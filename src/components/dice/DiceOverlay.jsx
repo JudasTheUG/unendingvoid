@@ -113,31 +113,59 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
   const fontSize = strLabel.length >= 2 ? (strLabel.length >= 3 ? 84 : 98) : 124;
   ctx.font = `900 ${fontSize}px "Orbitron", monospace, sans-serif`;
 
-  // 1. Deep carved physical shadow
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
-  ctx.fillText(strLabel, 131, 132);
+  if (isHighlighted) {
+    // ──────── ANTI-COLOR NUMERAL IN HIGHLIGHTED AREA ────────
+    // Bold deep obsidian black text framed inside the vibrant glowing neon aura.
+    // Infinite contrast ratio (21:1) so the number is instantly legible and never washed out.
 
-  // 2. Etched groove border
-  ctx.strokeStyle = isHighlighted ? theme.border : 'rgba(0, 0, 0, 0.85)';
-  ctx.lineWidth = isHighlighted ? 12 : 8;
-  ctx.strokeText(strLabel, 128, 128);
+    // 1. Heavy dark outer barrier
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 14;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(strLabel, 128, 128);
 
-  // 3. Glowing neon core
-  ctx.shadowColor = theme.border;
-  ctx.shadowBlur = isHighlighted ? 32 : 16;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(strLabel, 128, 128);
+    // 2. Solid deep pitch-black / dark obsidian anti-color numeral
+    ctx.fillStyle = '#020617';
+    ctx.fillText(strLabel, 128, 128);
 
-  // 4. Inner highlight stroke
-  ctx.strokeStyle = theme.border;
-  ctx.lineWidth = isHighlighted ? 5 : 3;
-  ctx.strokeText(strLabel, 128, 128);
-  ctx.shadowBlur = 0;
+    // 3. Sharp inner contrast stroke
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 6;
+    ctx.strokeText(strLabel, 128, 128);
 
-  // Disambiguation line under 6 and 9 (or 60/90)
-  if (label === 6 || label === 9 || label === '6' || label === '9' || label === '60' || label === '90') {
-    ctx.fillStyle = theme.border;
-    ctx.fillRect(80, 192, 96, 8);
+    // 4. Disambiguation line in deep black
+    if (label === 6 || label === 9 || label === '6' || label === '9' || label === '60' || label === '90') {
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(80, 192, 96, 10);
+    }
+  } else {
+    // ──────── STANDARD LASER-ENGRAVED NUMERAL (DARK METALLIC FACE) ────────
+    // 1. Deep carved physical shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    ctx.fillText(strLabel, 131, 132);
+
+    // 2. Etched groove border
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.lineWidth = 8;
+    ctx.strokeText(strLabel, 128, 128);
+
+    // 3. Glowing neon core
+    ctx.shadowColor = theme.border;
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(strLabel, 128, 128);
+
+    // 4. Inner highlight stroke
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 3;
+    ctx.strokeText(strLabel, 128, 128);
+    ctx.shadowBlur = 0;
+
+    // Disambiguation line under 6 and 9 (or 60/90)
+    if (label === 6 || label === 9 || label === '6' || label === '9' || label === '60' || label === '90') {
+      ctx.fillStyle = theme.border;
+      ctx.fillRect(80, 192, 96, 8);
+    }
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -535,10 +563,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                   die.userData.dieType === 'd6',
                   true
                 );
-                die.userData.winningPlate.material.emissive = new THREE.Color(
-                  DIE_THEMES[die.userData.dieType]?.border || 0x00f0ff
-                );
-                die.userData.winningPlate.material.emissiveIntensity = 2.4;
+                // Keep material emissive at 0 so the black anti-color text remains deep pitch black
+                die.userData.winningPlate.material.emissive = new THREE.Color(0x000000);
+                die.userData.winningPlate.material.emissiveIntensity = 0;
+                die.userData.winningPlate.material.opacity = 1.0;
                 die.userData.winningPlate.material.needsUpdate = true;
               }
             }
@@ -551,7 +579,8 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
               die.userData.winningPlate.scale.set(pulse, pulse, 1);
             }
             if (die.userData.faceSpotlight) {
-              die.userData.faceSpotlight.intensity = Math.min(8.0, 4.5 + 3.0 * pulse);
+              // Balanced spotlight provides brilliant face illumination without saturating/washing out digits
+              die.userData.faceSpotlight.intensity = Math.min(3.2, 1.8 + 0.8 * pulse);
             }
           }
         });
@@ -626,6 +655,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       const hlMat = new THREE.MeshStandardMaterial({
         map: createEngravedFaceTexture(targetNum, 'd6', true, false),
         transparent: true,
+        opacity: 0,
         roughness: 0.2,
         metalness: 0.8,
         depthWrite: false,
