@@ -45,7 +45,7 @@ describe('playerActions', () => {
   it('updatePlayerHP calls updateDoc with correct parameters', async () => {
     const hp = 50;
     await updatePlayerHP(mockUserId, hp);
-
+    
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       hp,
