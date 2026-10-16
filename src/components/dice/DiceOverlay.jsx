@@ -106,6 +106,11 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
     ctx.shadowBlur = 0;
   }
 
+  // Determine outline color based on user requirement:
+  // Red outline, and if in red or reddish dice (d6, d8, d10percentile, d100), make it white
+  const isReddish = dieType === 'd6' || dieType === 'd8' || dieType === 'd10percentile' || dieType === 'd100';
+  const outlineColor = isReddish ? '#ffffff' : '#ff0033';
+
   // Engraved number typography
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -114,56 +119,63 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
   ctx.font = `900 ${fontSize}px "Orbitron", monospace, sans-serif`;
 
   if (isHighlighted) {
-    // ──────── ANTI-COLOR NUMERAL IN HIGHLIGHTED AREA ────────
-    // Bold deep obsidian black text framed inside the vibrant glowing neon aura.
-    // Infinite contrast ratio (21:1) so the number is instantly legible and never washed out.
-
-    // 1. Heavy dark outer barrier
+    // ──────── ANTI-COLOR NUMERAL IN HIGHLIGHTED AREA WITH CONTRAST OUTLINE ────────
+    // 1. Dark outer shadow barrier
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 14;
+    ctx.lineWidth = 16;
     ctx.lineJoin = 'round';
     ctx.strokeText(strLabel, 128, 128);
 
-    // 2. Solid deep pitch-black / dark obsidian anti-color numeral
+    // 2. High-contrast user-requested outline: RED (or WHITE on red/reddish dice)
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = 9;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(strLabel, 128, 128);
+
+    // 3. Crisp inner black definition stroke
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.strokeText(strLabel, 128, 128);
+
+    // 4. Solid deep pitch-black / dark obsidian anti-color numeral core
     ctx.fillStyle = '#020617';
     ctx.fillText(strLabel, 128, 128);
 
-    // 3. Sharp inner contrast stroke
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 6;
-    ctx.strokeText(strLabel, 128, 128);
-
-    // 4. Disambiguation line in deep black
+    // 5. Disambiguation line in deep black with outline
     if (label === 6 || label === 9 || label === '6' || label === '9' || label === '60' || label === '90') {
+      ctx.strokeStyle = outlineColor;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(78, 190, 100, 12);
       ctx.fillStyle = '#020617';
-      ctx.fillRect(80, 192, 96, 10);
+      ctx.fillRect(80, 192, 96, 8);
     }
   } else {
-    // ──────── STANDARD LASER-ENGRAVED NUMERAL (DARK METALLIC FACE) ────────
+    // ──────── STANDARD ENGRAVED NUMERAL (DARK METALLIC FACE) ────────
     // 1. Deep carved physical shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
     ctx.fillText(strLabel, 131, 132);
 
-    // 2. Etched groove border
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+    // 2. User-requested outline: RED (or WHITE on red/reddish dice)
+    ctx.strokeStyle = outlineColor;
     ctx.lineWidth = 8;
+    ctx.lineJoin = 'round';
     ctx.strokeText(strLabel, 128, 128);
 
-    // 3. Glowing neon core
-    ctx.shadowColor = theme.border;
-    ctx.shadowBlur = 16;
+    // 3. Etched dark inner groove
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(strLabel, 128, 128);
+
+    // 4. Crisp glowing text core
     ctx.fillStyle = '#ffffff';
     ctx.fillText(strLabel, 128, 128);
 
-    // 4. Inner highlight stroke
-    ctx.strokeStyle = theme.border;
-    ctx.lineWidth = 3;
-    ctx.strokeText(strLabel, 128, 128);
-    ctx.shadowBlur = 0;
-
     // Disambiguation line under 6 and 9 (or 60/90)
     if (label === 6 || label === 9 || label === '6' || label === '9' || label === '60' || label === '90') {
-      ctx.fillStyle = theme.border;
+      ctx.strokeStyle = outlineColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(78, 190, 100, 12);
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(80, 192, 96, 8);
     }
   }
