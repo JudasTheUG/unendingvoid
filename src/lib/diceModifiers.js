@@ -6,6 +6,7 @@
  * @returns {number} Total modifier to add to dice result
  */
 export function calculateModifier(player, traitDefs, purpose) {
+  if (!player) return 0;
   let modifier = 0;
 
   // Stat-based modifier (D&D-style: floor((stat - 10) / 2))

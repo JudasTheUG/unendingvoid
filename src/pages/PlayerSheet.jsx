@@ -19,23 +19,40 @@ export default function PlayerSheet() {
   const { t, i18n } = useTranslation();
   const { user, profile } = useAuth();
   const { data: player, loading: playerLoading } = usePlayerData(user?.uid);
-  const { docs: allItems } = useCollection('items');
-  const { docs: allTraits } = useCollection('traits');
+  const { docs: allItems = [] } = useCollection('items');
+  const { docs: allTraits = [] } = useCollection('traits');
 
   const [equippedWeapon, setEquippedWeapon] = useState(null);
   const [equippedArmor, setEquippedArmor] = useState(null);
 
-  if (playerLoading || !player) return <LoadingSpinner />;
+  const effectivePlayer = player || profile || {
+    uid: user?.uid,
+    displayName: user?.displayName || user?.email?.split('@')[0] || 'Void Operative',
+    role: 'player',
+    locale: 'en',
+    hp: 100,
+    maxHp: 100,
+    shields: 50,
+    maxShields: 50,
+    credits: 500,
+    stats: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
+    traits: [],
+    inventory: [],
+  };
+
+  if (playerLoading && !player && !profile) return <LoadingSpinner />;
 
   const activeLocale = i18n.language || 'en';
 
   // Resolve inventory items
-  const inventoryItems = (player.inventory || [])
+  const inventoryItems = (effectivePlayer.inventory || [])
     .map((itemId) => allItems.find((it) => it.id === itemId))
     .filter(Boolean);
 
   // Resolve equipped ship
-  const equippedShip = allItems.find((it) => it.id === player.spaceship && it.type === 'spaceship');
+  const equippedShip = allItems.find(
+    (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
+  );
 
   const statLabels = {
     strength: t('player.strength') || 'Strength',
@@ -61,8 +78,8 @@ export default function PlayerSheet() {
       {/* 3D Dice Layer */}
       <DiceOverlay
         user={user}
-        profile={player}
-        modifier={calculateModifier(player, allTraits, 'attack')}
+        profile={effectivePlayer}
+        modifier={calculateModifier(effectivePlayer, allTraits, 'attack')}
       />
 
       {/* Header bar */}
@@ -70,19 +87,19 @@ export default function PlayerSheet() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-display text-xl md:text-2xl font-black text-neon-cyan tracking-wider drop-shadow-[0_0_10px_rgba(0,240,255,0.4)]">
-              {player.displayName || 'Void Operative'}
+              {effectivePlayer.displayName || 'Void Operative'}
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">
               Operative
             </span>
           </div>
           <p className="text-xs text-gray-400 font-mono mt-0.5">
-            UID: {player.uid || user?.uid} · Quantum Link Stable
+            UID: {effectivePlayer.uid || user?.uid} · Quantum Link Active
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <CreditCounter amount={player.credits || 0} />
+          <CreditCounter amount={effectivePlayer.credits || 0} />
           <LanguageSwitcher />
           <button
             id="logout-btn"
@@ -99,10 +116,10 @@ export default function PlayerSheet() {
         {/* Left Column: Vitals & Ship */}
         <div className="space-y-6">
           <VitalsPanel
-            hp={player.hp || 0}
-            maxHp={player.maxHp || 100}
-            shields={player.shields || 0}
-            maxShields={player.maxShields || 50}
+            hp={effectivePlayer.hp || 0}
+            maxHp={effectivePlayer.maxHp || 100}
+            shields={effectivePlayer.shields || 0}
+            maxShields={effectivePlayer.maxShields || 50}
             hpLabel={t('player.hp') || 'Health / Integrity'}
             shieldsLabel={t('player.shields') || 'Energy Shields'}
           />
@@ -113,7 +130,7 @@ export default function PlayerSheet() {
           />
 
           <TraitsList
-            traits={player.traits || []}
+            traits={effectivePlayer.traits || []}
             traitDefs={allTraits}
             locale={activeLocale}
           />
@@ -122,14 +139,14 @@ export default function PlayerSheet() {
         {/* Center & Right Column: Stats & Inventory */}
         <div className="lg:col-span-2 space-y-6">
           <StatsGrid
-            stats={player.stats || {}}
+            stats={effectivePlayer.stats || {}}
             labels={statLabels}
           />
 
           <InventoryList
             items={inventoryItems}
-            equippedWeapon={equippedWeapon || player.equippedWeapon}
-            equippedArmor={equippedArmor || player.equippedArmor}
+            equippedWeapon={equippedWeapon || effectivePlayer.equippedWeapon}
+            equippedArmor={equippedArmor || effectivePlayer.equippedArmor}
             locale={activeLocale}
             onEquip={handleEquip}
           />

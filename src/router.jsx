@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
@@ -10,9 +11,14 @@ function ProtectedRoute({ children, requiredRole }) {
 
   if (loading) return <LoadingSpinner />;
   if (!user) return <Navigate to="/login" replace />;
-  if (requiredRole && profile?.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+
+  const effectiveRole = profile?.role || 'player';
+
+  // If page requires DM and user is not DM, send to Player Sheet (never loop to root)
+  if (requiredRole === 'dm' && effectiveRole !== 'dm') {
+    return <Navigate to="/sheet" replace />;
   }
+
   return children;
 }
 
@@ -53,6 +59,7 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
