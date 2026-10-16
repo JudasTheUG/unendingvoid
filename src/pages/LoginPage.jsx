@@ -24,7 +24,7 @@ export default function LoginPage() {
       } else {
         await signInEmail(email, password);
       }
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(isRegister ? t('auth.registerError') : t('auth.loginError'));
     } finally {
@@ -37,7 +37,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInGoogle();
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(t('auth.loginError'));
     } finally {

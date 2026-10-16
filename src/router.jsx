@@ -2,32 +2,19 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
 import PlayerSheet from './pages/PlayerSheet';
+import CampaignPage from './pages/CampaignPage';
 import DMPanel from './pages/DMPanel';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 
-function ProtectedRoute({ children, requiredRole }) {
-  const { user, profile, loading } = useAuth();
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
   if (!user) return <Navigate to="/login" replace />;
 
-  const effectiveRole = profile?.role || 'player';
-
-  // If page requires DM and user is not DM, send to Player Sheet (never loop to root)
-  if (requiredRole === 'dm' && effectiveRole !== 'dm') {
-    return <Navigate to="/sheet" replace />;
-  }
-
   return children;
-}
-
-function RoleRedirect() {
-  const { profile, loading } = useAuth();
-
-  if (loading) return <LoadingSpinner />;
-  if (profile?.role === 'dm') return <Navigate to="/dm" replace />;
-  return <Navigate to="/sheet" replace />;
 }
 
 export default function AppRouter() {
@@ -35,31 +22,72 @@ export default function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+
+        {/* Dashboard hub: My Characters & My Campaigns */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <RoleRedirect />
+              <Navigate to="/dashboard" replace />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Character Sheet routes (D&D Beyond style) */}
+        <Route
+          path="/character/:characterId"
+          element={
+            <ProtectedRoute>
+              <PlayerSheet />
             </ProtectedRoute>
           }
         />
         <Route
           path="/sheet"
           element={
-            <ProtectedRoute requiredRole="player">
+            <ProtectedRoute>
               <PlayerSheet />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Campaign Page for Players */}
+        <Route
+          path="/campaign/:campaignId"
+          element={
+            <ProtectedRoute>
+              <CampaignPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* DM Command Console for Campaign */}
+        <Route
+          path="/dm/:campaignId"
+          element={
+            <ProtectedRoute>
+              <DMPanel />
             </ProtectedRoute>
           }
         />
         <Route
           path="/dm"
           element={
-            <ProtectedRoute requiredRole="dm">
+            <ProtectedRoute>
               <DMPanel />
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );
