@@ -56,7 +56,7 @@ describe('playerActions', () => {
   it('updatePlayerShields calls updateDoc with correct parameters', async () => {
     const shields = 100;
     await updatePlayerShields(mockUserId, shields);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       shields,
@@ -68,7 +68,7 @@ describe('playerActions', () => {
     const stat = 'strength';
     const value = 18;
     await updatePlayerStat(mockUserId, stat, value);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       'stats.strength': value,
@@ -79,7 +79,7 @@ describe('playerActions', () => {
   it('addTrait calls updateDoc with correct parameters', async () => {
     const traitId = 'tough';
     await addTrait(mockUserId, traitId);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(arrayUnion).toHaveBeenCalledWith(traitId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
@@ -91,7 +91,7 @@ describe('playerActions', () => {
   it('removeTrait calls updateDoc with correct parameters', async () => {
     const traitId = 'tough';
     await removeTrait(mockUserId, traitId);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(arrayRemove).toHaveBeenCalledWith(traitId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
@@ -103,7 +103,7 @@ describe('playerActions', () => {
   it('addItemToInventory calls updateDoc with correct parameters', async () => {
     const itemId = 'blaster';
     await addItemToInventory(mockUserId, itemId);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(arrayUnion).toHaveBeenCalledWith(itemId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
@@ -115,7 +115,7 @@ describe('playerActions', () => {
   it('removeItemFromInventory calls updateDoc with correct parameters', async () => {
     const itemId = 'blaster';
     await removeItemFromInventory(mockUserId, itemId);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(arrayRemove).toHaveBeenCalledWith(itemId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
@@ -127,7 +127,7 @@ describe('playerActions', () => {
   it('updateCredits calls updateDoc with correct parameters', async () => {
     const credits = 1500;
     await updateCredits(mockUserId, credits);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       credits,
@@ -138,7 +138,7 @@ describe('playerActions', () => {
   it('equipWeapon calls updateDoc with correct parameters', async () => {
     const itemId = 'laser_rifle';
     await equipWeapon(mockUserId, itemId);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       equippedWeapon: itemId,
@@ -149,7 +149,7 @@ describe('playerActions', () => {
   it('equipArmor calls updateDoc with correct parameters', async () => {
     const itemId = 'kevlar_vest';
     await equipArmor(mockUserId, itemId);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       equippedArmor: itemId,
@@ -160,7 +160,7 @@ describe('playerActions', () => {
   it('setSpaceship calls updateDoc with correct parameters', async () => {
     const itemId = 'millennium_falcon';
     await setSpaceship(mockUserId, itemId);
-    
+
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       spaceship: itemId,
