@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Is the requester authenticated?
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: Is the requester the document owner?
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    // Helper: Is the requester a DM?
+    function isDM() {
+      return isAuth()
+        && exists(/databases/$(database)/documents/players/$(request.auth.uid))
+        && get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'dm';
+    }
+
+    // ── Players ──
+    match /players/{userId} {
+      allow read: if isAuth();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isDM();
+      allow delete: if isDM();
+    }
+
+    // ── Items (read-only for players, DM manages) ──
+    match /items/{itemId} {
+      allow read: if isAuth();
+      allow write: if isDM();
+    }
+
+    // ── Traits (read-only for players, DM manages) ──
+    match /traits/{traitId} {
+      allow read: if isAuth();
+      allow write: if isDM();
+    }
+
+    // ── Rolls (anyone auth'd can create, all can read, immutable) ──
+    match /rolls/{rollId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.playerId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ── Sessions (DM owns, players read) ──
+    match /sessions/{sessionId} {
+      allow read: if isAuth();
+      allow write: if isDM();
+    }
+  }
+}

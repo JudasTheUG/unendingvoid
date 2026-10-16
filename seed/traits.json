@@ -1,0 +1,109 @@
+[
+  {
+    "id": "trait_cybernetic_arm",
+    "type": "buff",
+    "name": {
+      "en": "Cybernetic Myomer Arm",
+      "tr": "Sibernetik Miyomer Kol",
+      "nl": "Cybernetische Myomeer Arm"
+    },
+    "description": {
+      "en": "Hydraulically augmented limb capable of crushing reinforced bulkheads.",
+      "tr": "Güçlendirilmiş bölmeleri ezebilen hidrolik takviyeli uzuv.",
+      "nl": "Hydraulisch versterkte arm die stalen schotten kan verpletteren."
+    },
+    "statModifiers": {
+      "strength": 2
+    },
+    "rollModifier": 1
+  },
+  {
+    "id": "trait_void_veteran",
+    "type": "buff",
+    "name": {
+      "en": "Void Veteran",
+      "tr": "Boşluk Gazisi",
+      "nl": "Leegte Veteraan"
+    },
+    "description": {
+      "en": "Decades of zero-G combat have sharpened tactical instincts under cosmic pressure.",
+      "tr": "Sıfır yerçekimi çatışmalarıyla kozmik baskı altında bilenmiş taktiksel refleksler.",
+      "nl": "Decennia van nul-G gevechten hebben tactische reflexen aangescherpt."
+    },
+    "statModifiers": {
+      "constitution": 1,
+      "wisdom": 1
+    },
+    "rollModifier": 2
+  },
+  {
+    "id": "trait_quantum_insight",
+    "type": "buff",
+    "name": {
+      "en": "Quantum Intuition",
+      "tr": "Kuantum Sezgisi",
+      "nl": "Kwantum Intuïtie"
+    },
+    "description": {
+      "en": "Subconscious awareness of localized probabilistic fluctuations.",
+      "tr": "Yerel olasılık dalgalanmalarının bilinçaltı düzeyinde sezilmesi.",
+      "nl": "Onbewust bewustzijn van probabilistische fluctuaties."
+    },
+    "statModifiers": {
+      "intelligence": 3
+    },
+    "rollModifier": 2
+  },
+  {
+    "id": "trait_antisocial",
+    "type": "debuff",
+    "name": {
+      "en": "Cynical Isolationist",
+      "tr": "Kuşkucu İzolasyonist",
+      "nl": "Cynische Isolationist"
+    },
+    "description": {
+      "en": "Deep-seated distrust of synthetic life and planetary authorities hinders diplomacy.",
+      "tr": "Sentetik yaşama ve otoritelere duyulan derin güvensizlik diplomasiyi zorlaştırır.",
+      "nl": "Diepgeworteld wantrouwen belemmert diplomatische interactie."
+    },
+    "statModifiers": {
+      "charisma": -2
+    },
+    "rollModifier": -1
+  },
+  {
+    "id": "trait_gravity_sickness",
+    "type": "debuff",
+    "name": {
+      "en": "Atmospheric Vertigo",
+      "tr": "Atmosferik Baş Dönmesi",
+      "nl": "Atmosferische Draaierigheid"
+    },
+    "description": {
+      "en": "Inner ear disorientation caused by sudden planetary gravitational transitions.",
+      "tr": "Gezegen yerçekimine ani geçişin iç kulakta yarattığı yön kaybı.",
+      "nl": "Binnenoordisoriëntatie door planetaire zwaartekrachtovergangen."
+    },
+    "statModifiers": {
+      "dexterity": -2
+    },
+    "rollModifier": -1
+  },
+  {
+    "id": "trait_lucky",
+    "type": "buff",
+    "name": {
+      "en": "Entangled Fate (Lucky)",
+      "tr": "Dolanık Kader (Şanslı)",
+      "nl": "Verstrengeld Noodlot (Geluk)"
+    },
+    "description": {
+      "en": "Probability mysteriously collapses in your favor during life-or-death decisions.",
+      "tr": "Ölüm kalım anlarında olasılıklar gizemli şekilde lehinize sonuçlanır.",
+      "nl": "Waarschijnlijkheid stort mysterieus in uw voordeel in bij hachelijke situaties."
+    },
+    "statModifiers": {},
+    "rollModifier": 3
+  }
+]

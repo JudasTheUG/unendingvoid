@@ -1,0 +1,69 @@
+{
+  "app": {
+    "title": "Unending Void",
+    "subtitle": "Sci-Fi TTRPG Virtual Tabletop"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Create Account",
+    "logout": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display Name",
+    "googleSignIn": "Sign in with Google",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginError": "Login failed. Check your credentials.",
+    "registerError": "Registration failed. Try again."
+  },
+  "player": {
+    "sheet": "Character Sheet",
+    "hp": "HP",
+    "shields": "Shields",
+    "credits": "Credits",
+    "stats": "Stats",
+    "strength": "STR",
+    "dexterity": "DEX",
+    "constitution": "CON",
+    "intelligence": "INT",
+    "wisdom": "WIS",
+    "charisma": "CHA",
+    "inventory": "Inventory",
+    "traits": "Traits",
+    "spaceship": "Spaceship",
+    "equipped": "Equipped",
+    "noItems": "No items in inventory",
+    "noTraits": "No active traits"
+  },
+  "dm": {
+    "panel": "DM Control Panel",
+    "roster": "Player Roster",
+    "combat": "Combat Tracker",
+    "items": "Item Manager",
+    "traitAssigner": "Trait Assigner",
+    "spawnItem": "Spawn Item",
+    "assignTrait": "Assign Trait",
+    "overrideStats": "Override Stats",
+    "startCombat": "Start Combat",
+    "endCombat": "End Combat",
+    "nextTurn": "Next Turn"
+  },
+  "dice": {
+    "roll": "Roll",
+    "notation": "Dice Notation",
+    "result": "Result",
+    "history": "Roll History",
+    "modifier": "Modifier",
+    "total": "Total"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "language": "Language"
+  }
+}

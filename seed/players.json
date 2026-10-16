@@ -1,0 +1,77 @@
+[
+  {
+    "id": "player_kael",
+    "uid": "player_kael",
+    "displayName": "Commander Kaelen Voss",
+    "role": "player",
+    "locale": "en",
+    "hp": 85,
+    "maxHp": 100,
+    "shields": 45,
+    "maxShields": 60,
+    "credits": 2450,
+    "stats": {
+      "strength": 16,
+      "dexterity": 14,
+      "constitution": 15,
+      "intelligence": 12,
+      "wisdom": 10,
+      "charisma": 13
+    },
+    "traits": ["trait_cybernetic_arm", "trait_void_veteran"],
+    "inventory": ["item_plasma_rifle", "item_nanite_stim", "item_combat_suit"],
+    "equippedWeapon": "item_plasma_rifle",
+    "equippedArmor": "item_combat_suit",
+    "spaceship": "item_corvette_voidrunner"
+  },
+  {
+    "id": "player_lyra",
+    "uid": "player_lyra",
+    "displayName": "Dr. Lyra Sol",
+    "role": "player",
+    "locale": "tr",
+    "hp": 65,
+    "maxHp": 75,
+    "shields": 70,
+    "maxShields": 70,
+    "credits": 4120,
+    "stats": {
+      "strength": 9,
+      "dexterity": 15,
+      "constitution": 12,
+      "intelligence": 18,
+      "wisdom": 16,
+      "charisma": 11
+    },
+    "traits": ["trait_quantum_insight", "trait_antisocial"],
+    "inventory": ["item_arc_pistol", "item_neural_scanner", "item_nanite_stim"],
+    "equippedWeapon": "item_arc_pistol",
+    "equippedArmor": null,
+    "spaceship": null
+  },
+  {
+    "id": "dm_master",
+    "uid": "dm_master",
+    "displayName": "Void Architect (DM)",
+    "role": "dm",
+    "locale": "en",
+    "hp": 999,
+    "maxHp": 999,
+    "shields": 999,
+    "maxShields": 999,
+    "credits": 999999,
+    "stats": {
+      "strength": 20,
+      "dexterity": 20,
+      "constitution": 20,
+      "intelligence": 20,
+      "wisdom": 20,
+      "charisma": 20
+    },
+    "traits": [],
+    "inventory": [],
+    "equippedWeapon": null,
+    "equippedArmor": null,
+    "spaceship": null
+  }
+]

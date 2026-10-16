@@ -1,0 +1,69 @@
+{
+  "app": {
+    "title": "Sonsuz Boşluk",
+    "subtitle": "Bilim Kurgu TTRPG Sanal Masa"
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "register": "Hesap Oluştur",
+    "logout": "Çıkış Yap",
+    "email": "E-posta",
+    "password": "Şifre",
+    "displayName": "Görünen Ad",
+    "googleSignIn": "Google ile giriş yap",
+    "noAccount": "Hesabınız yok mu?",
+    "hasAccount": "Zaten hesabınız var mı?",
+    "loginError": "Giriş başarısız. Bilgilerinizi kontrol edin.",
+    "registerError": "Kayıt başarısız. Tekrar deneyin."
+  },
+  "player": {
+    "sheet": "Karakter Sayfası",
+    "hp": "HP",
+    "shields": "Kalkan",
+    "credits": "Kredi",
+    "stats": "İstatistikler",
+    "strength": "GÜÇ",
+    "dexterity": "ÇEV",
+    "constitution": "DAY",
+    "intelligence": "ZEK",
+    "wisdom": "BİL",
+    "charisma": "KAR",
+    "inventory": "Envanter",
+    "traits": "Özellikler",
+    "spaceship": "Uzay Gemisi",
+    "equipped": "Kuşanılmış",
+    "noItems": "Envanterde eşya yok",
+    "noTraits": "Aktif özellik yok"
+  },
+  "dm": {
+    "panel": "GM Kontrol Paneli",
+    "roster": "Oyuncu Listesi",
+    "combat": "Savaş Takipçisi",
+    "items": "Eşya Yöneticisi",
+    "traitAssigner": "Özellik Atayıcı",
+    "spawnItem": "Eşya Oluştur",
+    "assignTrait": "Özellik Ata",
+    "overrideStats": "İstatistik Düzenle",
+    "startCombat": "Savaşı Başlat",
+    "endCombat": "Savaşı Bitir",
+    "nextTurn": "Sonraki Tur"
+  },
+  "dice": {
+    "roll": "At",
+    "notation": "Zar Notasyonu",
+    "result": "Sonuç",
+    "history": "Atış Geçmişi",
+    "modifier": "Düzeltici",
+    "total": "Toplam"
+  },
+  "common": {
+    "loading": "Yükleniyor...",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "confirm": "Onayla",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "back": "Geri",
+    "language": "Dil"
+  }
+}

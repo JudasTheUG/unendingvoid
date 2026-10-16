@@ -1,0 +1,138 @@
+[
+  {
+    "id": "item_plasma_rifle",
+    "type": "weapon",
+    "name": {
+      "en": "Hyperion Plasma Rifle",
+      "tr": "Hyperion Plazma Tüfeği",
+      "nl": "Hyperion Plasmageweer"
+    },
+    "description": {
+      "en": "High-yield thermal burst rifle capable of ionizing atmospheric gases.",
+      "tr": "Atmosferik gazları iyonlaştırabilen yüksek verimli termal patlama tüfeği.",
+      "nl": "Krachtig thermisch barstgeweer dat atmosferische gassen kan ioniseren."
+    },
+    "damage": 18,
+    "rarity": "rare",
+    "value": 1200
+  },
+  {
+    "id": "item_arc_pistol",
+    "type": "weapon",
+    "name": {
+      "en": "Tesla Arc Stunner",
+      "tr": "Tesla Ark Tabancası",
+      "nl": "Tesla Boogpistool"
+    },
+    "description": {
+      "en": "Discharges concentrated electromagnetic arcs to incapacitate synthetic and biological foes.",
+      "tr": "Sentetik ve biyolojik hedefleri etkisiz hale getiren elektromanyetik ark deşarjı.",
+      "nl": "Vuurt geconcentreerde elektromagnetische bogen af om vijanden uit te schakelen."
+    },
+    "damage": 12,
+    "rarity": "uncommon",
+    "value": 650
+  },
+  {
+    "id": "item_void_blade",
+    "type": "weapon",
+    "name": {
+      "en": "Singularity Edge",
+      "tr": "Tekillik Kılıcı",
+      "nl": "Singulariteitszwaard"
+    },
+    "description": {
+      "en": "An alien monomolecular blade encased in a micro-gravitational field.",
+      "tr": "Mikro-yerçekimi alanı içine hapsedilmiş uzaylı tek moleküllü kılıç.",
+      "nl": "Een buitenaards monomoleculair zwaard gevangen in een micro-zwaartekrachtveld."
+    },
+    "damage": 28,
+    "rarity": "alien",
+    "value": 4500
+  },
+  {
+    "id": "item_combat_suit",
+    "type": "armor",
+    "name": {
+      "en": "Apex Composite Exo-Suit",
+      "tr": "Apex Kompozit Dış İskelet",
+      "nl": "Apex Composiet Exo-Pak"
+    },
+    "description": {
+      "en": "Reinforced titanium weave with kinetic dispersion dampeners.",
+      "tr": "Kinetik dağıtıcı sönümleyicilere sahip güçlendirilmiş titanyum dokuma.",
+      "nl": "Versterkt titaniumweefsel met kinetische dispersiedempers."
+    },
+    "defense": 25,
+    "rarity": "rare",
+    "value": 1800
+  },
+  {
+    "id": "item_shield_matrix",
+    "type": "armor",
+    "name": {
+      "en": "Aegis Phase Deflector",
+      "tr": "Aegis Faz Saptırıcı",
+      "nl": "Aegis Fase Deflector"
+    },
+    "description": {
+      "en": "Generates an oscillating energy barrier that absorbs high-frequency beam impacts.",
+      "tr": "Yüksek frekanslı ışın darbelerini emen salınımlı bir enerji bariyeri üretir.",
+      "nl": "Genereert een oscillerende energiebarrière die hoogfrequente straling absorbeert."
+    },
+    "defense": 35,
+    "rarity": "legendary",
+    "value": 3200
+  },
+  {
+    "id": "item_nanite_stim",
+    "type": "consumable",
+    "name": {
+      "en": "Nanite Repair Syringe",
+      "tr": "Nanit Onarım Şırıngası",
+      "nl": "Nanite Reparatiespuit"
+    },
+    "description": {
+      "en": "Injects microscopic repair units that rapidly knit flesh and cauterize wounds.",
+      "tr": "Doku tamir eden ve yaraları anında dağlayan mikroskobik tamir birimleri enjekte eder.",
+      "nl": "Injecteert microscopische reparatie-eenheden die weefsel snel herstellen."
+    },
+    "effect": "heal:35",
+    "rarity": "common",
+    "value": 150
+  },
+  {
+    "id": "item_neural_scanner",
+    "type": "gear",
+    "name": {
+      "en": "Omni-Spectrum Bio-Scanner",
+      "tr": "Çok Spektrumlu Biyo-Tarayıcı",
+      "nl": "Omni-Spectrum Bioscanner"
+    },
+    "description": {
+      "en": "Scans biosignatures, structural weaknesses, and localized atmospheric hazards up to 500 meters.",
+      "tr": "500 metreye kadar biyo-imzaları, yapısal zayıflıkları ve atmosferik tehlikeleri tarar.",
+      "nl": "Scant biokenmerken, structurele zwaktes en gevaren tot 500 meter ver."
+    },
+    "rarity": "uncommon",
+    "value": 500
+  },
+  {
+    "id": "item_corvette_voidrunner",
+    "type": "spaceship",
+    "name": {
+      "en": "Viper-Class Light Interceptor",
+      "tr": "Engerek Sınıfı Hafif Önleme Gemisi",
+      "nl": "Viper-Klasse Lichte Onderschepper"
+    },
+    "description": {
+      "en": "Sub-warp high mobility scout craft equipped with dual twin-linked laser cannons.",
+      "tr": "Çift bağlantılı lazer toplarıyla donatılmış alt-büküm yüksek hareket kabiliyetli keşif aracı.",
+      "nl": "Hoge mobiliteit sub-warp verkenningsschip met dubbele laserkanonnen."
+    },
+    "speed": 850,
+    "hullPoints": 200,
+    "rarity": "legendary",
+    "value": 25000
+  }
+]

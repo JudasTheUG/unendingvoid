@@ -1,0 +1,69 @@
+{
+  "app": {
+    "title": "Eindeloze Leegte",
+    "subtitle": "Sci-Fi TTRPG Virtueel Tafelblad"
+  },
+  "auth": {
+    "login": "Inloggen",
+    "register": "Account Aanmaken",
+    "logout": "Uitloggen",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "displayName": "Weergavenaam",
+    "googleSignIn": "Inloggen met Google",
+    "noAccount": "Nog geen account?",
+    "hasAccount": "Heb je al een account?",
+    "loginError": "Inloggen mislukt. Controleer je gegevens.",
+    "registerError": "Registratie mislukt. Probeer het opnieuw."
+  },
+  "player": {
+    "sheet": "Karakterblad",
+    "hp": "HP",
+    "shields": "Schilden",
+    "credits": "Credits",
+    "stats": "Statistieken",
+    "strength": "KRA",
+    "dexterity": "BEH",
+    "constitution": "UIT",
+    "intelligence": "INT",
+    "wisdom": "WIJ",
+    "charisma": "CHA",
+    "inventory": "Inventaris",
+    "traits": "Eigenschappen",
+    "spaceship": "Ruimteschip",
+    "equipped": "Uitgerust",
+    "noItems": "Geen items in inventaris",
+    "noTraits": "Geen actieve eigenschappen"
+  },
+  "dm": {
+    "panel": "GM Bedieningspaneel",
+    "roster": "Spelerlijst",
+    "combat": "Gevechtsvolger",
+    "items": "Itembeheerder",
+    "traitAssigner": "Eigenschappen Toewijzer",
+    "spawnItem": "Item Aanmaken",
+    "assignTrait": "Eigenschap Toewijzen",
+    "overrideStats": "Statistieken Overschrijven",
+    "startCombat": "Gevecht Starten",
+    "endCombat": "Gevecht Beëindigen",
+    "nextTurn": "Volgende Beurt"
+  },
+  "dice": {
+    "roll": "Gooi",
+    "notation": "Dobbelsteen Notatie",
+    "result": "Resultaat",
+    "history": "Worp Geschiedenis",
+    "modifier": "Modificator",
+    "total": "Totaal"
+  },
+  "common": {
+    "loading": "Laden...",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "back": "Terug",
+    "language": "Taal"
+  }
+}
