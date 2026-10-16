@@ -35,19 +35,19 @@ function playDiceClatterSound() {
 
 // Color palettes per die type
 const DIE_THEMES = {
-  d4: { border: '#eab308', glow: 'rgba(234, 179, 8, 0.6)', baseColor: 0x1f1908, label: 'D4' },
-  d6: { border: '#ef4444', glow: 'rgba(239, 68, 68, 0.6)', baseColor: 0x240808, label: 'D6' },
-  d8: { border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.6)', baseColor: 0x261406, label: 'D8' },
-  d10: { border: '#10b981', glow: 'rgba(16, 185, 129, 0.6)', baseColor: 0x062215, label: 'D10' },
-  d10percentile: { border: '#ec4899', glow: 'rgba(236, 72, 153, 0.6)', baseColor: 0x240618, label: 'D%' },
-  d12: { border: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)', baseColor: 0x1d082d, label: 'D12' },
-  d20: { border: '#00f0ff', glow: 'rgba(0, 240, 255, 0.6)', baseColor: 0x051b2a, label: 'D20' },
-  d100: { border: '#ec4899', glow: 'rgba(236, 72, 153, 0.6)', baseColor: 0x240618, label: 'D100' },
+  d4: { border: '#eab308', glow: 'rgba(234, 179, 8, 0.75)', baseColor: 0x1f1908, label: 'D4' },
+  d6: { border: '#ef4444', glow: 'rgba(239, 68, 68, 0.75)', baseColor: 0x240808, label: 'D6' },
+  d8: { border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.75)', baseColor: 0x261406, label: 'D8' },
+  d10: { border: '#10b981', glow: 'rgba(16, 185, 129, 0.75)', baseColor: 0x062215, label: 'D10' },
+  d10percentile: { border: '#ec4899', glow: 'rgba(236, 72, 153, 0.75)', baseColor: 0x240618, label: 'D%' },
+  d12: { border: '#a855f7', glow: 'rgba(168, 85, 247, 0.75)', baseColor: 0x1d082d, label: 'D12' },
+  d20: { border: '#00f0ff', glow: 'rgba(0, 240, 255, 0.75)', baseColor: 0x051b2a, label: 'D20' },
+  d100: { border: '#ec4899', glow: 'rgba(236, 72, 153, 0.75)', baseColor: 0x240618, label: 'D100' },
 };
 
 /**
  * Generate high-resolution canvas texture with engraved glowing numbers.
- * When isHighlighted=true, renders a glowing illuminated aura for the winning face.
+ * When isHighlighted=true, renders an intensely illuminated radiant halo and targeting aura for the winning face.
  */
 function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighlighted = false) {
   const canvas = document.createElement('canvas');
@@ -68,9 +68,9 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
 
     // Beveled cybernetic border
     ctx.strokeStyle = theme.border;
-    ctx.lineWidth = isHighlighted ? 10 : 6;
+    ctx.lineWidth = isHighlighted ? 12 : 6;
     ctx.shadowColor = theme.border;
-    ctx.shadowBlur = isHighlighted ? 18 : 0;
+    ctx.shadowBlur = isHighlighted ? 22 : 0;
     ctx.strokeRect(10, 10, 236, 236);
     ctx.shadowBlur = 0;
 
@@ -82,23 +82,27 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
     ctx.fillRect(236, 236, 14, 14);
   }
 
-  // Highlight halo for settled face
+  // Radiant illuminated aura on the winning face
   if (isHighlighted && !isBoxFace) {
-    const halo = ctx.createRadialGradient(128, 128, 30, 128, 128, 110);
-    halo.addColorStop(0, theme.glow || 'rgba(0, 240, 255, 0.45)');
-    halo.addColorStop(0.7, theme.glow ? theme.glow.replace('0.6', '0.2') : 'rgba(0, 240, 255, 0.15)');
+    // Glowing neon background disc
+    const halo = ctx.createRadialGradient(128, 128, 20, 128, 128, 115);
+    halo.addColorStop(0, theme.glow || 'rgba(0, 240, 255, 0.65)');
+    halo.addColorStop(0.5, 'rgba(7, 15, 30, 0.85)');
+    halo.addColorStop(0.85, theme.border);
     halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = halo;
     ctx.beginPath();
-    ctx.arc(128, 128, 110, 0, Math.PI * 2);
+    ctx.arc(128, 128, 115, 0, Math.PI * 2);
     ctx.fill();
 
-    // Subtle neon targeting brackets
+    // Outer neon targeting ring
     ctx.strokeStyle = theme.border;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
     ctx.shadowColor = theme.border;
-    ctx.shadowBlur = 14;
-    ctx.strokeRect(28, 28, 200, 200);
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(128, 128, 102, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.shadowBlur = 0;
   }
 
@@ -106,25 +110,25 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const strLabel = String(label);
-  const fontSize = strLabel.length >= 2 ? (strLabel.length >= 3 ? 85 : 100) : 124;
+  const fontSize = strLabel.length >= 2 ? (strLabel.length >= 3 ? 84 : 98) : 124;
   ctx.font = `900 ${fontSize}px "Orbitron", monospace, sans-serif`;
 
-  // 1. Deep carved physical shadow (offset down-right into metal face)
+  // 1. Deep carved physical shadow
   ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
   ctx.fillText(strLabel, 131, 132);
 
   // 2. Etched groove border
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
-  ctx.lineWidth = isHighlighted ? 10 : 8;
+  ctx.strokeStyle = isHighlighted ? theme.border : 'rgba(0, 0, 0, 0.85)';
+  ctx.lineWidth = isHighlighted ? 12 : 8;
   ctx.strokeText(strLabel, 128, 128);
 
-  // 3. Sci-Fi Glowing core
+  // 3. Glowing neon core
   ctx.shadowColor = theme.border;
-  ctx.shadowBlur = isHighlighted ? 26 : 16;
-  ctx.fillStyle = isHighlighted ? '#ffffff' : '#f0f9ff';
+  ctx.shadowBlur = isHighlighted ? 32 : 16;
+  ctx.fillStyle = '#ffffff';
   ctx.fillText(strLabel, 128, 128);
 
-  // 4. Subtle theme color tint on inner edge
+  // 4. Inner highlight stroke
   ctx.strokeStyle = theme.border;
   ctx.lineWidth = isHighlighted ? 5 : 3;
   ctx.strokeText(strLabel, 128, 128);
@@ -146,7 +150,6 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
  * the camera and aligns faceUp with camera/world up (0, 1, 0).
  */
 function computeSettlingQuaternion(faceNormal, faceUp, cameraLookDir) {
-  // World target directions:
   const z_world = cameraLookDir.clone().normalize();
   let y_world = new THREE.Vector3(0, 1, 0).projectOnPlane(z_world);
   if (y_world.lengthSq() < 0.001) {
@@ -156,7 +159,6 @@ function computeSettlingQuaternion(faceNormal, faceUp, cameraLookDir) {
   const x_world = new THREE.Vector3().crossVectors(y_world, z_world).normalize();
   const mWorld = new THREE.Matrix4().makeBasis(x_world, y_world, z_world);
 
-  // Die local face directions:
   const z_die = faceNormal.clone().normalize();
   let y_die = faceUp.clone().projectOnPlane(z_die);
   if (y_die.lengthSq() < 0.001) {
@@ -169,7 +171,6 @@ function computeSettlingQuaternion(faceNormal, faceUp, cameraLookDir) {
   const x_die = new THREE.Vector3().crossVectors(y_die, z_die).normalize();
   const mDie = new THREE.Matrix4().makeBasis(x_die, y_die, z_die);
 
-  // M_target = M_world * M_die^T
   const mDieInv = mDie.clone().transpose();
   const mTarget = new THREE.Matrix4().multiplyMatrices(mWorld, mDieInv);
 
@@ -177,89 +178,121 @@ function computeSettlingQuaternion(faceNormal, faceUp, cameraLookDir) {
 }
 
 /**
- * Build authentic D10 Pentagonal Trapezohedron geometry with 10 kite faces.
- * Guarantees 100% outward-facing normals and correct counter-clockwise winding.
+ * Build authentic D10 Pentagonal Trapezohedron geometry.
+ * Uses exact 20-triangle canonical mesh so all 10 faces are uniform, flat, and outward-facing.
  */
-function createD10Data(labels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
-  const topApex = new THREE.Vector3(0, 2.2, 0);
-  const botApex = new THREE.Vector3(0, -2.2, 0);
-  const R = 2.0;
-
-  const upperVerts = [];
-  const lowerVerts = [];
-  for (let k = 0; k < 5; k++) {
-    const theta = (k * 2 * Math.PI) / 5;
-    upperVerts.push(new THREE.Vector3(R * Math.cos(theta), 0.45, R * Math.sin(theta)));
-    const phi = theta + Math.PI / 5;
-    lowerVerts.push(new THREE.Vector3(R * Math.cos(phi), -0.45, R * Math.sin(phi)));
+function createD10Data(labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']) {
+  const vertices = [];
+  for (let i = 0, b = 0; i < 10; ++i, b += (Math.PI * 2) / 10) {
+    vertices.push(new THREE.Vector3(Math.cos(b) * 2.1, Math.sin(b) * 2.1, 0.105 * (i % 2 ? 1 : -1) * 2.1));
   }
+  vertices.push(new THREE.Vector3(0, 0, -2.1 * 1.15)); // index 10: bottom pole
+  vertices.push(new THREE.Vector3(0, 0, 2.1 * 1.15));  // index 11: top pole
+
+  const rawFaces = [
+    [5, 7, 11, 0], [4, 2, 10, 1], [1, 3, 11, 2], [0, 8, 10, 3], [7, 9, 11, 4],
+    [8, 6, 10, 5], [9, 1, 11, 6], [2, 0, 10, 7], [3, 5, 11, 8], [6, 4, 10, 9],
+    [1, 0, 2, -1], [1, 2, 3, -1], [3, 2, 4, -1], [3, 4, 5, -1], [5, 4, 6, -1],
+    [5, 6, 7, -1], [7, 6, 8, -1], [7, 8, 9, -1], [9, 8, 0, -1], [9, 0, 1, -1]
+  ];
 
   const positions = [];
   const faces = [];
 
-  // Upper 5 kite faces: mapped to labels[0], labels[2], labels[4], labels[6], labels[8]
-  for (let k = 0; k < 5; k++) {
-    const prevLower = lowerVerts[(k - 1 + 5) % 5];
-    const currUpper = upperVerts[k];
-    const currLower = lowerVerts[k];
+  rawFaces.forEach((f) => {
+    const vA = vertices[f[0]];
+    const vB = vertices[f[1]];
+    const vC = vertices[f[2]];
+    const norm = new THREE.Vector3().subVectors(vB, vA).cross(new THREE.Vector3().subVectors(vC, vA)).normalize();
+    const cent = new THREE.Vector3().add(vA).add(vB).add(vC).multiplyScalar(1 / 3);
 
-    // Tri 1 (outward winding): topApex -> currUpper -> prevLower
-    positions.push(
-      topApex.x, topApex.y, topApex.z,
-      currUpper.x, currUpper.y, currUpper.z,
-      prevLower.x, prevLower.y, prevLower.z
-    );
-    // Tri 2 (outward winding): topApex -> currLower -> currUpper
-    positions.push(
-      topApex.x, topApex.y, topApex.z,
-      currLower.x, currLower.y, currLower.z,
-      currUpper.x, currUpper.y, currUpper.z
-    );
+    if (norm.dot(cent) < 0) {
+      positions.push(vA.x, vA.y, vA.z, vC.x, vC.y, vC.z, vB.x, vB.y, vB.z);
+    } else {
+      positions.push(vA.x, vA.y, vA.z, vB.x, vB.y, vB.z, vC.x, vC.y, vC.z);
+    }
 
-    const center = new THREE.Vector3()
-      .add(topApex)
-      .add(prevLower)
-      .add(currUpper)
-      .add(currLower)
-      .multiplyScalar(0.25);
+    if (f[3] !== -1) {
+      const finalNorm = norm.dot(cent) < 0 ? norm.clone().negate() : norm.clone();
+      let up = new THREE.Vector3(0, 1, 0).projectOnPlane(finalNorm);
+      if (up.lengthSq() < 0.001) up = new THREE.Vector3(0, 0, 1).projectOnPlane(finalNorm);
+      up.normalize();
+      faces.push({ center: cent, normal: finalNorm, up, label: labels[f[3]] });
+    }
+  });
 
-    const normal = center.clone().normalize();
-    const up = topApex.clone().sub(center).normalize();
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.computeVertexNormals();
 
-    faces.push({ center, normal, up, label: labels[k * 2] });
-  }
+  return { geometry, faces };
+}
 
-  // Lower 5 kite faces: mapped to labels[1], labels[3], labels[5], labels[7], labels[9]
-  for (let k = 0; k < 5; k++) {
-    const currUpper = upperVerts[k];
-    const currLower = lowerVerts[k];
-    const nextUpper = upperVerts[(k + 1) % 5];
+/**
+ * Build authentic D12 Dodecahedron geometry.
+ * Explicitly constructs 12 congruent regular pentagonal faces without crossing internal diagonals.
+ */
+function createD12Data() {
+  const p = (1 + Math.sqrt(5)) / 2;
+  const q = 1 / p;
+  const scale = 1.35;
 
-    // Tri 1 (outward winding for bottom apex): botApex -> currUpper -> currLower
-    positions.push(
-      botApex.x, botApex.y, botApex.z,
-      currUpper.x, currUpper.y, currUpper.z,
-      currLower.x, currLower.y, currLower.z
-    );
-    // Tri 2 (outward winding for bottom apex): botApex -> currLower -> nextUpper
-    positions.push(
-      botApex.x, botApex.y, botApex.z,
-      currLower.x, currLower.y, currLower.z,
-      nextUpper.x, nextUpper.y, nextUpper.z
-    );
+  const rawVerts = [
+    [0, q, p], [0, q, -p], [0, -q, p], [0, -q, -p],
+    [p, 0, q], [p, 0, -q], [-p, 0, q], [-p, 0, -q],
+    [q, p, 0], [q, -p, 0], [-q, p, 0], [-q, -p, 0],
+    [1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1],
+    [-1, 1, 1], [-1, 1, -1], [-1, -1, 1], [-1, -1, -1]
+  ];
+  const vertices = rawVerts.map((v) => new THREE.Vector3(v[0] * scale, v[1] * scale, v[2] * scale));
 
-    const center = new THREE.Vector3()
-      .add(botApex)
-      .add(currUpper)
-      .add(currLower)
-      .add(nextUpper)
-      .multiplyScalar(0.25);
+  const rawFaces = [
+    [2, 14, 4, 12, 0, 1],
+    [15, 9, 11, 19, 3, 2],
+    [16, 10, 17, 7, 6, 3],
+    [6, 7, 19, 11, 18, 4],
+    [6, 18, 2, 0, 16, 5],
+    [18, 11, 9, 14, 2, 6],
+    [1, 17, 10, 8, 13, 7],
+    [1, 13, 5, 15, 3, 8],
+    [13, 8, 12, 4, 5, 9],
+    [5, 4, 14, 9, 15, 10],
+    [0, 12, 8, 10, 16, 11],
+    [3, 19, 7, 17, 1, 12]
+  ];
 
-    const normal = center.clone().normalize();
-    const up = botApex.clone().sub(center).negate().normalize();
+  const positions = [];
+  const faces = [];
 
-    faces.push({ center, normal, up, label: labels[k * 2 + 1] });
-  }
+  rawFaces.forEach((f) => {
+    const pentVerts = [vertices[f[0]], vertices[f[1]], vertices[f[2]], vertices[f[3]], vertices[f[4]]];
+    const center = new THREE.Vector3();
+    pentVerts.forEach((v) => center.add(v));
+    center.multiplyScalar(0.2);
+
+    const e1 = new THREE.Vector3().subVectors(pentVerts[1], pentVerts[0]);
+    const e2 = new THREE.Vector3().subVectors(pentVerts[2], pentVerts[0]);
+    let norm = new THREE.Vector3().crossVectors(e1, e2).normalize();
+    if (norm.dot(center) < 0) norm.negate();
+
+    // 5 coplanar triangles connecting center to pentagon edges
+    for (let i = 0; i < 5; i++) {
+      const vA = pentVerts[i];
+      const vB = pentVerts[(i + 1) % 5];
+      const triNorm = new THREE.Vector3().subVectors(vB, vA).cross(new THREE.Vector3().subVectors(center, vA)).normalize();
+      if (triNorm.dot(center) > 0) {
+        positions.push(vA.x, vA.y, vA.z, vB.x, vB.y, vB.z, center.x, center.y, center.z);
+      } else {
+        positions.push(vB.x, vB.y, vB.z, vA.x, vA.y, vA.z, center.x, center.y, center.z);
+      }
+    }
+
+    let up = new THREE.Vector3(0, 1, 0).projectOnPlane(norm);
+    if (up.lengthSq() < 0.001) up = new THREE.Vector3(0, 0, 1).projectOnPlane(norm);
+    up.normalize();
+
+    faces.push({ center, normal: norm, up, label: f[5] });
+  });
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -345,59 +378,10 @@ function createD8Data() {
 }
 
 /**
- * Extract the 12 pentagonal faces of Dodecahedron using true geometric face normals.
+ * Build D20 Icosahedron faces.
  */
-function extractD12Faces(geometry) {
-  const pos = geometry.attributes.position;
-  const triNormals = [];
-
-  for (let i = 0; i < pos.count; i += 3) {
-    const vA = new THREE.Vector3().fromBufferAttribute(pos, i);
-    const vB = new THREE.Vector3().fromBufferAttribute(pos, i + 1);
-    const vC = new THREE.Vector3().fromBufferAttribute(pos, i + 2);
-    // Geometric normal of triangle
-    const normal = new THREE.Vector3()
-      .subVectors(vC, vB)
-      .cross(new THREE.Vector3().subVectors(vA, vB))
-      .normalize();
-    const center = new THREE.Vector3().add(vA).add(vB).add(vC).multiplyScalar(1 / 3);
-    triNormals.push({ normal, center });
-  }
-
-  // Group triangles by identical face normal
-  const faceGroups = [];
-  triNormals.forEach((t) => {
-    const existing = faceGroups.find((g) => g.normal.distanceTo(t.normal) < 0.05);
-    if (existing) {
-      existing.triangles.push(t);
-    } else {
-      faceGroups.push({ normal: t.normal.clone(), triangles: [t] });
-    }
-  });
-
-  return faceGroups.slice(0, 12).map((g, idx) => {
-    const avgCenter = new THREE.Vector3();
-    g.triangles.forEach((t) => avgCenter.add(t.center));
-    avgCenter.multiplyScalar(1 / g.triangles.length);
-    const normal = g.normal.clone();
-
-    let up = new THREE.Vector3(0, 1, 0).projectOnPlane(normal);
-    if (up.lengthSq() < 0.001) up = new THREE.Vector3(0, 0, 1).projectOnPlane(normal);
-    up.normalize();
-
-    return {
-      center: avgCenter,
-      normal,
-      up,
-      label: idx + 1,
-    };
-  });
-}
-
-/**
- * Extract the 20 triangular faces of Icosahedron (D20).
- */
-function extractD20Faces(geometry) {
+function createD20Data() {
+  const geometry = new THREE.IcosahedronGeometry(2.3);
   const pos = geometry.attributes.position;
   const faces = [];
 
@@ -419,11 +403,11 @@ function extractD20Faces(geometry) {
       center,
       normal,
       up,
-      label: (i / 3) + 1,
+      label: i / 3 + 1,
     });
   }
 
-  return faces;
+  return { geometry, faces };
 }
 
 export default function DiceOverlay({ user, profile, modifier = 0 }) {
@@ -460,14 +444,14 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     container.appendChild(renderer.domElement);
 
     // High quality sci-fi metallic lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0x00f0ff, 3.0);
+    const keyLight = new THREE.DirectionalLight(0x00f0ff, 3.2);
     keyLight.position.set(12, 18, 12);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xff00aa, 2.2);
+    const fillLight = new THREE.DirectionalLight(0xff00aa, 2.4);
     fillLight.position.set(-12, -10, 10);
     scene.add(fillLight);
 
@@ -492,9 +476,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
       if (diceGroup && diceGroup.children.length > 0) {
         diceGroup.children.forEach((die) => {
-          if (die.userData.animating) {
-            die.userData.elapsed = (die.userData.elapsed || 0) + dt;
+          // Always increment elapsed time so highlight pulsing continues smoothly after landing
+          die.userData.elapsed = (die.userData.elapsed || 0) + dt;
 
+          if (die.userData.animating) {
             // Physics motion
             die.position.x += die.userData.linVel.x * dt;
             die.position.y += die.userData.linVel.y * dt;
@@ -523,14 +508,14 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
               if (!die.userData.settleStartQuat) {
                 die.userData.settleStartQuat = die.quaternion.clone();
               }
-              const progress = Math.min(1, Math.max(0, (die.userData.elapsed - 0.75) / 0.60));
+              const progress = Math.min(1, Math.max(0, (die.userData.elapsed - 0.75) / 0.6));
               const ease = 1 - Math.pow(1 - progress, 3);
               if (die.userData.targetQuaternion) {
                 die.quaternion.slerpQuaternions(die.userData.settleStartQuat, die.userData.targetQuaternion, ease);
               }
               die.userData.linVel.multiplyScalar(0.7);
             } else {
-              // Phase 3: Completely settled and resting
+              // Phase 3: Settle completely
               die.userData.animating = false;
               if (die.userData.targetQuaternion) {
                 die.quaternion.copy(die.userData.targetQuaternion);
@@ -540,14 +525,33 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
           // Face illumination / highlight on settlement (1.35s onwards)
           if (die.userData.elapsed >= 1.35) {
-            if (die.userData.highlightMesh) {
-              const highlightProg = Math.min(1, (die.userData.elapsed - 1.35) / 0.2);
-              const pulse = 0.88 + 0.12 * Math.sin((die.userData.elapsed - 1.35) * 8);
-              die.userData.highlightMesh.material.opacity = highlightProg * pulse;
+            // Activate highlight once on settlement
+            if (!die.userData.highlightActivated) {
+              die.userData.highlightActivated = true;
+              if (die.userData.winningPlate) {
+                die.userData.winningPlate.material.map = createEngravedFaceTexture(
+                  die.userData.winningLabel,
+                  die.userData.dieType,
+                  die.userData.dieType === 'd6',
+                  true
+                );
+                die.userData.winningPlate.material.emissive = new THREE.Color(
+                  DIE_THEMES[die.userData.dieType]?.border || 0x00f0ff
+                );
+                die.userData.winningPlate.material.emissiveIntensity = 2.4;
+                die.userData.winningPlate.material.needsUpdate = true;
+              }
+            }
+
+            // Continuous rhythmic cybernetic pulse after landing
+            const settleTime = die.userData.elapsed - 1.35;
+            const pulse = 1.0 + 0.12 * Math.sin(settleTime * 6.0);
+
+            if (die.userData.winningPlate) {
+              die.userData.winningPlate.scale.set(pulse, pulse, 1);
             }
             if (die.userData.faceSpotlight) {
-              const lightProg = Math.min(1, (die.userData.elapsed - 1.35) / 0.25);
-              die.userData.faceSpotlight.intensity = lightProg * 5.5;
+              die.userData.faceSpotlight.intensity = Math.min(8.0, 4.5 + 3.0 * pulse);
             }
           }
         });
@@ -581,29 +585,29 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       const size = 2.4;
       const geometry = new THREE.BoxGeometry(size, size, size);
 
-      // Three.js order: +X (1), -X (6), +Y (2), -Y (5), +Z (3), -Z (4)
+      // Three.js box order: +X (1), -X (6), +Y (2), -Y (5), +Z (3), -Z (4)
       const targetNum = Number(targetResult) || 1;
       const materials = [
-        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(1, 'd6', true, targetNum === 1), roughness: 0.2, metalness: 0.8 }),
-        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(6, 'd6', true, targetNum === 6), roughness: 0.2, metalness: 0.8 }),
-        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(2, 'd6', true, targetNum === 2), roughness: 0.2, metalness: 0.8 }),
-        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(5, 'd6', true, targetNum === 5), roughness: 0.2, metalness: 0.8 }),
-        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(3, 'd6', true, targetNum === 3), roughness: 0.2, metalness: 0.8 }),
-        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(4, 'd6', true, targetNum === 4), roughness: 0.2, metalness: 0.8 }),
+        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(1, 'd6', true, false), roughness: 0.2, metalness: 0.8 }),
+        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(6, 'd6', true, false), roughness: 0.2, metalness: 0.8 }),
+        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(2, 'd6', true, false), roughness: 0.2, metalness: 0.8 }),
+        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(5, 'd6', true, false), roughness: 0.2, metalness: 0.8 }),
+        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(3, 'd6', true, false), roughness: 0.2, metalness: 0.8 }),
+        new THREE.MeshStandardMaterial({ map: createEngravedFaceTexture(4, 'd6', true, false), roughness: 0.2, metalness: 0.8 }),
       ];
 
       const cubeMesh = new THREE.Mesh(geometry, materials);
       dieRoot.add(cubeMesh);
 
-      // Wireframe edge accents
-      const wireGeo = new THREE.WireframeGeometry(geometry);
-      const wireMat = new THREE.LineBasicMaterial({
+      // Wireframe perimeter edge accents (12 edges)
+      const edgeGeo = new THREE.EdgesGeometry(geometry, 15);
+      const edgeMat = new THREE.LineBasicMaterial({
         color: new THREE.Color(theme.border),
         linewidth: 2,
         transparent: true,
         opacity: 0.85,
       });
-      dieRoot.add(new THREE.LineSegments(wireGeo, wireMat));
+      dieRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
 
       const d6Faces = {
         1: { normal: new THREE.Vector3(1, 0, 0), up: new THREE.Vector3(0, 1, 0), center: new THREE.Vector3(1.2, 0, 0) },
@@ -617,9 +621,36 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       const targetFace = d6Faces[targetNum] || d6Faces[1];
       dieRoot.userData.targetQuaternion = computeSettlingQuaternion(targetFace.normal, targetFace.up, cameraLookDir);
 
-      // Spotlight illuminating the settled top face
-      const faceSpot = new THREE.PointLight(theme.border, 0, 8, 1.5);
-      faceSpot.position.copy(targetFace.center).add(targetFace.normal.clone().multiplyScalar(2.0));
+      // Flush overlay plate on the winning face that lights up and pulses
+      const hlGeo = new THREE.PlaneGeometry(2.35, 2.35);
+      const hlMat = new THREE.MeshStandardMaterial({
+        map: createEngravedFaceTexture(targetNum, 'd6', true, false),
+        transparent: true,
+        roughness: 0.2,
+        metalness: 0.8,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      });
+      const hlMesh = new THREE.Mesh(hlGeo, hlMat);
+      hlMesh.position.copy(targetFace.center).add(targetFace.normal.clone().multiplyScalar(0.005));
+
+      const z_plate = targetFace.normal.clone().normalize();
+      let y_plate = targetFace.up.clone().projectOnPlane(z_plate);
+      if (y_plate.lengthSq() < 0.001) y_plate = new THREE.Vector3(0, 1, 0).projectOnPlane(z_plate);
+      y_plate.normalize();
+      const x_plate = new THREE.Vector3().crossVectors(y_plate, z_plate).normalize();
+      hlMesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x_plate, y_plate, z_plate));
+
+      dieRoot.add(hlMesh);
+      dieRoot.userData.winningPlate = hlMesh;
+      dieRoot.userData.winningLabel = targetNum;
+      dieRoot.userData.dieType = 'd6';
+
+      // Focused neon spotlight illuminating the winning face
+      const faceSpot = new THREE.PointLight(theme.border, 0, 10, 1.3);
+      faceSpot.position.copy(targetFace.center).add(targetFace.normal.clone().multiplyScalar(2.2));
       dieRoot.add(faceSpot);
       dieRoot.userData.faceSpotlight = faceSpot;
     } else {
@@ -644,8 +675,8 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
           break;
         }
         case 'd10': {
-          // Standard D10 (0..9 or 1..10)
-          const data = createD10Data([1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+          // Standard D10 (0..9)
+          const data = createD10Data(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
           geometry = data.geometry;
           faces = data.faces;
           planeSize = 1.15;
@@ -660,15 +691,18 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
           break;
         }
         case 'd12': {
-          geometry = new THREE.DodecahedronGeometry(2.1);
-          faces = extractD12Faces(geometry);
+          // Authentic 12-sided dodecahedron with 12 clean pentagonal faces
+          const data = createD12Data();
+          geometry = data.geometry;
+          faces = data.faces;
           planeSize = 1.25;
           break;
         }
         case 'd20':
         default: {
-          geometry = new THREE.IcosahedronGeometry(2.3);
-          faces = extractD20Faces(geometry);
+          const data = createD20Data();
+          geometry = data.geometry;
+          faces = data.faces;
           planeSize = 1.05;
           break;
         }
@@ -685,15 +719,22 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       const bodyMesh = new THREE.Mesh(geometry, baseMaterial);
       dieRoot.add(bodyMesh);
 
-      // Glowing cybernetic wireframe edges
-      const wireGeo = new THREE.WireframeGeometry(geometry);
-      const wireMat = new THREE.LineBasicMaterial({
+      // Glowing outer perimeter edges (ONLY true geometric polygon edges, no crossing diagonals)
+      const edgeGeo = new THREE.EdgesGeometry(geometry, 15);
+      const edgeMat = new THREE.LineBasicMaterial({
         color: new THREE.Color(theme.border),
         linewidth: 2,
         transparent: true,
         opacity: 0.85,
       });
-      dieRoot.add(new THREE.LineSegments(wireGeo, wireMat));
+      dieRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
+
+      // Match target face
+      const targetStr = String(targetResult);
+      const targetFace =
+        faces.find((f) => String(f.label) === targetStr) ||
+        faces.find((f) => Number(f.label) === Number(targetResult)) ||
+        faces[0];
 
       // Attach laser-etched engraved number plates flush on each face
       faces.forEach((f) => {
@@ -719,48 +760,25 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
         if (y_plate.lengthSq() < 0.001) y_plate = new THREE.Vector3(0, 0, 1).projectOnPlane(z_plate);
         y_plate.normalize();
         const x_plate = new THREE.Vector3().crossVectors(y_plate, z_plate).normalize();
-        const mPlate = new THREE.Matrix4().makeBasis(x_plate, y_plate, z_plate);
-        plate.quaternion.setFromRotationMatrix(mPlate);
+        plate.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x_plate, y_plate, z_plate));
 
         dieRoot.add(plate);
+
+        // Store reference to winning plate for illumination on settlement
+        if (f === targetFace) {
+          dieRoot.userData.winningPlate = plate;
+          dieRoot.userData.winningLabel = f.label;
+          dieRoot.userData.dieType = dieType;
+        }
       });
 
-      // Target face normal: align the face with targetResult directly to camera
-      const targetStr = String(targetResult);
-      const targetFace = faces.find((f) => String(f.label) === targetStr) ||
-                         faces.find((f) => Number(f.label) === Number(targetResult)) ||
-                         faces[0];
-
+      // Target face settling orientation: points directly at camera
       if (targetFace) {
         dieRoot.userData.targetQuaternion = computeSettlingQuaternion(targetFace.normal, targetFace.up, cameraLookDir);
 
-        // Winning face illuminated overlay (lights up when settled)
-        const hlGeo = new THREE.PlaneGeometry(planeSize * 1.12, planeSize * 1.12);
-        const hlMat = new THREE.MeshBasicMaterial({
-          map: createEngravedFaceTexture(targetFace.label, dieType, false, true),
-          transparent: true,
-          opacity: 0,
-          depthWrite: false,
-          polygonOffset: true,
-          polygonOffsetFactor: -2,
-          polygonOffsetUnits: -2,
-        });
-        const hlMesh = new THREE.Mesh(hlGeo, hlMat);
-        hlMesh.position.copy(targetFace.center).add(targetFace.normal.clone().multiplyScalar(0.006));
-
-        const z_hl = targetFace.normal.clone().normalize();
-        let y_hl = targetFace.up.clone().projectOnPlane(z_hl);
-        if (y_hl.lengthSq() < 0.001) y_hl = new THREE.Vector3(0, 1, 0).projectOnPlane(z_hl);
-        y_hl.normalize();
-        const x_hl = new THREE.Vector3().crossVectors(y_hl, z_hl).normalize();
-        hlMesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x_hl, y_hl, z_hl));
-
-        dieRoot.add(hlMesh);
-        dieRoot.userData.highlightMesh = hlMesh;
-
         // Dedicated neon spotlight focused directly on the settled face
-        const faceSpot = new THREE.PointLight(theme.border, 0, 8, 1.5);
-        faceSpot.position.copy(targetFace.center).add(targetFace.normal.clone().multiplyScalar(2.0));
+        const faceSpot = new THREE.PointLight(theme.border, 0, 10, 1.3);
+        faceSpot.position.copy(targetFace.center).add(targetFace.normal.clone().multiplyScalar(2.2));
         dieRoot.add(faceSpot);
         dieRoot.userData.faceSpotlight = faceSpot;
       }
@@ -811,12 +829,12 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
       // Left die: Tens percentile die (00, 10, 20... 90)
       const dieTens = createDieMesh('d10percentile', seed, tensVal);
-      dieTens.position.x = -2.2;
+      dieTens.position.x = -2.4;
       diceGroup.add(dieTens);
 
       // Right die: Units die (0..9)
       const dieOnes = createDieMesh('d10', seed + 47, onesVal);
-      dieOnes.position.x = 2.2;
+      dieOnes.position.x = 2.4;
       diceGroup.add(dieOnes);
     } else {
       // Standard dice (d4, d6, d8, d10, d12, d20)
@@ -893,11 +911,11 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       let onesVal;
       if (raw100 === 100) {
         tensVal = '00';
-        onesVal = 0;
+        onesVal = '0';
       } else {
         const tensInt = Math.floor(raw100 / 10) * 10;
         tensVal = String(tensInt).padStart(2, '0');
-        onesVal = raw100 % 10;
+        onesVal = String(raw100 % 10);
       }
 
       const formattedNotation = `1d100${appliedMod ? (appliedMod >= 0 ? `+${appliedMod}` : appliedMod) : ''}`;
@@ -928,13 +946,17 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
         if (match[3]) notMod = parseInt(match[3], 10);
       }
 
-      const totalMod = customMod !== null ? customMod : (modifier + notMod);
+      const totalMod = customMod !== null ? customMod : modifier + notMod;
       const results = [];
       for (let i = 0; i < count; i++) {
-        // D10 numbers 0..9 or 1..sides
-        results.push(Math.floor(Math.random() * sides) + 1);
+        if (sides === 10) {
+          // D10 numbers 0..9 (or 1..10)
+          results.push(String(Math.floor(Math.random() * 10)));
+        } else {
+          results.push(Math.floor(Math.random() * sides) + 1);
+        }
       }
-      const sum = results.reduce((a, b) => a + b, 0);
+      const sum = results.reduce((a, b) => a + (Number(b) || 0), 0);
       const total = sum + totalMod;
       const formattedNotation = `${count}d${sides}${totalMod ? (totalMod >= 0 ? `+${totalMod}` : totalMod) : ''}`;
 
@@ -1081,7 +1103,8 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                   <div>
                     <span className="text-neon-cyan font-bold block">{r.playerName}</span>
                     <span className="text-[10px] text-gray-400">
-                      {r.purpose || r.notation} {r.tensResult !== undefined ? `[${r.tensResult}, ${r.onesResult}]` : `[${r.results?.join(',')}]`}
+                      {r.purpose || r.notation}{' '}
+                      {r.tensResult !== undefined ? `[${r.tensResult}, ${r.onesResult}]` : `[${r.results?.join(',')}]`}
                     </span>
                   </div>
                   <span className="font-display font-black text-sm text-white">
