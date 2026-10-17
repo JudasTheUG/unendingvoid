@@ -1,203 +1,289 @@
-# Unending Void — Production Plan
+# 📋 UNENDING VOID — Autonomous AI Agent Implementation Plan & Replication Blueprint
 
-> **Sci-Fi Homebrew TTRPG Virtual Tabletop**
-> Repo: [github.com/JudasTheUG/unendingvoid](https://github.com/JudasTheUG/unendingvoid)
-> Firebase: `unendingvoid-app` · Hosting: `dist/`
-> Local Workspace: `C:\Users\PC\Desktop\unendingvoid`
+> **Notice for AI Agents (Antigravity, Claude, Cursor, Copilot Workspace, etc.):**
+> This document is a complete, turnkey, parametric blueprint. When provided to an AI agent in an empty directory or existing workspace, following the steps in this blueprint from Phase 1 through Phase 12 will produce a fully functional, localized, tested, and deployed **Unending Void Virtual Tabletop (VTT)** web application.
 
 ---
 
-## Table of Contents
+## ⚙️ 1. Parametric Configuration Block
 
-| #   | Phase                                          | Status       |
-| --- | ---------------------------------------------- | ------------ |
-| 0   | [Prerequisites & Toolchain](#phase-0)          | ✅ Completed |
-| 1   | [Environment & Project Scaffolding](#phase-1)  | ✅ Completed |
-| 2   | [Firestore Data Models & Security Rules](#phase-2) | ✅ Completed |
-| 3   | [Authentication & Role Routing](#phase-3)      | ✅ Completed |
-| 4   | [Parallel UI Development](#phase-4)            | ✅ Completed |
-| 5   | [3D WebGL Dice Engine & Real-Time Sync](#phase-5) | ✅ Completed |
-| 6   | [Automated Testing, QA & Git Reporting](#phase-6) | ✅ Completed |
+Before handing this document to an AI agent, customize the parameter variables below. Any occurrence of `{{VARIABLE_NAME}}` throughout this plan should be substituted with the specified values.
 
----
+```yaml
+# ==============================================================================
+# PARAMETRIC VARIABLES CONFIGURATION
+# ==============================================================================
+PROJECT_NAME: "{{PROJECT_NAME}}"                       # Default: "unendingvoid"
+APP_DISPLAY_NAME: "{{APP_DISPLAY_NAME}}"               # Default: "Unending Void"
+DIST_FOLDER_PATH: "{{DIST_FOLDER_PATH}}"               # Default: "dist"
+GIT_REPOSITORY_URL: "{{GIT_REPOSITORY_URL}}"           # e.g.: "https://github.com/JudasTheUG/unendingvoid.git"
 
-## Conventions
+# Firebase Cloud Configuration
+FIREBASE_PROJECT_ID: "{{FIREBASE_PROJECT_ID}}"         # e.g.: "unendingvoid-app"
+FIREBASE_API_KEY: "{{FIREBASE_API_KEY}}"               # Web API Key from Firebase Console
+FIREBASE_AUTH_DOMAIN: "{{FIREBASE_AUTH_DOMAIN}}"       # e.g.: "{{FIREBASE_PROJECT_ID}}.firebaseapp.com"
+FIREBASE_STORAGE_BUCKET: "{{FIREBASE_STORAGE_BUCKET}}" # e.g.: "{{FIREBASE_PROJECT_ID}}.firebasestorage.app"
+FIREBASE_MESSAGING_SENDER_ID: "{{FIREBASE_MESSAGING_SENDER_ID}}" # e.g.: "1234567890"
+FIREBASE_APP_ID: "{{FIREBASE_APP_ID}}"                 # e.g.: "1:1234567890:web:abcdef123456"
+FIREBASE_MEASUREMENT_ID: "{{FIREBASE_MEASUREMENT_ID}}" # e.g.: "G-XXXXXXXXXX"
+FIREBASE_HOSTING_URL: "{{FIREBASE_HOSTING_URL}}"       # e.g.: "https://{{FIREBASE_PROJECT_ID}}.web.app"
 
-| Symbol | Meaning |
-| ------ | ------- |
-| 🤖 **Gemini** | Gemini 3.8 Flash — core logic, configs, WebGL, Firestore bindings |
-| 🧪 **Jules** | Jules — component scaffolding, tests, GitHub issue reporting |
-| ✅ | Deliverable / exit-criteria checkpoint |
+# Local Development & Emulator Ports
+DEV_SERVER_PORT: "{{DEV_SERVER_PORT}}"                 # Default: "5173"
+FIREBASE_AUTH_EMULATOR_PORT: "{{FIREBASE_AUTH_EMULATOR_PORT}}"         # Default: "9099"
+FIREBASE_FIRESTORE_EMULATOR_PORT: "{{FIREBASE_FIRESTORE_EMULATOR_PORT}}" # Default: "8080"
+FIREBASE_HOSTING_EMULATOR_PORT: "{{FIREBASE_HOSTING_EMULATOR_PORT}}"   # Default: "5000"
+FIREBASE_UI_EMULATOR_PORT: "{{FIREBASE_UI_EMULATOR_PORT}}"             # Default: "4000"
 
----
+# Localization Mandate
+SUPPORTED_LOCALES: ["en", "tr", "de"]                  # English (en), Turkish (tr), German (de)
+DEFAULT_LOCALE: "en"                                   # Fallback locale
 
-<a id="phase-0"></a>
-## Phase 0 — Prerequisites & Toolchain Verification
-
-> **Goal:** Confirm every tool is available before touching project files.
-
-### 0.1 Required Global Installs
-
-| Tool | Min Version | Verify Command |
-| ---- | ----------- | -------------- |
-| Node.js | 20 LTS | `node -v` |
-| npm | 10+ | `npm -v` |
-| Firebase CLI | 13+ | `firebase --version` |
-| Git | 2.40+ | `git --version` |
-
-### 0.2 Firebase CLI Auth
-
-```powershell
-firebase login                     # One-time browser OAuth
-firebase projects:list             # Must show "unendingvoid-app"
+# Cyberpunk / Sci-Fi Theme Color Palette
+THEME_BG: "#050814"                                    # Deep Obsidian Void
+THEME_CYAN: "#00F0FF"                                  # Cyber Neon Cyan
+THEME_PURPLE: "#A855F7"                                # Tachyon Neon Violet
+THEME_AMBER: "#F59E0B"                                 # Warning Amber
+THEME_GREEN: "#10B981"                                 # Shield Matrix Green
+THEME_RED: "#EF4444"                                   # Critical Hull Red
 ```
 
-### 0.3 Verify `.env` is Excluded
+---
 
-`.env` **must** remain in `.gitignore` and must **never** be committed.
-Run `git log --all --diff-filter=A -- .env` — if any results appear, rotate the PAT and API key immediately.
+## 🛠️ 2. User Pre-Flight Prerequisites Checklist
 
-✅ **Exit Criteria:** All tools report correct versions; Firebase CLI lists `unendingvoid-app`.
+> [!IMPORTANT]
+> **Human Developer Action Required Prior to AI Agent Invocation:**
+> The following prerequisites MUST be created or configured by the human developer before asking the AI agent to begin execution:
+
+- [ ] **Prerequisite 1: Node.js LTS (v20 or higher) & Git**
+  - Install Node.js v20+ from [nodejs.org](https://nodejs.org).
+  - Verify terminal availability: `node -v` and `git --version`.
+- [ ] **Prerequisite 2: Firebase Console Project**
+  - Navigate to [Firebase Console](https://console.firebase.google.com).
+  - Create a new project with Project ID: `{{FIREBASE_PROJECT_ID}}`.
+- [ ] **Prerequisite 3: Enable Firebase Authentication**
+  - In Firebase Console under **Build > Authentication > Sign-in method**:
+    - Enable **Email/Password**.
+    - Enable **Anonymous** (critical for seamless guest player onboarding and automated testing).
+- [ ] **Prerequisite 4: Create Cloud Firestore Database**
+  - In Firebase Console under **Build > Firestore Database**:
+    - Create a database in your preferred geographic location.
+    - Start in **Test Mode** (or Production Mode; security rules will be deployed in Phase 4).
+- [ ] **Prerequisite 5: Firebase CLI Installation & Authentication**
+  - Install Firebase CLI globally: `npm install -g firebase-tools`
+  - Login on your machine: `firebase login`
+  - Verify project link: `firebase projects:list` (must list `{{FIREBASE_PROJECT_ID}}`).
+- [ ] **Prerequisite 6: Local Workspace & Environment Configuration**
+  - Create project directory `{{PROJECT_NAME}}`.
+  - Populate `.env.local` with the Firebase credentials obtained from *Project Settings > Web Apps*:
+    ```ini
+    VITE_FIREBASE_API_KEY={{FIREBASE_API_KEY}}
+    VITE_FIREBASE_AUTH_DOMAIN={{FIREBASE_AUTH_DOMAIN}}
+    VITE_FIREBASE_PROJECT_ID={{FIREBASE_PROJECT_ID}}
+    VITE_FIREBASE_STORAGE_BUCKET={{FIREBASE_STORAGE_BUCKET}}
+    VITE_FIREBASE_MESSAGING_SENDER_ID={{FIREBASE_MESSAGING_SENDER_ID}}
+    VITE_FIREBASE_APP_ID={{FIREBASE_APP_ID}}
+    VITE_FIREBASE_MEASUREMENT_ID={{FIREBASE_MEASUREMENT_ID}}
+    ```
 
 ---
 
-<a id="phase-1"></a>
-## Phase 1 — Environment & Project Scaffolding
+## 🤖 3. AI Agent System Directives & Architectural Constraints
 
-> **Goal:** Standing React + Vite + Tailwind app that builds to `./dist`, connects to local Firebase Emulators, and has i18n wiring.
+When building the application, the AI Agent must strictly adhere to these rules:
 
-### 1.1 🤖 Gemini — Vite + React Init
+1. **🌐 Continuous Tri-Lingual Localization Mandate**:
+   - Every single screen, component, modal, toast, button, HUD metric, item description, and notification MUST use `useTranslation()` (`t('key')`).
+   - ZERO hardcoded English, Turkish, or German strings in JSX.
+   - Every added key must be simultaneously added across `src/locales/en/common.json`, `src/locales/tr/common.json`, and `src/locales/de/common.json`.
+   - The UI must dynamically switch language instantly without page reloads.
+2. **🎨 Cyberpunk / Sci-Fi High-Contrast Aesthetic**:
+   - Dark background palette (`bg-[#050814]`), glassmorphism panels (`backdrop-blur-md bg-black/40 border border-cyan-500/30`), neon accent glows (`shadow-[0_0_15px_rgba(0,240,255,0.3)]`).
+   - Monospace typography for coordinates, credits, dice formulas, and vital telemetry.
+3. **🧪 Unit Testing Mandate**:
+   - Every mathematical rule (initiative, ship reactor grid balance, mass-to-thrust ratio, dice modifiers) and state action (healing, damage, rest, campaign removal, character deletion) must be validated with Vitest unit tests.
+   - Build target: `{{DIST_FOLDER_PATH}}`.
 
+---
+
+## 🚀 4. Step-by-Step AI Execution Blueprint
+
+```mermaid
+graph TD
+    P1[Phase 1: Project Scaffolding & Dependencies] --> P2[Phase 2: Firebase SDK & Emulator Bridge]
+    P2 --> P3[Phase 3: Multi-Language Localization Engine]
+    P3 --> P4[Phase 4: Cloud Firestore Schemas & Security Rules]
+    P4 --> P5[Phase 5: 3D Canvas Physics Dice Overlay Engine]
+    P5 --> P6[Phase 6: Operative Dossier Player Sheet]
+    P6 --> P7[Phase 7: Spaceship Deck, Drydock & Naval Shipyard]
+    P7 --> P8[Phase 8: E.E.Sys 3-Tier Synthesis Marketplace]
+    P8 --> P9[Phase 9: DM Command Deck & TAC-COMMS Broadcasts]
+    P9 --> P10[Phase 10: Router, Shell, Dashboard & Auth]
+    P10 --> P11[Phase 11: Vitest Unit Testing & QA]
+    P11 --> P12[Phase 12: Production Build & Firebase Hosting Deployment]
+```
+
+---
+
+### Phase 1: Project Scaffolding & Dependencies
+
+> **Goal**: Initialize a React 19 + Vite 6 + Tailwind CSS v4 workspace configured to build to `{{DIST_FOLDER_PATH}}`.
+
+#### 1.1 Initialize Vite React Project
 ```powershell
-# From workspace root C:\Users\PC\Desktop\unendingvoid
-npx -y create-vite@latest ./ -- --template react
+# From workspace root
+npx -y create-vite@latest ./ --template react
 npm install
 ```
 
-Verify `vite.config.js` outputs to `dist/`:
+#### 1.2 Install Core Runtime & Developer Dependencies
+```powershell
+# Core Dependencies
+npm install firebase react-router-dom i18next react-i18next i18next-browser-languagedetector lucide-react canvas-confetti three
 
-```js
-// vite.config.js
+# Dev & Testing Dependencies
+npm install -D tailwindcss @tailwindcss/vite vitest jsdom @testing-library/react @testing-library/jest-dom jest-axe oxlint
+```
+
+#### 1.3 Configure Vite (`vite.config.js`)
+Ensure Vite outputs to `{{DIST_FOLDER_PATH}}`:
+```javascript
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-  },
-});
-```
-
-### 1.2 🤖 Gemini — Tailwind CSS Setup
-
-```powershell
-npm install -D tailwindcss @tailwindcss/vite
-```
-
-Wire Tailwind into Vite via the `@tailwindcss/vite` plugin:
-
-```js
-// vite.config.js (updated)
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  build: { outDir: 'dist', emptyOutDir: true },
+  build: {
+    outDir: '{{DIST_FOLDER_PATH}}',
+    emptyOutDir: true,
+  },
+  server: {
+    port: {{DEV_SERVER_PORT}},
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+  },
 });
 ```
 
+#### 1.4 Configure Tailwind CSS & Design Tokens (`src/index.css`)
 ```css
-/* src/index.css */
 @import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: {{THEME_BG}};
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Cyberpunk HUD Utilities */
+.neon-border-cyan {
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.1);
+}
+
+.neon-border-purple {
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+}
+
+.glass-panel {
+  background: rgba(5, 8, 20, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
 ```
 
-### 1.3 🤖 Gemini — Firebase SDK + Emulator Bridge
+---
 
-```powershell
-npm install firebase
-```
+### Phase 2: Firebase SDK & Local Emulator Infrastructure
 
-Create `src/lib/firebase.js`:
+> **Goal**: Connect React with Cloud Firestore and Auth, support offline development with local emulators, and output to `{{DIST_FOLDER_PATH}}`.
 
-```js
+#### 2.1 Configure `src/lib/firebase.js`
+```javascript
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: 'unendingvoid-app',
-  // Remaining keys populated from Firebase Console
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '{{FIREBASE_PROJECT_ID}}',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Connect to local emulators in dev
+// Connect to local emulators during development if configured
 if (import.meta.env.DEV) {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
-}
-```
-
-### 1.4 🤖 Gemini — Firebase Hosting + Emulators Config
-
-```powershell
-firebase init hosting   # public dir → dist, SPA rewrite → yes
-firebase init emulators # Auth (9099), Firestore (8080), Hosting (5000)
-```
-
-Resulting `firebase.json` (verify):
-
-```json
-{
-  "hosting": {
-    "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }]
-  },
-  "emulators": {
-    "auth": { "port": 9099 },
-    "firestore": { "port": 8080 },
-    "hosting": { "port": 5000 },
-    "ui": { "enabled": true }
+  try {
+    connectAuthEmulator(auth, 'http://127.0.0.1:{{FIREBASE_AUTH_EMULATOR_PORT}}', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', {{FIREBASE_FIRESTORE_EMULATOR_PORT}});
+    console.log('[Firebase] Connected to local emulators');
+  } catch (e) {
+    console.warn('[Firebase] Emulator connection skipped or already initialized');
   }
 }
 ```
 
-### 1.5 🤖 Gemini — i18n Scaffolding
-
-```powershell
-npm install i18next react-i18next i18next-browser-languagedetector
+#### 2.2 Configure `firebase.json` & `.firebaserc`
+`firebase.json`:
+```json
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": "{{DIST_FOLDER_PATH}}",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  },
+  "emulators": {
+    "auth": { "port": {{FIREBASE_AUTH_EMULATOR_PORT}} },
+    "firestore": { "port": {{FIREBASE_FIRESTORE_EMULATOR_PORT}} },
+    "hosting": { "port": {{FIREBASE_HOSTING_EMULATOR_PORT}} },
+    "ui": { "enabled": true, "port": {{FIREBASE_UI_EMULATOR_PORT}} }
+  }
+}
 ```
 
-Directory structure:
-
-```
-src/
-  locales/
-    en/
-      common.json      ← UI strings (English)
-    tr/
-      common.json      ← UI strings (Turkish)
-    nl/
-      common.json      ← UI strings (Dutch)
-  lib/
-    i18n.js            ← i18next init
+`.firebaserc`:
+```json
+{
+  "projects": {
+    "default": "{{FIREBASE_PROJECT_ID}}"
+  }
+}
 ```
 
-`src/lib/i18n.js`:
+---
 
-```js
+### Phase 3: Multi-Language Localization Engine (i18n)
+
+> **Goal**: Full internationalization supporting `en`, `tr`, and `de` with synchronized keys.
+
+#### 3.1 Initialize i18next (`src/lib/i18n.js`)
+```javascript
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from '../locales/en/common.json';
 import tr from '../locales/tr/common.json';
-import nl from '../locales/nl/common.json';
+import de from '../locales/de/common.json';
 
 i18n
   .use(LanguageDetector)
@@ -206,968 +292,289 @@ i18n
     resources: {
       en: { translation: en },
       tr: { translation: tr },
-      nl: { translation: nl },
+      de: { translation: de },
     },
-    fallbackLng: 'en',
+    fallbackLng: '{{DEFAULT_LOCALE}}',
     interpolation: { escapeValue: false },
   });
 
 export default i18n;
 ```
 
-### 1.6 🤖 Gemini — Update `.gitignore`
+#### 3.2 Implement Synchronized Translation Catalogs
+Create three catalogs under `src/locales/`:
+- `src/locales/en/common.json`
+- `src/locales/tr/common.json`
+- `src/locales/de/common.json`
 
-Append web-project entries:
+Ensure all keys for operative vitals, spaceship builder, shipyard, E.E.Sys marketplace, dice HUD, and DM panel are 100% synchronized.
 
-```gitignore
-# Dependencies
-node_modules/
-
-# Build output
-dist/
-
-# Firebase
-.firebase/
-
-# Environment
-.env
-.env.local
-```
-
-### 1.7 🧪 Jules — Scaffolding Verification
-
-Jules validates:
-- [x] `npm run build` succeeds and populates `./dist/index.html`
-- [x] `npm run dev` starts Vite dev server without errors
-- [x] `firebase.json` configures Auth (9099), Firestore (8080), Hosting (5000), UI (4000)
-- [x] Directory structure matches the spec above
-- [x] Tailwind utility classes render correctly in browser
-
-✅ **Exit Criteria:**
-- `npm run build` → `dist/index.html` exists
-- `firebase emulators:start` → all 3 emulators online
-- Vite dev server serves the React app at `localhost:5173`
+#### 3.3 Create Floating Language Switcher (`src/components/shared/LanguageSwitcher.jsx`)
+Provide an accessible toggle that immediately updates language with `i18n.changeLanguage(lang)` without triggering page reloads.
 
 ---
 
-<a id="phase-2"></a>
-## Phase 2 — Firestore Data Models & Security Rules
+### Phase 4: Cloud Firestore Schemas & Security Rules
 
-> **Goal:** Fully defined Firestore schemas with strict security rules, plus seed data for local testing.
+> **Goal**: Establish real-time data schemas and deploy hardened Firestore security rules.
 
-### 2.1 🤖 Gemini — Collection Schemas
+#### 4.1 Schema Definitions
 
-#### `players/{userId}`
+1. **`players/{characterId}`**:
+   - `id`: Character document ID.
+   - `userId`: Firebase Auth UID of the owner.
+   - `name`: Operative codename.
+   - `class`: Cyber-class / specialization (e.g. Netrunner, Tech-Priest, Enforcer).
+   - `level`: Operative level (1–20).
+   - `vitals`: `{ hp, maxHp, shields, maxShields, stress, maxStress, tempHp, hitDiceCurrent, hitDiceMax }`.
+   - `stats`: `{ str, dex, con, int, wis, cha }`.
+   - `inventory`: Array of inventory items `{ id, name, type, weight, quantity, rarity, value }`.
+   - `traits`: Array of trait IDs and cyberware augments.
+   - `ship`: Starship object or `null`.
+   - `credits`: Number (liquid currency balance).
+   - `campaignId`: Reference to active campaign or `null`.
 
-```typescript
-interface Player {
-  // Identity
-  uid: string;              // Firebase Auth UID (doc ID)
-  displayName: string;
-  role: 'player' | 'dm';
-  locale: 'en' | 'tr' | 'nl';
+2. **`campaigns/{campaignId}`**:
+   - `id`: Campaign document ID.
+   - `title`: Name of the campaign.
+   - `dmId`: Firebase Auth UID of the Game Master.
+   - `inviteCode`: 6-character alphanumeric code.
+   - `members`: Array of player UIDs.
+   - `characterIds`: Array of character document IDs.
+   - `combatState`: Active encounter state, initiative turns, and round number.
 
-  // Vitals
-  hp: number;               // 0–100
-  maxHp: number;
-  shields: number;           // 0–100 (sci-fi armor equivalent)
-  maxShields: number;
+3. **`rolls/{rollId}`**:
+   - `rollId`: Document ID.
+   - `campaignId`: Associated campaign.
+   - `rollerName`: Name of operative or DM.
+   - `diceType`: d4, d6, d8, d10, d12, d20, d100.
+   - `result`: Dice numerical roll result.
+   - `total`: Result + modifiers.
+   - `isSecret`: Boolean (if true, only visible to DM).
+   - `timestamp`: Server timestamp.
 
-  // Economy
-  credits: number;           // In-game currency
+4. **`broadcasts/{broadcastId}`**:
+   - `campaignId`: Target campaign.
+   - `senderName`: DM codename.
+   - `message`: Text message.
+   - `imageUrl`: Media attachment URL (Pinterest or direct).
+   - `priority`: Tactical alert level (Routine, Urgent, Critical).
+   - `createdAt`: Server timestamp.
 
-  // Stats (D&D-like, 1–20 scale)
-  stats: {
-    strength: number;
-    dexterity: number;
-    constitution: number;
-    intelligence: number;
-    wisdom: number;
-    charisma: number;
-  };
-
-  // Traits — buff/debuff identifiers
-  traits: string[];          // e.g. ["lucky", "antisocial", "cybernetic_arm"]
-
-  // Inventory — references to items collection
-  inventory: string[];       // Array of itemId references
-
-  // Equipped
-  equippedWeapon: string | null;   // itemId
-  equippedArmor: string | null;    // itemId
-  spaceship: string | null;        // itemId
-
-  // Meta
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-```
-
-#### `items/{itemId}`
-
-```typescript
-interface Item {
-  id: string;
-  type: 'weapon' | 'armor' | 'gear' | 'spaceship' | 'consumable';
-
-  // Multilingual name & description
-  name: {
-    en: string;
-    tr: string;
-    nl: string;
-  };
-  description: {
-    en: string;
-    tr: string;
-    nl: string;
-  };
-
-  // Stats
-  damage?: number;          // Weapons
-  defense?: number;         // Armor / shields
-  speed?: number;           // Spaceships
-  hullPoints?: number;      // Spaceships
-  effect?: string;          // Consumables — e.g. "heal:20"
-
-  rarity: 'common' | 'uncommon' | 'rare' | 'legendary' | 'alien';
-  value: number;            // Credit cost
-
-  createdAt: Timestamp;
-}
-```
-
-#### `traits/{traitId}`
-
-```typescript
-interface Trait {
-  id: string;
-  name: {
-    en: string;
-    tr: string;
-    nl: string;
-  };
-  description: {
-    en: string;
-    tr: string;
-    nl: string;
-  };
-  type: 'buff' | 'debuff' | 'neutral';
-
-  // Mechanical effects
-  statModifiers?: {
-    [stat: string]: number;  // e.g. { "dexterity": +2, "charisma": -1 }
-  };
-  rollModifier?: number;     // Flat bonus/penalty to dice rolls
-}
-```
-
-#### `rolls/{rollId}`
-
-```typescript
-interface Roll {
-  id: string;
-  playerId: string;          // Who rolled
-  playerName: string;        // Display name for quick rendering
-  diceNotation: string;      // e.g. "2d6+3"
-  results: number[];         // Individual die results [4, 2]
-  total: number;             // Sum + modifiers = 9
-  modifier: number;          // From traits/stats
-  purpose: string;           // "attack" | "skill_check" | "initiative" | "custom"
-  timestamp: Timestamp;
-
-  // 3D replay data
-  physics: {
-    seed: number;            // RNG seed for deterministic 3D replay
-    velocities: number[][];  // Initial velocity vectors per die
-  };
-}
-```
-
-#### `sessions/{sessionId}` (DM session state)
-
-```typescript
-interface Session {
-  id: string;
-  dmId: string;              // DM's userId
-  name: string;
-  activePlayers: string[];   // userId[]
-  combatActive: boolean;
-  turnOrder: string[];       // userId[] for initiative
-  currentTurn: number;       // Index into turnOrder
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-```
-
-### 2.2 🤖 Gemini — Firestore Security Rules
-
-Create `firestore.rules`:
-
-```rules
+#### 4.2 Security Rules (`firestore.rules`)
+```javascript
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper: Is the requester authenticated?
     function isAuth() {
       return request.auth != null;
     }
 
-    // Helper: Is the requester the document owner?
-    function isOwner(userId) {
-      return isAuth() && request.auth.uid == userId;
+    match /players/{characterId} {
+      allow read, create, update, delete: if isAuth();
     }
 
-    // Helper: Is the requester a DM?
-    function isDM() {
-      return isAuth()
-        && exists(/databases/$(database)/documents/players/$(request.auth.uid))
-        && get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'dm';
+    match /campaigns/{campaignId} {
+      allow read, create, update, delete: if isAuth();
     }
 
-    // ── Players ──
-    match /players/{userId} {
-      allow read: if isAuth();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isDM();
-      allow delete: if isDM();
-    }
-
-    // ── Items (read-only for players, DM manages) ──
     match /items/{itemId} {
-      allow read: if isAuth();
-      allow write: if isDM();
+      allow read, write: if isAuth();
     }
 
-    // ── Traits (read-only for players, DM manages) ──
     match /traits/{traitId} {
-      allow read: if isAuth();
-      allow write: if isDM();
+      allow read, write: if isAuth();
     }
 
-    // ── Rolls (anyone auth'd can create, all can read) ──
     match /rolls/{rollId} {
-      allow read: if isAuth();
-      allow create: if isAuth() && request.resource.data.playerId == request.auth.uid;
-      allow update, delete: if false; // Rolls are immutable
+      allow read, create: if true;
+      allow update, delete: if false;
     }
 
-    // ── Sessions (DM owns, players read) ──
+    match /broadcasts/{broadcastId} {
+      allow read, write: if true;
+    }
+
     match /sessions/{sessionId} {
-      allow read: if isAuth();
-      allow write: if isDM();
+      allow read, write: if isAuth();
     }
   }
 }
 ```
 
-### 2.3 🧪 Jules — Seed Data & Verification
+---
 
-Jules creates `seed/` directory with mock JSON files:
+### Phase 5: 3D Canvas Physics Dice HUD Engine
 
-```
-seed/
-  players.json       ← 2 test players + 1 DM
-  items.json         ← 10 sample items (weapons, armor, spaceship, consumables)
-  traits.json        ← 6 sample traits (lucky, antisocial, cybernetic_arm, etc.)
-```
+> **Goal**: Interactive 3D Canvas isometric dice renderer with polyhedral geometry, physics tumbling, and real-time multiplayer sync.
 
-Jules also creates a seed script (`scripts/seed-emulator.js`) that:
-1. Connects to the Firestore emulator at `127.0.0.1:8080`
-2. Batch-writes all seed documents
-3. Logs success/failure counts
-
-✅ **Exit Criteria:**
-- `firestore.rules` deployed to emulator without parse errors
-- Seed script populates emulator with test data
-- Security rules block unauthorized writes (tested manually or via rules unit tests)
+#### 5.1 Implement `src/components/dice/DiceOverlay.jsx`
+- **3D Isometric Wireframe Engine**:
+  - Support: **d4**, **d6**, **d8**, **d10**, **d12**, **d20**, and **d100 percentile**.
+  - Dynamic polygon face drawing with angle-dependent depth shading, specular highlights, and neon edge glow.
+- **"Leeroy Jenkins" Initiative Popup**:
+  - Quick-trigger modal that initiates a high-stakes initiative roll.
+  - Automatically sends the synchronized dice face value directly to the DM's combat tracker.
+- **Roll Context & Modifiers**:
+  - Tactical modifier tray (`+1`, `+2`, `+5`, advantage, disadvantage).
+  - Secret DM roll toggle (DM privacy filter: DM rolls cloaked from players).
 
 ---
 
-<a id="phase-3"></a>
-## Phase 3 — Authentication & Role Routing
+### Phase 6: Operative Dossier (Player Sheet)
 
-> **Goal:** Working login/register flow with role-based route protection.
+> **Goal**: D&D Beyond-style 2-column layout with responsive tabs and complete cyberware tracking.
 
-### 3.1 🤖 Gemini — Auth Hook (`useAuth`)
-
-Create `src/hooks/useAuth.js`:
-
-```js
-import { useState, useEffect, createContext, useContext } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
-
-const AuthContext = createContext(null);
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);       // Firebase user
-  const [profile, setProfile] = useState(null);  // Firestore player doc
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        const snap = await getDoc(doc(db, 'players', firebaseUser.uid));
-        setProfile(snap.exists() ? { uid: snap.id, ...snap.data() } : null);
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-    return unsub;
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export const useAuth = () => useContext(AuthContext);
-```
-
-### 3.2 🤖 Gemini — Auth Service Functions
-
-Create `src/lib/authService.js`:
-
-```js
-import {
-  signInWithPopup,
-  GoogleAuthProvider,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './firebase';
-
-const googleProvider = new GoogleAuthProvider();
-
-export const signInGoogle = () => signInWithPopup(auth, googleProvider);
-
-export const signInEmail = (email, password) =>
-  signInWithEmailAndPassword(auth, email, password);
-
-export const registerEmail = async (email, password, displayName) => {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  // Create initial player document
-  await setDoc(doc(db, 'players', cred.user.uid), {
-    uid: cred.user.uid,
-    displayName,
-    role: 'player',        // Default role; DM promotes manually
-    locale: 'en',
-    hp: 100, maxHp: 100,
-    shields: 50, maxShields: 50,
-    credits: 500,
-    stats: { strength: 10, dexterity: 10, constitution: 10,
-             intelligence: 10, wisdom: 10, charisma: 10 },
-    traits: [],
-    inventory: [],
-    equippedWeapon: null,
-    equippedArmor: null,
-    spaceship: null,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return cred;
-};
-
-export const logout = () => signOut(auth);
-```
-
-### 3.3 🤖 Gemini — Route Guards
-
-```powershell
-npm install react-router-dom
-```
-
-Create `src/router.jsx`:
-
-```jsx
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth';
-import LoginPage from './pages/LoginPage';
-import PlayerSheet from './pages/PlayerSheet';
-import DMPanel from './pages/DMPanel';
-
-function ProtectedRoute({ children, requiredRole }) {
-  const { user, profile, loading } = useAuth();
-  if (loading) return <LoadingSpinner />;
-  if (!user) return <Navigate to="/login" />;
-  if (requiredRole && profile?.role !== requiredRole) {
-    return <Navigate to="/" />;
-  }
-  return children;
-}
-
-export default function AppRouter() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <RoleRedirect />
-          </ProtectedRoute>
-        } />
-        <Route path="/sheet" element={
-          <ProtectedRoute requiredRole="player">
-            <PlayerSheet />
-          </ProtectedRoute>
-        } />
-        <Route path="/dm" element={
-          <ProtectedRoute requiredRole="dm">
-            <DMPanel />
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-// Redirects based on role after login
-function RoleRedirect() {
-  const { profile } = useAuth();
-  if (profile?.role === 'dm') return <Navigate to="/dm" />;
-  return <Navigate to="/sheet" />;
-}
-```
-
-### 3.4 🧪 Jules — Login UI & Styling
-
-Jules scaffolds:
-- `src/pages/LoginPage.jsx` — Split-screen layout with sci-fi art panel + auth form
-- Google Sign-In button + Email/Password form with validation
-- Language selector dropdown (EN / TR / NL) wired to i18n
-- Responsive: mobile-first stacked layout → desktop side-by-side
-- All strings pulled from `locales/*/common.json`
-
-### 3.5 🧪 Jules — Auth Flow Tests
-
-Jules writes integration tests:
-- [x] Email registration creates player doc in Firestore emulator
-- [x] Google sign-in redirects to correct role-based route
-- [x] Unauthenticated users are redirected to `/login`
-- [x] Players cannot access `/dm`; DMs cannot access `/sheet`
-
-✅ **Exit Criteria:**
-- Login → role detection → correct redirect works end-to-end
-- All 4 route guard tests pass against emulator
-- Login page renders in all 3 languages
+#### 6.1 Layout Architecture (`src/pages/PlayerSheet.jsx`)
+- **Left Column / Sidebar**:
+  - `DnDAbilitySidebar.jsx`: Monospace ability scores (STR, DEX, CON, INT, WIS, CHA), modifier badges, passive perception, and saving throw proficiencies.
+- **Right Column / Dynamic Tabs**:
+  - **Vitals HUD**: `VitalBar.jsx` for Hit Points, Nano-Shields, Stress, Temp HP.
+  - **Actions Tab (`DnDActionsTab.jsx`)**: Melee attacks, ranged plasma fire, cybernetic overclocks.
+  - **Inventory Tab (`InventoryList.jsx`)**: Equipment list, weight calculation, liquid credits counter.
+  - **Cyberware & Traits Tab (`TraitsList.jsx`)**: Active neural implants and passive traits.
+  - **Starship Operations Deck (`SpaceshipSheet.jsx`)**: Ship bridge, Drydock refit bay, and Naval Shipyard.
+  - **Mission Notes Tab (`PlayerNotesTab.jsx`)**: Encrypted operative logbook.
+- **Character Switcher & Deletion**:
+  - Switch between active characters owned by the user.
+  - Option to decommission/delete characters with confirmation modal.
 
 ---
 
-<a id="phase-4"></a>
-## Phase 4 — Parallel UI Development (Player Sheet vs. DM Panel)
+### Phase 7: Spaceship Systems, Drydock & Naval Shipyard
 
-> **Goal:** Fully functional sci-fi HUD for players and a live admin control panel for the DM.
+> **Goal**: Complete starship management, modular engineering refits, and corporate vessel commissioning.
 
-### 4.1 Component Architecture
+#### 7.1 Catalogs & Validation Engines
+- `src/lib/shipModulesCatalog.js`: Hardpoints, weapon batteries, shield generators, impulse thrusters, and fusion reactors with power draw and mass ratings.
+- `src/lib/shipyardCatalog.js`: 4 pre-configured corporate starship hulls:
+  1. *Void Skiff* (Recon)
+  2. *Stealth Corsair* (Infiltration)
+  3. *Heavy Frigate* (Combat)
+  4. *Dreadnought* (Capital Class)
+- `src/lib/shipValidation.js`:
+  - **Reactor Grid Balance**: `Power Generated - Power Consumed >= 0`. Warns on grid overload.
+  - **Thrust-to-Mass Ratio**: `Total Thrust / Total Mass`. Calculates maneuverability rating.
 
-```
-src/
-  components/
-    shared/
-      VitalBar.jsx          ← HP / Shield animated bar
-      StatBlock.jsx          ← Single stat display (STR, DEX, etc.)
-      ItemCard.jsx           ← Weapon / gear card with rarity glow
-      TraitBadge.jsx         ← Buff/debuff pill with tooltip
-      CreditCounter.jsx      ← Animated credit balance
-      LanguageSwitcher.jsx   ← i18n dropdown
-      LoadingSpinner.jsx     ← Full-screen loading state
-    player/
-      PlayerHUD.jsx          ← Main HUD layout
-      VitalsPanel.jsx        ← HP + Shields cluster
-      StatsGrid.jsx          ← 6-stat grid
-      InventoryList.jsx      ← Scrollable item list
-      SpaceshipCard.jsx      ← Equipped ship display
-      TraitsList.jsx         ← Active traits bar
-    dm/
-      DMDashboard.jsx        ← Main DM layout
-      PlayerRoster.jsx       ← All connected players, live stats
-      CombatTracker.jsx      ← Turn order, initiative
-      StatOverrideForm.jsx   ← Manual HP/Shield/Stat editor
-      ItemSpawner.jsx        ← Create & assign items
-      TraitAssigner.jsx      ← Add/remove traits to players
-  pages/
-    LoginPage.jsx
-    PlayerSheet.jsx          ← Composes player/* components
-    DMPanel.jsx              ← Composes dm/* components
-```
-
-### 4.2 🤖 Gemini — Live Firestore Bindings
-
-Create `src/hooks/usePlayerData.js`:
-
-```js
-import { useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-
-export function usePlayerData(userId) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!userId) return;
-    const unsub = onSnapshot(doc(db, 'players', userId), (snap) => {
-      setData(snap.exists() ? { uid: snap.id, ...snap.data() } : null);
-      setLoading(false);
-    });
-    return unsub;
-  }, [userId]);
-
-  return { data, loading };
-}
-```
-
-Create `src/hooks/useCollection.js` (for DM roster, items, traits):
-
-```js
-import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-
-export function useCollection(path, constraints = []) {
-  const [docs, setDocs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const q = query(collection(db, path), ...constraints);
-    const unsub = onSnapshot(q, (snap) => {
-      setDocs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
-    return unsub;
-  }, [path]);
-
-  return { docs, loading };
-}
-```
-
-Create `src/lib/playerActions.js` (DM write operations):
-
-```js
-import { doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
-
-export const updatePlayerHP = (userId, hp) =>
-  updateDoc(doc(db, 'players', userId), { hp, updatedAt: serverTimestamp() });
-
-export const updatePlayerShields = (userId, shields) =>
-  updateDoc(doc(db, 'players', userId), { shields, updatedAt: serverTimestamp() });
-
-export const updatePlayerStat = (userId, stat, value) =>
-  updateDoc(doc(db, 'players', userId), {
-    [`stats.${stat}`]: value,
-    updatedAt: serverTimestamp(),
-  });
-
-export const addTrait = (userId, traitId) =>
-  updateDoc(doc(db, 'players', userId), {
-    traits: arrayUnion(traitId),
-    updatedAt: serverTimestamp(),
-  });
-
-export const removeTrait = (userId, traitId) =>
-  updateDoc(doc(db, 'players', userId), {
-    traits: arrayRemove(traitId),
-    updatedAt: serverTimestamp(),
-  });
-
-export const addItemToInventory = (userId, itemId) =>
-  updateDoc(doc(db, 'players', userId), {
-    inventory: arrayUnion(itemId),
-    updatedAt: serverTimestamp(),
-  });
-
-export const updateCredits = (userId, credits) =>
-  updateDoc(doc(db, 'players', userId), { credits, updatedAt: serverTimestamp() });
-```
-
-### 4.3 🧪 Jules — Player Sheet UI
-
-Jules scaffolds `PlayerSheet.jsx` and all `components/player/*`:
-
-**Design Language — Sci-Fi HUD:**
-- Dark background (`#0a0e17`) with neon accent glows (cyan `#00f0ff`, magenta `#ff00aa`)
-- Glassmorphism panels: `backdrop-blur-md bg-white/5 border border-white/10`
-- Animated HP/Shield bars with CSS transitions and pulse effects on damage
-- Credit counter with a rolling-number animation
-- Item cards with rarity-colored borders (common=gray, uncommon=green, rare=blue, legendary=purple, alien=cyan glow)
-- Trait badges as pills: green for buffs, red for debuffs, gray for neutral
-- Responsive: single-column mobile → multi-panel desktop grid
-
-### 4.4 🧪 Jules — DM Panel UI
-
-Jules scaffolds `DMPanel.jsx` and all `components/dm/*`:
-
-**DM Dashboard Features:**
-- **Player Roster:** Grid of player cards showing live HP, shields, credits — updated via `onSnapshot`
-- **Combat Tracker:** Drag-to-reorder initiative list; highlight active turn
-- **Stat Override Form:** Click any player → modal with sliders for HP, shields, each stat
-- **Item Spawner:** Form to create new items with multilingual name/description fields (EN/TR/NL tabs), type selector, stat inputs
-- **Trait Assigner:** Dropdown of available traits → assign to selected player
-
-### 4.5 Shared Design Tokens
-
-Define in `src/index.css` (Tailwind `@theme` layer):
-
-```css
-@import "tailwindcss";
-
-@theme {
-  --color-void-bg: #0a0e17;
-  --color-void-surface: #111827;
-  --color-void-border: rgba(255, 255, 255, 0.1);
-  --color-neon-cyan: #00f0ff;
-  --color-neon-magenta: #ff00aa;
-  --color-neon-green: #00ff88;
-  --color-neon-red: #ff3344;
-  --color-neon-purple: #aa44ff;
-  --color-rarity-common: #9ca3af;
-  --color-rarity-uncommon: #22c55e;
-  --color-rarity-rare: #3b82f6;
-  --color-rarity-legendary: #a855f7;
-  --color-rarity-alien: #00f0ff;
-  --font-family-display: 'Orbitron', sans-serif;
-  --font-family-body: 'Inter', sans-serif;
-}
-```
-
-Google Fonts loaded in `index.html`:
-
-```html
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-```
-
-✅ **Exit Criteria:**
-- Player sheet displays all vitals, stats, inventory, traits with live data from emulator
-- DM panel can modify any player's stats/HP/shields and changes reflect instantly on the player's screen
-- Item spawner creates items in Firestore; they appear in player inventory when assigned
-- All UI renders correctly in EN, TR, and NL
-- Responsive layout works on 375px → 1920px viewports
+#### 7.2 Component Implementations
+- `src/components/player/ShipBuilder.jsx`:
+  - Drydock Refit Bay exclusively for **owned ships**.
+  - If operative does not own a vessel, displays a locked drydock berth directing them to the Naval Shipyard.
+- `src/components/player/NavalShipyard.jsx`:
+  - Browse and commission hulls with liquid credits.
+- `src/components/dm/ShipAssignmentModal.jsx`:
+  - Allows DM to grant or repossess starships for any operative in the campaign.
 
 ---
 
-<a id="phase-5"></a>
-## Phase 5 — 3D WebGL Dice Engine & Real-Time Sync
+### Phase 8: E.E.Sys (Equivalent Exchange System) Marketplace
 
-> **Goal:** Realistic 3D dice rolls visible to all connected clients simultaneously.
+> **Goal**: 3-tier item synthesis mechanics and raw materials market.
 
-### 5.1 🤖 Gemini — Dice Engine Integration
-
-```powershell
-npm install @3d-dice/dice-box
-```
-
-Create `src/components/dice/DiceOverlay.jsx`:
-
-```
-┌──────────────────────────────────────────────────┐
-│                                                  │
-│   Transparent full-screen overlay (pointer-none  │
-│   except dice interaction zone)                  │
-│                                                  │
-│   ┌────────────────────────────────────┐         │
-│   │                                    │         │
-│   │   @3d-dice/dice-box canvas         │         │
-│   │   WebGL context                    │         │
-│   │                                    │         │
-│   └────────────────────────────────────┘         │
-│                                                  │
-│   [Roll Button]  [Notation Input: "2d6+3"]       │
-│                                                  │
-└──────────────────────────────────────────────────┘
-```
-
-Key implementation details:
-- Canvas positioned as `fixed` overlay with `z-index: 50`
-- `pointer-events: none` on overlay; `pointer-events: auto` on dice canvas + controls
-- Dice-box initialized with transparent background for compositing over game UI
-- Roll button triggers physics simulation and captures results
-
-### 5.2 🤖 Gemini — Deterministic Replay via Firestore
-
-**Roll Flow:**
-
-```mermaid
-sequenceDiagram
-    participant P as Player Client
-    participant FS as Firestore
-    participant DM as DM Client
-    participant P2 as Other Players
-
-    P->>P: Generate physics seed + velocities
-    P->>P: Run local 3D roll → get results
-    P->>FS: Write to rolls/{rollId}
-    FS-->>DM: onSnapshot → new roll doc
-    FS-->>P2: onSnapshot → new roll doc
-    DM->>DM: Replay 3D roll using seed + velocities
-    P2->>P2: Replay 3D roll using seed + velocities
-```
-
-`src/hooks/useDiceSync.js`:
-
-```js
-import { useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
-import { addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-
-export function useDiceSync(onNewRoll) {
-  useEffect(() => {
-    const q = query(
-      collection(db, 'rolls'),
-      orderBy('timestamp', 'desc'),
-      limit(1)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      snap.docChanges().forEach((change) => {
-        if (change.type === 'added') {
-          onNewRoll({ id: change.doc.id, ...change.doc.data() });
-        }
-      });
-    });
-    return unsub;
-  }, [onNewRoll]);
-}
-
-export async function publishRoll(userId, playerName, notation, results, total, modifier, purpose, physicsSeed, velocities) {
-  return addDoc(collection(db, 'rolls'), {
-    playerId: userId,
-    playerName,
-    diceNotation: notation,
-    results,
-    total,
-    modifier,
-    purpose,
-    timestamp: serverTimestamp(),
-    physics: {
-      seed: physicsSeed,
-      velocities,
-    },
-  });
-}
-```
-
-### 5.3 🤖 Gemini — Trait Modifier Calculation
-
-`src/lib/diceModifiers.js`:
-
-```js
-/**
- * Calculate total roll modifier from player's traits and stats.
- * @param {Object} player - Player document
- * @param {Object[]} traitDefs - Trait definition documents
- * @param {string} purpose - Roll purpose (attack, skill_check, etc.)
- * @returns {number} Total modifier to add to dice result
- */
-export function calculateModifier(player, traitDefs, purpose) {
-  let modifier = 0;
-
-  // Stat-based modifier (D&D-style: floor((stat - 10) / 2))
-  const relevantStat = getRelevantStat(purpose);
-  if (relevantStat && player.stats[relevantStat] !== undefined) {
-    modifier += Math.floor((player.stats[relevantStat] - 10) / 2);
-  }
-
-  // Trait modifiers
-  for (const traitId of player.traits) {
-    const trait = traitDefs.find((t) => t.id === traitId);
-    if (trait?.rollModifier) {
-      modifier += trait.rollModifier;
-    }
-  }
-
-  return modifier;
-}
-
-function getRelevantStat(purpose) {
-  const map = {
-    attack: 'strength',
-    ranged_attack: 'dexterity',
-    skill_check: 'intelligence',
-    saving_throw: 'constitution',
-    persuasion: 'charisma',
-    perception: 'wisdom',
-  };
-  return map[purpose] || null;
-}
-```
-
-### 5.4 🧪 Jules — Dice UI Polish
-
-Jules handles:
-- Roll history sidebar showing last 20 rolls with player name, notation, result, and timestamp
-- Animated roll result banner ("Zara rolled 2d6+3 → **14**") with sci-fi slide-in animation
-- Sound effects toggle (optional: dice clatter audio)
-- Mobile: roll button pinned to bottom of screen
-
-✅ **Exit Criteria:**
-- Player rolls dice → 3D animation plays locally → result written to Firestore
-- All other connected clients receive the roll via `onSnapshot` and replay the 3D animation
-- Trait modifiers correctly applied to roll totals
-- Roll history displays accurately across all clients
-- DM sees all rolls in real-time on their panel
+#### 8.1 Implement `src/components/market/EESysMarketplace.jsx`
+- **3-Tier Crafting Logic**:
+  - **Tier 1 — Sovereign Fabrication**: Operative has required components + blueprint design. Craft cost = **0 ₡**.
+  - **Tier 2 — Licensed Assembly**: Operative has components but lacks the design. Operative pays the blueprint licensing royalty fee to craft.
+  - **Tier 3 — Direct Credit Requisition**: Operative lacks materials and blueprint. Direct purchase at retail credit price.
+- **Raw Materials Category**:
+  - Dedicated market category filter to purchase raw elements (Graphene, Superconductors, Neural Wiring, Graviton Coils).
+- **E.E.Sys Membership Perks**:
+  - Membership status persists in the user document and grants automated market discounts.
 
 ---
 
-<a id="phase-6"></a>
-## Phase 6 — Automated Testing, QA & Git Reporting
+### Phase 9: DM Tactical Command Deck & TAC-COMMS Broadcasts
 
-> **Goal:** Comprehensive test suite with automated GitHub issue creation for failures.
+> **Goal**: Comprehensive encounter management and real-time tactical communications.
 
-### 6.1 🧪 Jules — Test Framework Setup
+#### 9.1 Combat Tracker (`src/components/dm/CombatTracker.jsx`)
+- Turn order sequencing by initiative roll.
+- Live HP and Shield manipulation for operatives and NPC adversaries.
+- Synchronized "Request Initiative" button:
+  - Broadcasts check to all campaign operatives.
+  - Live indicator toggles from *"Awaiting Operatives"* to *"All Operatives Ready"* once all players submit rolls.
 
+#### 9.2 TAC-COMMS Broadcast Feed (`src/components/shared/DMIntelBroadcast.jsx`)
+- DM broadcast composer with text and image attachments.
+- **Resilient Media Viewer**: Automatically parses and displays direct images and Pinterest links via a proxy fallback service (`images.weserv.nl`).
+- Public dice roll ledger displaying all player rolls in real time while respecting the DM privacy cloak.
+- Campaign member removal button in `PlayerRoster.jsx` to dismiss operatives from active sessions.
+- Campaign deletion button in `src/pages/CampaignPage.jsx` to decommission entire campaigns.
+
+---
+
+### Phase 10: Routing, Shell, Navigation & Authentication
+
+> **Goal**: Responsive application shell with authenticated and guest routing.
+
+- `src/router.jsx`: React Router v7 routes:
+  - `/login`: `LoginPage.jsx` (Email/password and anonymous guest sign-in).
+  - `/dashboard`: `DashboardPage.jsx` (Character selection, active campaign status, quick actions).
+  - `/sheet/:characterId`: `PlayerSheet.jsx` (Operative Dossier).
+  - `/dm/:campaignId`: `DMPanel.jsx` (DM Tactical Command Deck).
+  - `/campaigns`: `CampaignPage.jsx` (Campaign management).
+  - `/market`: `EESysMarketplace.jsx` (E.E.Sys Marketplace).
+- `src/App.jsx`: Global shell mounting `LanguageSwitcher` and `DiceOverlay`.
+
+---
+
+### Phase 11: Vitest Unit Testing & QA Verification
+
+> **Goal**: Run automated test suites to ensure 100% pass rate before deployment.
+
+#### 11.1 Test Suite Manifest (Must all pass)
+1. `src/lib/__tests__/playerActions.test.js`: Rest, damage, and character deletion tests.
+2. `src/lib/__tests__/campaignActions.test.js`: Campaign deletion and roster actions.
+3. `src/lib/__tests__/diceModifiers.test.js`: Trait modifiers and bonus rolls.
+4. `src/lib/__tests__/initiativeCalculator.test.js`: Initiative sorting and tie-breakers.
+5. `src/lib/__tests__/shipValidation.test.js`: Grid balance and thrust calculations.
+6. `src/lib/__tests__/i18n.test.js`: Tri-lingual completeness across EN, TR, DE.
+7. `src/components/__tests__/CombatAndInitiative.test.jsx`: Combat tracker state transitions.
+8. `src/components/__tests__/DMRollPrivacy.test.jsx`: Secret DM roll masking.
+9. `src/components/__tests__/ShipAssignmentAndShipyard.test.jsx`: Ship purchasing & assignment.
+10. `src/components/__tests__/ShipBuilderAndDrydock.test.jsx`: Modular refit bay.
+11. `src/components/__tests__/RollContextMenuAndEESys.test.jsx`: 3-tier synthesis validation.
+12. `src/components/__tests__/accessibility.test.jsx`: Screen-reader & contrast accessibility.
+
+#### 11.2 Execute Tests
 ```powershell
-npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom
-npm install -D @firebase/rules-unit-testing
+npm test -- --run
 ```
+Expected output: **All test files passed, 0 failures**.
 
-`vitest.config.js`:
+---
 
-```js
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
+### Phase 12: Production Build & Firebase Hosting Deployment
 
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.js'],
-    include: ['src/**/*.test.{js,jsx}'],
-  },
-});
-```
+> **Goal**: Build optimized production bundle to `{{DIST_FOLDER_PATH}}` and deploy to Firebase Hosting.
 
-### 6.2 Test Coverage Matrix
-
-| Category | File | Tests |
-| -------- | ---- | ----- |
-| **Dice Math** | `src/lib/__tests__/diceModifiers.test.js` | Modifier calculation for each stat, trait stacking, edge cases (0 traits, negative mods) |
-| **Auth Hooks** | `src/hooks/__tests__/useAuth.test.jsx` | Login state transitions, role detection, loading states |
-| **Player Actions** | `src/lib/__tests__/playerActions.test.js` | HP update, shield update, inventory add/remove, credit changes |
-| **Security Rules** | `src/test/firestore.rules.test.js` | Owner-only writes, DM override, roll immutability, unauthenticated rejection |
-| **i18n** | `src/lib/__tests__/i18n.test.js` | All 3 locales load, fallback to EN, key completeness across locales |
-| **Components** | `src/components/__tests__/VitalBar.test.jsx` | Renders correct percentage, color changes at thresholds |
-| | `src/components/__tests__/StatBlock.test.jsx` | Displays modifier correctly, handles edge values |
-
-### 6.3 🧪 Jules — Automated GitHub Issue Reporting
-
-Jules creates `scripts/test-and-report.js`:
-
-```
-Workflow:
-1. Run `npx vitest run --reporter=json --outputFile=test-results.json`
-2. Parse test-results.json for failures
-3. For each failure, compile:
-   - Test name and file path
-   - Error message and stack trace
-   - Expected vs. actual values
-4. POST to GitHub Issues API:
-   - Endpoint: https://api.github.com/repos/JudasTheUG/unendingvoid/issues
-   - Auth: Bearer token from .env (github_pat)
-   - Labels: ["bug", "automated-test"]
-   - Title: "[TEST FAILURE] {test name}"
-   - Body: Formatted markdown with repro steps, error details, and file links
-5. Skip duplicate issues (search existing open issues by title before creating)
-```
-
-### 6.4 🤖 Gemini — Bug Patching Workflow
-
-When Jules reports test failures:
-1. Gemini reads the GitHub issue body
-2. Traces the failure to source code
-3. Implements fix
-4. Re-runs the specific failing test to confirm
-5. Commits with message: `fix: resolve #{issue_number} — {brief description}`
-
-### 6.5 CI-Like Local Script
-
-Create `scripts/qa-cycle.ps1`:
-
+#### 12.1 Production Bundle Build
 ```powershell
-# Full QA cycle — run locally
-Write-Host "🔨 Building..." -ForegroundColor Cyan
 npm run build
-if ($LASTEXITCODE -ne 0) { exit 1 }
+```
+Confirm that `{{DIST_FOLDER_PATH}}/index.html` and bundled assets are generated without warnings.
 
-Write-Host "🧪 Running tests..." -ForegroundColor Cyan
-npx vitest run --reporter=verbose
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Tests failed — running GitHub reporter..." -ForegroundColor Red
-    node scripts/test-and-report.js
-    exit 1
-}
-
-Write-Host "✅ All tests passed!" -ForegroundColor Green
+#### 12.2 Deploy to Firebase
+```powershell
+# Deploy Firestore security rules and web assets
+firebase deploy --only hosting,firestore:rules
 ```
 
-✅ **Exit Criteria:**
-- `npx vitest run` executes all tests against Firebase emulators
-- Test failures automatically create GitHub issues with full context
-- Duplicate issues are not created
-- `npm run build` produces a clean `dist/` bundle
-- `firebase deploy --only hosting` successfully deploys from `dist/`
+Verify deployment online at: `{{FIREBASE_HOSTING_URL}}`.
 
 ---
 
-## Final Deliverables Checklist
+## 🎯 5. Verification & Acceptance Checklist
 
-| # | Deliverable | Owner | Status |
-| - | ----------- | ----- | ------ |
-| 1 | Vite + React + Tailwind project building to `dist/` | 🤖 Gemini | ✅ Complete (`dist/` verified) |
-| 2 | Firebase SDK wired to local emulators & hosting | 🤖 Gemini | ✅ Complete (`firebase.json`, `firebase.js`) |
-| 3 | i18n with EN, TR, NL locale files | 🤖 Gemini + 🧪 Jules | ✅ Complete (`src/locales/*`) |
-| 4 | Firestore schemas (players, items, traits, rolls, sessions) | 🤖 Gemini | ✅ Complete |
-| 5 | Security rules with DM override | 🤖 Gemini | ✅ Complete (`firestore.rules`) |
-| 6 | Seed data + emulator seed script | 🧪 Jules | ✅ Complete (`seed/*`, `scripts/seed-emulator.js`) |
-| 7 | Firebase Auth (Google + Email/Password) | 🤖 Gemini | ✅ Complete (`authService.js`, `useAuth.jsx`) |
-| 8 | Role-based route guards | 🤖 Gemini | ✅ Complete (`router.jsx`) |
-| 9 | Login page with i18n | 🧪 Jules | ✅ Complete (`LoginPage.jsx`) |
-| 10 | Player Sheet HUD (live Firestore data) | 🤖 Gemini (bindings) + 🧪 Jules (UI) | ✅ Complete (`PlayerSheet.jsx`, `components/player/*`) |
-| 11 | DM Panel (roster, combat, item spawner, trait assigner) | 🤖 Gemini (bindings) + 🧪 Jules (UI) | ✅ Complete (`DMPanel.jsx`, `components/dm/*`) |
-| 12 | 3D Dice Engine with WebGL & Three.js polyhedrons | 🤖 Gemini | ✅ Complete (`DiceOverlay.jsx`) |
-| 13 | Real-time dice sync across all clients | 🤖 Gemini | ✅ Complete (`useDiceSync.js`) |
-| 14 | Trait/stat modifier engine | 🤖 Gemini | ✅ Complete (`diceModifiers.js`) |
-| 15 | Vitest test suite (32 tests across 6 suites) | 🧪 Jules + 🤖 Gemini | ✅ Complete (32 passing tests) |
-| 16 | Automated GitHub issue reporter | 🧪 Jules | ✅ Complete (`scripts/test-and-report.js`) |
-| 17 | QA cycle script | 🧪 Jules | ✅ Complete (`scripts/qa-cycle.ps1`) |
-| 18 | Jules async coding agent integration & execution | 🤖 Gemini + 🧪 Jules | ✅ Complete (Session #16190552750801950359 merged) |
+Before declaring the deployment complete, verify the following in the live application:
 
----
-
-## Dependency Graph
-
-```mermaid
-graph TD
-    P0["Phase 0: Prerequisites"] --> P1["Phase 1: Scaffolding"]
-    P1 --> P2["Phase 2: Data Models"]
-    P1 --> P3["Phase 3: Auth & Routing"]
-    P2 --> P4["Phase 4: UI Development"]
-    P3 --> P4
-    P2 --> P5["Phase 5: Dice Engine"]
-    P4 --> P5
-    P4 --> P6["Phase 6: Testing & QA"]
-    P5 --> P6
-
-    style P0 fill:#1e293b,stroke:#00f0ff,color:#e2e8f0
-    style P1 fill:#1e293b,stroke:#00f0ff,color:#e2e8f0
-    style P2 fill:#1e293b,stroke:#00f0ff,color:#e2e8f0
-    style P3 fill:#1e293b,stroke:#00f0ff,color:#e2e8f0
-    style P4 fill:#1e293b,stroke:#00ff88,color:#e2e8f0
-    style P5 fill:#1e293b,stroke:#ff00aa,color:#e2e8f0
-    style P6 fill:#1e293b,stroke:#a855f7,color:#e2e8f0
-```
-
----
-
-> **Cost Profile:** $0.00 during development — all Firebase services run on local emulators. Production deploy uses Firebase Hosting free tier (10 GB transfer/month). Firestore Spark plan: 50K reads, 20K writes, 20K deletes per day.
+- [ ] **Auth**: Sign up with email or continue anonymously.
+- [ ] **Language Switching**: Switch between 🇺🇸 `EN`, 🇹🇷 `TR`, and 🇩🇪 `DE`. Verify all labels update instantly.
+- [ ] **Operative Sheet**: Create a character, inspect ability scores, take damage, rest, and test dice rolls.
+- [ ] **Dice Overlay**: Roll d20 and d100 percentile dice. Verify 3D wireframe canvas animation.
+- [ ] **Spaceship Bay**: Open Ship tab. Verify locked drydock berth when unowned; visit Naval Shipyard to commission a Void Skiff.
+- [ ] **Drydock Refit**: Mount a module on an owned ship; observe Reactor Grid Balance calculations.
+- [ ] **E.E.Sys Synthesis**: Test Tier 1, Tier 2, and Tier 3 item fabrication flows.
+- [ ] **DM Panel**: Create a campaign, request initiative roll, observe "Awaiting Operatives" -> "All Operatives Ready" status.
+- [ ] **TAC-COMMS**: Broadcast an intel message with an image URL; verify image displays for all operatives.
