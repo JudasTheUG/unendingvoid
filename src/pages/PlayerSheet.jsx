@@ -17,6 +17,7 @@ import EESysMarketplace, { EE_CATALOG_ITEMS, MEMBERSHIP_ITEM } from '../componen
 import TraitsList from '../components/player/TraitsList';
 import PlayerNotesTab from '../components/player/PlayerNotesTab';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
+import CommsAndRollsFlow from '../components/shared/CommsAndRollsFlow';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer } from '../lib/playerActions';
@@ -305,6 +306,20 @@ export default function PlayerSheet() {
           <span>🏪</span>
           <span>E.E.Sys</span>
         </button>
+
+        {/* Far Right Side Tab: Live Comms & Quantum Rolls Flow */}
+        <div className="ml-auto flex items-center pl-2">
+          <button
+            onClick={() => setMainTab('flow')}
+            className={`px-4 py-2.5 rounded-xl font-display font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap
+                       ${mainTab === 'flow'
+                         ? 'bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                         : 'text-gray-400 hover:text-emerald-300 hover:bg-emerald-950/20 border border-white/10 hover:border-emerald-500/40'}`}
+          >
+            <span>📡📜</span>
+            <span>{t('flow.tabTitle', 'Live Flow')}</span>
+          </button>
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -475,6 +490,18 @@ export default function PlayerSheet() {
           inventoryItems={inventoryItems}
           onUpdateCredits={(credits) => setLocalCredits(credits)}
           onUpdateInventory={(updatedInv) => setLocalInventory(updatedInv)}
+        />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* TAB 4: LIVE DUAL TELEMETRY FLOW (COMMS + QUANTUM ROLLS)           */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {mainTab === 'flow' && (
+        <CommsAndRollsFlow
+          isDM={false}
+          user={user}
+          profile={effectivePlayer}
+          onSaveToNotes={handleAddNote}
         />
       )}
 

@@ -64,7 +64,8 @@
     "overrideStats": "Attribute überschreiben",
     "startCombat": "Kampf beginnen",
     "endCombat": "Kampf beenden",
-    "nextTurn": "Nächster Zug"
+    "nextTurn": "Nächster Zug",
+    "commandConsole": "Meister-Befehlskonsole"
   },
   "combat": {
     "alertHeader": "TAKTISCHER ALARM // GEFECHT UNVERMEIDLICH",
@@ -494,5 +495,30 @@
     "cyberneticsTraits": "Kybernetik & Genetische Merkmale",
     "active": "Aktiv",
     "noTraits": "Keine genetischen Augmentierungen oder psychologischen Merkmale erfasst."
+  },
+  "flow": {
+    "tabTitle": "Live-Feed",
+    "headerTitle": "Taktischer Feed // Funk & Quantenwürfel",
+    "headerSubtitle": "Echtzeit-Doppelstream-Telemetrie von Flottenübertragungen und Quantenwürfelergebnissen",
+    "commsColumnTitle": "TAC-COMMS Stream",
+    "rollsColumnTitle": "Quantenwürfel-Ledger Stream",
+    "allChannels": "Alle Kanäle",
+    "priorityEmergency": "Notfall",
+    "priorityHigh": "Hohe Priorität",
+    "priorityRoutine": "Routine",
+    "noBroadcasts": "Noch keine taktischen Funksprüche erfasst.",
+    "noRolls": "In dieser Sitzung wurden noch keine Würfe protokolliert.",
+    "totalRolls": "Gesamtwürfe",
+    "averageRoll": "Durchschnittswert",
+    "highestRoll": "Höchster Wurf",
+    "criticalCount": "Kritisch (Nat 20/100)",
+    "filterAll": "Alle Würfe",
+    "filterMine": "Meine Würfe",
+    "quickRoll": "Schnellwurf",
+    "saveToNotes": "In Feldnotizen speichern",
+    "saved": "Gespeichert",
+    "broadcastNow": "Funkspruch senden",
+    "dmScreenBadge": "DM Geheim",
+    "dualViewActive": "Live-Doppeltelemetriestrom Aktiv"
   }
 }

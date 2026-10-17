@@ -64,7 +64,8 @@
     "overrideStats": "Override Stats",
     "startCombat": "Start Combat",
     "endCombat": "End Combat",
-    "nextTurn": "Next Turn"
+    "nextTurn": "Next Turn",
+    "commandConsole": "Master Command Console"
   },
   "combat": {
     "alertHeader": "TACTICAL ALERT // ENGAGEMENT IMMINENT",
@@ -494,5 +495,30 @@
     "cyberneticsTraits": "Cybernetics & Genetic Traits",
     "active": "Active",
     "noTraits": "No genetic augmentations or psychological traits recorded."
+  },
+  "flow": {
+    "tabTitle": "Live Flow",
+    "headerTitle": "Tactical Flow // Comms & Quantum Rolls",
+    "headerSubtitle": "Real-time dual stream telemetry of fleet transmissions and quantum dice outcomes",
+    "commsColumnTitle": "TAC-COMMS Stream",
+    "rollsColumnTitle": "Quantum Roll Ledger Stream",
+    "allChannels": "All Channels",
+    "priorityEmergency": "Emergency",
+    "priorityHigh": "High Priority",
+    "priorityRoutine": "Routine",
+    "noBroadcasts": "No tactical comms recorded yet.",
+    "noRolls": "No dice rolls logged in current session.",
+    "totalRolls": "Total Rolls",
+    "averageRoll": "Average Result",
+    "highestRoll": "Peak Roll",
+    "criticalCount": "Crit (Nat 20/100)",
+    "filterAll": "All Rolls",
+    "filterMine": "My Rolls",
+    "quickRoll": "Quick Roll",
+    "saveToNotes": "Save to Field Notes",
+    "saved": "Saved",
+    "broadcastNow": "Broadcast Comms",
+    "dmScreenBadge": "DM Secret",
+    "dualViewActive": "Live Dual Telemetry Stream Active"
   }
 }
