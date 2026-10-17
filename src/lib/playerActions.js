@@ -147,4 +147,25 @@ export const addPlayerDesign = (userId, designId) =>
     updatedAt: serverTimestamp(),
   });
 
+export const updatePlayerAvatar = (userId, avatarUrl) => {
+  try {
+    const raw = localStorage.getItem(`unendingvoid_player_${userId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.avatarUrl = avatarUrl;
+      parsed.photoURL = avatarUrl;
+      parsed.imageUrl = avatarUrl;
+      localStorage.setItem(`unendingvoid_player_${userId}`, JSON.stringify(parsed));
+    }
+  } catch (_) {}
+
+  return updateDoc(doc(db, 'players', userId), {
+    avatarUrl,
+    photoURL: avatarUrl,
+    imageUrl: avatarUrl,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+
 

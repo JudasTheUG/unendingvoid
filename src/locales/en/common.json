@@ -354,7 +354,12 @@
     "statCheck": "{{stat}} Check",
     "statSave": "{{stat}} Save",
     "skillCheck": "{{skill}} Check",
-    "rollHint": "Left-click: Roll {{name}} · Right-click: Advantage / Disadvantage"
+    "rollHint": "Left-click: Roll {{name}} · Right-click: Advantage / Disadvantage",
+    "uploadAvatar": "Upload Operative Portrait",
+    "changeAvatar": "Change",
+    "avatarUploaded": "Portrait Updated",
+    "shipIconBadge": "Assigned Vessel",
+    "shipNotAssigned": "No Vessel Assigned"
   },
   "abilities": {
     "strength": "Strength",

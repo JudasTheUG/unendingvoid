@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import VitalBar from '../shared/VitalBar';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
 import RollContextMenu from '../shared/RollContextMenu';
 import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
+import { processProfileImage } from '../../lib/imageUtils';
+import { updatePlayerAvatar } from '../../lib/playerActions';
 
 export default function DnDCharacterHeader({
   character,
@@ -12,11 +14,44 @@ export default function DnDCharacterHeader({
   onShortRest,
   onLongRest,
   onUpdateHp,
+  onUpdateAvatar,
 }) {
   const { t } = useTranslation();
+  const fileInputRef = useRef(null);
   const [customAmount, setCustomAmount] = useState('10');
   const [justSaved, setJustSaved] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [avatarOverride, setAvatarOverride] = useState(null);
+
+  const avatarImage = avatarOverride || character.avatarUrl || character.imageUrl || character.photoURL;
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      // Process profile image: auto-resize if > 1MB or exceeds dimensions
+      const dataUrl = await processProfileImage(file);
+      setAvatarOverride(dataUrl);
+
+      const charId = character.id || character.uid;
+      if (onUpdateAvatar) {
+        await onUpdateAvatar(dataUrl);
+      } else if (charId) {
+        await updatePlayerAvatar(charId, dataUrl);
+      }
+      flashSaved();
+    } catch (err) {
+      console.warn('Avatar upload failed:', err);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const flashSaved = () => {
     setJustSaved(true);
@@ -105,13 +140,74 @@ export default function DnDCharacterHeader({
       {/* Top Identity Row */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl bg-neon-cyan/15 border-2 border-neon-cyan/60 flex items-center justify-center font-display text-2xl shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-            🚀
+          {/* PROFILE ICON / AVATAR WITH UPLOAD */}
+          <div className="relative group shrink-0">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              data-testid="avatar-file-input"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="w-16 h-16 rounded-xl bg-neon-cyan/15 border-2 border-neon-cyan/60 hover:border-neon-cyan flex items-center justify-center font-display text-2xl shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_20px_rgba(0,240,255,0.5)] transition-all overflow-hidden relative cursor-pointer"
+              title={t('characterStats.uploadAvatar', 'Upload Operative Portrait')}
+            >
+              {avatarImage ? (
+                <img
+                  src={avatarImage}
+                  alt={character.displayName || character.name || 'Void Operative'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl">👤</span>
+              )}
+
+              {/* Upload Hover Overlay */}
+              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] text-neon-cyan font-mono font-bold">
+                <span>📷</span>
+                <span className="text-[8px] uppercase tracking-tighter">
+                  {isUploading ? '...' : t('characterStats.changeAvatar', 'Change')}
+                </span>
+              </div>
+            </button>
+
+            {/* Ship Icon Mini-Badge on Profile Icon */}
+            <div
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-[#0c1220] border border-cyan-400/60 flex items-center justify-center text-xs shadow-md select-none"
+              title={`${t('characterStats.shipIconBadge', 'Assigned Vessel')}: ${
+                character.spaceshipName ||
+                (character.ship?.name
+                  ? typeof character.ship.name === 'object'
+                    ? character.ship.name.en
+                    : character.ship.name
+                  : t('characterStats.shipNotAssigned', 'No Vessel Assigned'))
+              }`}
+            >
+              🚀
+            </div>
           </div>
+
           <div>
-            <h1 className="font-display text-xl md:text-2xl font-black text-white tracking-wide">
-              {character.displayName || character.name || 'Void Operative'}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-xl md:text-2xl font-black text-white tracking-wide">
+                {character.displayName || character.name || 'Void Operative'}
+              </h1>
+              {(character.spaceshipName || character.ship?.name) && (
+                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-950/70 border border-cyan-500/40 text-[10px] font-mono text-neon-cyan font-bold">
+                  <span>🚀</span>
+                  <span>
+                    {typeof character.ship?.name === 'object'
+                      ? character.ship.name.en
+                      : character.spaceshipName || character.ship?.name}
+                  </span>
+                </span>
+              )}
+            </div>
             <p className="text-xs font-mono text-neon-cyan mt-0.5">
               {t('characterStats.level', 'Level')} {character.level || 1} {t(`classes.${(character.characterClass || 'operative').toLowerCase().replace(/[\s-]+/g, '_')}`, character.characterClass || 'Operative')} · {t(`species.${(character.species || 'augmented_human').toLowerCase().replace(/[\s-]+/g, '_')}`, character.species || 'Augmented Human')}
             </p>

@@ -354,7 +354,12 @@
     "statCheck": "{{stat}} Kontrolü",
     "statSave": "{{stat}} Kurtarması",
     "skillCheck": "{{skill}} Kontrolü",
-    "rollHint": "Sol tık: {{name}} at · Sağ tık: Avantaj / Dezavantaj"
+    "rollHint": "Sol tık: {{name}} at · Sağ tık: Avantaj / Dezavantaj",
+    "uploadAvatar": "Operatif Portresi Yükle",
+    "changeAvatar": "Değiştir",
+    "avatarUploaded": "Portre Güncellendi",
+    "shipIconBadge": "Atanan Gemi",
+    "shipNotAssigned": "Gemi Atanmadı"
   },
   "abilities": {
     "strength": "Kuvvet",

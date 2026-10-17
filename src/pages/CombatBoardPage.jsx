@@ -319,11 +319,15 @@ export default function CombatBoardPage() {
         pMaxShields = s.maxShields ?? s.shields ?? pMaxShields ?? 100;
       }
 
+      const ac = (campaign.activeCharacters || []).find((x) => (x.characterId || x.uid) === id);
+      const avatarUrl = p.avatarUrl || p.imageUrl || p.photoURL || ac?.avatarUrl || ac?.imageUrl || null;
+
       return {
         ...p,
         id,
         name: pName,
         displayName: pName,
+        avatarUrl,
         hp: p.hp ?? p.maxHp ?? 100,
         maxHp: p.maxHp ?? 100,
         armorClass: pAc ?? (combatMode === 'ship' ? 16 : 14),
@@ -346,6 +350,7 @@ export default function CombatBoardPage() {
         id,
         name: eName,
         displayName: eName,
+        avatarUrl: e.avatarUrl || e.imageUrl || null,
         hp: e.hp ?? 30,
         maxHp: e.maxHp ?? e.hp ?? 30,
         armorClass: eAc,
@@ -637,14 +642,24 @@ export default function CombatBoardPage() {
                       : ''
                 }`}
               >
-                {/* Pawn Icon / Initials */}
-                <span className="text-[9px] sm:text-[10px] font-black leading-none uppercase">
-                  {combatMode === 'ship'
-                    ? tokenCombatant.isEnemy ? '🛸' : '🚀'
-                    : tokenCombatant.isEnemy
-                      ? tokenCombatant.name.slice(0, 2).toUpperCase()
-                      : tokenCombatant.name.slice(0, 2).toUpperCase()}
-                </span>
+                {/* Pawn Icon / Avatar Image */}
+                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                  {(tokenCombatant.avatarUrl || tokenCombatant.imageUrl || tokenCombatant.photoURL) ? (
+                    <img
+                      src={tokenCombatant.avatarUrl || tokenCombatant.imageUrl || tokenCombatant.photoURL}
+                      alt={tokenCombatant.name}
+                      className="w-full h-full object-cover rounded-full pointer-events-none"
+                    />
+                  ) : (
+                    <span className="text-[9px] sm:text-[10px] font-black leading-none uppercase">
+                      {combatMode === 'ship'
+                        ? tokenCombatant.isEnemy ? '🛸' : '🚀'
+                        : tokenCombatant.isEnemy
+                          ? tokenCombatant.name.slice(0, 2).toUpperCase()
+                          : tokenCombatant.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
 
                 {/* Status Overlay Icon (Dead / Unconscious) */}
                 {tokenCombatant.status === 'Dead' && (
@@ -802,8 +817,19 @@ export default function CombatBoardPage() {
                 >
                   {/* Card Title & Type */}
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5 truncate">
+                    <div className="flex items-center gap-2 truncate">
                       <span className="text-xs font-bold text-gray-400 font-mono">{idx + 1}.</span>
+                      {c.avatarUrl || c.imageUrl || c.photoURL ? (
+                        <img
+                          src={c.avatarUrl || c.imageUrl || c.photoURL}
+                          alt={c.name}
+                          className="w-5 h-5 rounded-full object-cover border border-neon-cyan/50 shrink-0"
+                        />
+                      ) : (
+                        <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] font-bold shrink-0">
+                          {c.isEnemy ? '💀' : '👤'}
+                        </span>
+                      )}
                       <span className="text-sm font-bold text-white truncate">
                         {c.displayName || c.name || (c.isEnemy ? 'Hostile Unit' : 'Operative')}
                       </span>

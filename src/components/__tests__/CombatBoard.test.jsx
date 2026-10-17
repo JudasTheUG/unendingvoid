@@ -25,6 +25,7 @@ let mockAuth = {
 };
 
 let mockCampaignData = null;
+let mockPlayerAvatar = null;
 
 // Mock useAuth
 vi.mock('../../hooks/useAuth', () => ({
@@ -46,6 +47,7 @@ vi.mock('firebase/firestore', async (importOriginal) => {
           data: () => ({
             displayName: pName,
             name: pName,
+            avatarUrl: docRef.id === 'char_ugur' ? mockPlayerAvatar : null,
             hp: 100,
             maxHp: 100,
           }),
@@ -138,6 +140,7 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
     vi.clearAllMocks();
     window.close = vi.fn();
     mockCampaignData = null;
+    mockPlayerAvatar = null;
     mockAuth = {
       user: { uid: 'dm_user_1', displayName: 'Dungeon Master' },
       profile: { role: 'dm' },
@@ -350,5 +353,20 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
 
     fireEvent.click(closeBtn);
     expect(window.close).toHaveBeenCalled();
+  });
+
+  it('renders uploaded avatar image on combat tokens when present', () => {
+    mockPlayerAvatar = 'https://example.com/ugur.jpg';
+    mockAuth = {
+      user: { uid: 'dm_user_1', displayName: 'Dungeon Master' },
+      profile: { role: 'dm' },
+    };
+
+    render(<CombatBoardPage />);
+
+    // Check that img with character name alt text renders the uploaded avatar
+    const tokenImgs = screen.getAllByAltText('Uğur GELEÇ');
+    expect(tokenImgs.length).toBeGreaterThan(0);
+    expect(tokenImgs[0]).toHaveAttribute('src', 'https://example.com/ugur.jpg');
   });
 });

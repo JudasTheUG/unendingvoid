@@ -112,6 +112,35 @@ describe('Player Sheet Multi-Language Localization Engine', () => {
     expect(handleUpdateHp).toHaveBeenCalledWith(50, 25);
   });
 
+  it('renders profile icon avatar, file upload input, and assigned ship badge', () => {
+    const handleUpdateAvatar = vi.fn();
+    render(
+      <DnDCharacterHeader
+        character={{
+          ...mockCharacter,
+          avatarUrl: 'https://example.com/salih.jpg',
+          spaceshipName: 'MCRN Tachi',
+        }}
+        onShortRest={vi.fn()}
+        onLongRest={vi.fn()}
+        onUpdateHp={vi.fn()}
+        onUpdateAvatar={handleUpdateAvatar}
+      />
+    );
+
+    // Profile image rendered
+    const avatarImg = screen.getByAltText(/Uğur GELEÇ|Salih Eyyübi|Kaelen Voss/i);
+    expect(avatarImg).toBeInTheDocument();
+    expect(avatarImg).toHaveAttribute('src', 'https://example.com/salih.jpg');
+
+    // File input present
+    const fileInput = screen.getByTestId('avatar-file-input');
+    expect(fileInput).toBeInTheDocument();
+
+    // Ship badge is present
+    expect(screen.getByText('MCRN Tachi')).toBeInTheDocument();
+  });
+
   it('renders DnDAbilitySidebar with Turkish ability labels and skills', async () => {
     await i18n.changeLanguage('tr');
     render(<DnDAbilitySidebar character={mockCharacter} />);

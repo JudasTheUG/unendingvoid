@@ -354,7 +354,12 @@
     "statCheck": "{{stat}}-Wurf",
     "statSave": "{{stat}}-Rettungswurf",
     "skillCheck": "{{skill}}-Wurf",
-    "rollHint": "Linksklick: {{name}} würfeln · Rechtsklick: Vorteil / Nachteil"
+    "rollHint": "Linksklick: {{name}} würfeln · Rechtsklick: Vorteil / Nachteil",
+    "uploadAvatar": "Operative-Porträt hochladen",
+    "changeAvatar": "Ändern",
+    "avatarUploaded": "Porträt aktualisiert",
+    "shipIconBadge": "Zugewiesenes Schiff",
+    "shipNotAssigned": "Kein Schiff zugewiesen"
   },
   "abilities": {
     "strength": "Stärke",

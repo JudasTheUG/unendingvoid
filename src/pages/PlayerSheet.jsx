@@ -22,7 +22,7 @@ import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
 import CommsAndRollsFlow from '../components/shared/CommsAndRollsFlow';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
-import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer } from '../lib/playerActions';
+import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer, updatePlayerAvatar } from '../lib/playerActions';
 import { logout } from '../lib/authService';
 
 export default function PlayerSheet() {
@@ -45,29 +45,33 @@ export default function PlayerSheet() {
   const [equippedWeapon, setEquippedWeapon] = useState(null);
   const [equippedArmor, setEquippedArmor] = useState(null);
 
-  // Local state overrides for immediate market reactivity
+  // Local state overrides for immediate reactivity
   const [localCredits, setLocalCredits] = useState(null);
   const [localInventory, setLocalInventory] = useState(null);
+  const [localAvatar, setLocalAvatar] = useState(null);
 
-  const effectivePlayer = player || profile || {
+  const basePlayer = player || profile || {};
+  const effectivePlayer = {
+    ...basePlayer,
     id: targetId,
     uid: targetId,
-    ownerId: user?.uid,
-    displayName: user?.displayName || user?.email?.split('@')[0] || 'Void Operative',
-    role: 'player',
-    characterClass: 'Cyber-Commando',
-    level: 1,
-    proficiencyBonus: 2,
-    hp: 24,
-    maxHp: 24,
-    shields: 15,
-    maxShields: 15,
-    credits: 250,
-    speed: 30,
-    armorClass: 14,
-    stats: { strength: 14, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 10, charisma: 10 },
-    traits: [],
-    inventory: [],
+    ownerId: basePlayer.ownerId || user?.uid,
+    displayName: basePlayer.displayName || basePlayer.name || user?.displayName || user?.email?.split('@')[0] || 'Void Operative',
+    role: basePlayer.role || 'player',
+    characterClass: basePlayer.characterClass || 'Cyber-Commando',
+    level: basePlayer.level || 1,
+    proficiencyBonus: basePlayer.proficiencyBonus || 2,
+    hp: basePlayer.hp ?? 24,
+    maxHp: basePlayer.maxHp ?? 24,
+    shields: basePlayer.shields ?? 15,
+    maxShields: basePlayer.maxShields ?? 15,
+    credits: basePlayer.credits ?? 250,
+    speed: basePlayer.speed ?? 30,
+    armorClass: basePlayer.armorClass ?? 14,
+    stats: basePlayer.stats || { strength: 14, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 10, charisma: 10 },
+    traits: basePlayer.traits || [],
+    inventory: basePlayer.inventory || [],
+    avatarUrl: localAvatar || basePlayer.avatarUrl || basePlayer.imageUrl || basePlayer.photoURL || null,
   };
 
   // Reset local state overrides whenever operative targetId changes
@@ -75,6 +79,7 @@ export default function PlayerSheet() {
     setLocalShip(null);
     setLocalCredits(null);
     setLocalInventory(null);
+    setLocalAvatar(null);
   }, [targetId]);
 
   // Track whether combat is active in the campaign
@@ -260,6 +265,17 @@ export default function PlayerSheet() {
     }
   };
 
+  const handleUpdateAvatar = async (avatarUrl) => {
+    const charId = effectivePlayer?.id || effectivePlayer?.uid;
+    setLocalAvatar(avatarUrl);
+    if (!charId) return;
+    try {
+      await updatePlayerAvatar(charId, avatarUrl);
+    } catch (err) {
+      console.warn('Failed to update avatar in Firestore:', err);
+    }
+  };
+
   return (
     <div className="min-h-dvh bg-void-bg text-white relative p-4 md:p-6 lg:p-8 pb-44 md:pb-52 lg:pb-56 space-y-6">
       {/* 3D Dice Layer */}
@@ -384,6 +400,7 @@ export default function PlayerSheet() {
             onShortRest={handleShortRest}
             onLongRest={handleLongRest}
             onUpdateHp={handleUpdateHp}
+            onUpdateAvatar={handleUpdateAvatar}
           />
 
           {/* Main D&D Beyond 2-Column Layout */}
