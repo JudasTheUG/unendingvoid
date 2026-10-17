@@ -81,6 +81,7 @@ export default function DMPanel() {
       try {
         await updateDoc(doc(db, 'campaigns', campaign?.id || campaignId), {
           combatActive: true,
+          combatEnded: false,
           updatedAt: serverTimestamp(),
         });
       } catch (err) {

@@ -1230,7 +1230,7 @@ export default function CombatBoardPage() {
       )}
 
       {/* COMBAT ENDED / INACTIVE NOTIFICATION MODAL (PLAYERS ONLY) */}
-      {!isDM && !campaign.combatActive && (
+      {!isDM && (!campaign.combatActive || campaign.combatEnded || !campaign.turnOrder || campaign.turnOrder.length === 0) && (
         <div
           role="dialog"
           aria-modal="true"

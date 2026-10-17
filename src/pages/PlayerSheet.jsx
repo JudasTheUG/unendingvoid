@@ -83,40 +83,99 @@ export default function PlayerSheet() {
   }, [targetId]);
 
   // Track whether combat is active in the campaign
-  const [isCombatActive, setIsCombatActive] = useState(false);
+  const [isCombatActive, setIsCombatActive] = useState(() => {
+    if (typeof localStorage === 'undefined') return false;
+    try {
+      const combatEnded = localStorage.getItem('unendingvoid:combat_ended');
+      const combatOrder = localStorage.getItem('unendingvoid:combat_order');
+      if (!combatOrder) return false;
+      if (combatEnded) {
+        const endedData = JSON.parse(combatEnded);
+        const orderData = JSON.parse(combatOrder);
+        if ((endedData.timestamp || 0) >= (orderData.timestamp || 0)) {
+          return false;
+        }
+      }
+      const order = JSON.parse(combatOrder);
+      return Boolean(order && Array.isArray(order.turnOrder) && order.turnOrder.length > 0);
+    } catch (_) {
+      return false;
+    }
+  });
 
   React.useEffect(() => {
     if (!effectivePlayer?.campaignId || !db) return;
-    const unsub = onSnapshot(doc(db, 'campaigns', effectivePlayer.campaignId), (snap) => {
-      if (snap.exists()) {
-        setIsCombatActive(Boolean(snap.data()?.combatActive));
-      } else {
-        setIsCombatActive(false);
+    const unsub = onSnapshot(
+      doc(db, 'campaigns', effectivePlayer.campaignId),
+      (snap) => {
+        if (snap.exists()) {
+          const camp = snap.data();
+          const active = Boolean(
+            camp?.combatActive &&
+            !camp?.combatEnded &&
+            Array.isArray(camp?.turnOrder) &&
+            camp.turnOrder.length > 0
+          );
+          setIsCombatActive(active);
+        } else {
+          setIsCombatActive(false);
+        }
+      },
+      (err) => {
+        console.warn('[PlayerSheet] Campaign snapshot error:', err);
       }
-    });
+    );
     return () => unsub();
   }, [effectivePlayer?.campaignId]);
 
-  // Listen for combat initialization and termination
+  // Listen for combat initialization and termination (window events + multi-tab storage)
   React.useEffect(() => {
     const handleCombatStart = (e) => {
-      setIsCombatActive(true);
       const data = e.detail;
-      if (data && data.campaignId) {
-        // Auto-open combat board in a new tab/window when combat starts
-        window.open(`/combat/${data.campaignId}`, '_blank');
+      const campId = effectivePlayer?.campaignId;
+      if (data && (!campId || data.campaignId === campId)) {
+        setIsCombatActive(true);
+        if (data.campaignId) {
+          // Auto-open combat board in a new tab/window when combat starts
+          window.open(`/combat/${data.campaignId}`, '_blank');
+        }
       }
     };
+
     const handleCombatEnd = () => {
       setIsCombatActive(false);
     };
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'unendingvoid:combat_ended') {
+        setIsCombatActive(false);
+      } else if (e.key === 'unendingvoid:combat_order') {
+        if (!e.newValue) {
+          setIsCombatActive(false);
+          return;
+        }
+        try {
+          const parsed = JSON.parse(e.newValue);
+          const campId = effectivePlayer?.campaignId;
+          if (parsed && (!campId || parsed.campaignId === campId)) {
+            setIsCombatActive(Boolean(parsed.turnOrder && parsed.turnOrder.length > 0));
+          }
+        } catch (_) {
+          setIsCombatActive(false);
+        }
+      }
+    };
+
     window.addEventListener('unendingvoid:combat_order_set', handleCombatStart);
     window.addEventListener('unendingvoid:combat_ended', handleCombatEnd);
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       window.removeEventListener('unendingvoid:combat_order_set', handleCombatStart);
       window.removeEventListener('unendingvoid:combat_ended', handleCombatEnd);
+      window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [effectivePlayer?.campaignId]);
 
   const equippedShip = allItems.find(
     (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
