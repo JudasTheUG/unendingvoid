@@ -1121,8 +1121,18 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 
       const targetStr = String(targetResult);
       const targetFace =
-        faces.find((f) => String(f.label) === targetStr) ||
-        faces.find((f) => Number(f.label) === Number(targetResult)) ||
+        faces.find((f) => {
+          if (dieType === 'd10' && (Number(targetResult) === 10 || targetResult === '10' || Number(targetResult) === 0 || targetResult === '0')) {
+            return f.label === '0';
+          }
+          return String(f.label) === targetStr;
+        }) ||
+        faces.find((f) => {
+          if (dieType === 'd10' && (Number(targetResult) === 10 || targetResult === '10' || Number(targetResult) === 0 || targetResult === '0')) {
+            return f.label === '0';
+          }
+          return Number(f.label) === Number(targetResult);
+        }) ||
         faces[0];
 
       const plateGeo = getPlaneGeometry(planeSize);
@@ -1564,9 +1574,12 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       const results = [];
       for (let i = 0; i < count; i++) {
         if (fixedResults && fixedResults[i] !== undefined) {
-          results.push(Number(fixedResults[i]));
+          const val = Number(fixedResults[i]);
+          // In standard TTRPG rules, the '0' face on a physical d10 yields a numerical value of 10
+          results.push(sides === 10 && val === 0 ? 10 : val);
         } else if (sides === 10) {
-          results.push(String(Math.floor(Math.random() * 10)));
+          // A d10 generates values from 1 to 10 (the physical '0' face represents 10)
+          results.push(Math.floor(Math.random() * 10) + 1);
         } else {
           results.push(Math.floor(Math.random() * sides) + 1);
         }
@@ -1675,7 +1688,14 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
                     <strong className="text-neon-cyan font-bold">{activeRollBanner.chosenResult}</strong>
                   </>
                 ) : (
-                  <>Die Result: [{activeRollBanner.results?.join(', ')}]</>
+                  <>
+                    Die Result: [
+                    {(activeRollBanner.notation?.match(/\d*d10(?!\d)/i)
+                      ? activeRollBanner.results?.map((v) => (v === 0 || v === '0' ? 10 : v))
+                      : activeRollBanner.results
+                    )?.join(', ')}
+                    ]
+                  </>
                 )}
                 {activeRollBanner.modifier
                   ? ` (${activeRollBanner.modifier >= 0 ? `+${activeRollBanner.modifier}` : activeRollBanner.modifier})`
@@ -1687,7 +1707,11 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
                 {activeRollBanner.isCoin ? 'Outcome' : 'Total'}
               </span>
               <span className="font-display text-2xl md:text-3xl font-black text-neon-cyan drop-shadow-[0_0_12px_rgba(0,240,255,0.8)]">
-                {activeRollBanner.total}
+                {activeRollBanner.notation?.match(/\d*d10(?!\d)/i) &&
+                (activeRollBanner.results?.includes(0) || activeRollBanner.results?.includes('0')) &&
+                (activeRollBanner.total === 0 || activeRollBanner.total === '0')
+                  ? 10 + (Number(activeRollBanner.modifier) || 0)
+                  : activeRollBanner.total}
               </span>
             </div>
             <button
@@ -1923,13 +1947,20 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
                             ? `[${r.results?.join(',')}]`
                             : r.tensResult !== undefined
                               ? `[${r.tensResult}, ${r.onesResult}]`
-                              : `[${r.results?.join(',')}]`}
+                              : `[${(r.notation?.match(/\d*d10(?!\d)/i)
+                                  ? r.results?.map((v) => (v === 0 || v === '0' ? 10 : v))
+                                  : r.results
+                                )?.join(',')}]`}
                         </span>
                       </span>
                     </div>
                     <div className="text-right">
                       <span className="font-display font-black text-base text-white block">
-                        {r.total}
+                        {r.notation?.match(/\d*d10(?!\d)/i) &&
+                        (r.results?.includes(0) || r.results?.includes('0')) &&
+                        (r.total === 0 || r.total === '0')
+                          ? 10 + (Number(r.modifier) || 0)
+                          : r.total}
                       </span>
                       <span className="text-[9px] uppercase tracking-wider text-gray-400">Total</span>
                     </div>

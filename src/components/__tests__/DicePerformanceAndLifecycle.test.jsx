@@ -117,4 +117,109 @@ describe('DicePerformanceAndLifecycle', () => {
     // Should not throw and should remain mounted
     expect(screen.getByText('d20')).toBeInTheDocument();
   });
+
+  it('evaluates d10 face 0 as numerical value 10 in results and total calculation', () => {
+    let publishedPayload = null;
+    const handleMultiplayerRoll = (e) => {
+      publishedPayload = e.detail;
+    };
+    window.addEventListener('unendingvoid:multiplayer_roll', handleMultiplayerRoll);
+
+    render(
+      <DiceOverlay
+        user={{ uid: 'test-user', displayName: 'Test User' }}
+        profile={{ role: 'player' }}
+      />
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:roll', {
+          detail: {
+            notation: '1d10',
+            modifier: 3,
+            label: 'Damage Control',
+            fixedResults: [0], // 0 face on d10
+          },
+        })
+      );
+    });
+
+    window.removeEventListener('unendingvoid:multiplayer_roll', handleMultiplayerRoll);
+
+    expect(publishedPayload).toBeDefined();
+    expect(publishedPayload.results).toEqual([10]);
+    // 10 + modifier 3 = 13
+    expect(publishedPayload.total).toBe(13);
+  });
+
+  it('evaluates multiple d10 dice summing face 0 as 10', () => {
+    let publishedPayload = null;
+    const handleMultiplayerRoll = (e) => {
+      publishedPayload = e.detail;
+    };
+    window.addEventListener('unendingvoid:multiplayer_roll', handleMultiplayerRoll);
+
+    render(
+      <DiceOverlay
+        user={{ uid: 'test-user', displayName: 'Test User' }}
+        profile={{ role: 'player' }}
+      />
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:roll', {
+          detail: {
+            notation: '2d10',
+            modifier: 0,
+            label: 'Heavy Pulse Fire',
+            fixedResults: [0, 7], // 0 face (10) + 7 = 17
+          },
+        })
+      );
+    });
+
+    window.removeEventListener('unendingvoid:multiplayer_roll', handleMultiplayerRoll);
+
+    expect(publishedPayload).toBeDefined();
+    expect(publishedPayload.results).toEqual([10, 7]);
+    expect(publishedPayload.total).toBe(17);
+  });
+
+  it('displays 10 instead of 0 in the Quantum Roll Ledger for d10 rolls', () => {
+    const historicalRoll = {
+      id: 'd10-legacy-roll',
+      playerId: 'test-user',
+      playerName: 'Operative Jax',
+      role: 'player',
+      notation: '1d10',
+      results: [0],
+      total: 0,
+      modifier: 0,
+      purpose: 'Hull Patch Check',
+      timestamp: Date.now(),
+      clientTimestamp: Date.now(),
+    };
+    localStorage.setItem('unendingvoid:rolls_history', JSON.stringify([historicalRoll]));
+
+    render(
+      <DiceOverlay
+        user={{ uid: 'test-user', displayName: 'Test User' }}
+        profile={{ role: 'player' }}
+      />
+    );
+
+    // Open ledger
+    const ledgerBtn = screen.getByTitle(/Toggle Quantum Roll Ledger/i);
+    act(() => {
+      ledgerBtn.click();
+    });
+
+    expect(screen.getByText(/Quantum Roll Ledger/i)).toBeInTheDocument();
+    // Result should display [10] instead of [0]
+    expect(screen.getByText('[10]')).toBeInTheDocument();
+    // Total should display 10 instead of 0
+    expect(screen.getByText('10')).toBeInTheDocument();
+  });
 });

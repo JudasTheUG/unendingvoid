@@ -265,7 +265,12 @@ export default function CommsAndRollsFlow({
     let counted = 0;
 
     visibleRolls.forEach((r) => {
-      const val = Number(r.total);
+      const isD10 = Boolean(r.notation?.match(/\d*d10(?!\d)/i));
+      const hasZeroFace = r.results?.includes(0) || r.results?.includes('0');
+      const val = isD10 && hasZeroFace && (r.total === 0 || r.total === '0')
+        ? 10 + (Number(r.modifier) || 0)
+        : Number(r.total);
+
       if (!isNaN(val)) {
         sum += val;
         peak = Math.max(peak, val);
@@ -650,7 +655,10 @@ export default function CommsAndRollsFlow({
                             ? `[${r.results?.join(', ')}]`
                             : r.tensResult !== undefined
                               ? `[${r.tensResult}, ${r.onesResult}]`
-                              : `[${r.results?.join(', ')}]`}
+                              : `[${(r.notation?.match(/\d*d10(?!\d)/i)
+                                  ? r.results?.map((v) => (v === 0 || v === '0' ? 10 : v))
+                                  : r.results
+                                )?.join(', ')}]`}
                         </span>
                         {r.modifier !== undefined && r.modifier !== 0 && (
                           <span className="text-slate-400 ml-1">
@@ -670,7 +678,11 @@ export default function CommsAndRollsFlow({
                                        ? 'text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.8)]'
                                        : 'text-white'}`}
                       >
-                        {r.total}
+                        {r.notation?.match(/\d*d10(?!\d)/i) &&
+                        (r.results?.includes(0) || r.results?.includes('0')) &&
+                        (r.total === 0 || r.total === '0')
+                          ? 10 + (Number(r.modifier) || 0)
+                          : r.total}
                       </span>
                       <span className="text-[9px] uppercase tracking-wider text-gray-400">Total</span>
                     </div>
