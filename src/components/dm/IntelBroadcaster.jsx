@@ -40,8 +40,9 @@ export default function IntelBroadcaster() {
     setIsBroadcasting(true);
     setStatusMessage(null);
 
+    const nowMillis = Date.now();
     const newBroadcast = {
-      id: `intel_${Date.now()}`,
+      id: `intel_${nowMillis}`,
       sender: channel,
       channel: channel,
       priority,
@@ -49,7 +50,8 @@ export default function IntelBroadcaster() {
       content: content.trim(),
       imageUrl: imageUrl.trim() || null,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC',
-      createdAt: Date.now(),
+      createdAt: nowMillis,
+      createdMillis: nowMillis,
     };
 
     try {
@@ -58,6 +60,7 @@ export default function IntelBroadcaster() {
           await addDoc(collection(db, 'broadcasts'), {
             ...newBroadcast,
             createdAt: serverTimestamp(),
+            createdMillis: nowMillis,
           });
         } catch (err) {
           console.warn('[IntelBroadcaster] Firestore write error, saving locally:', err.message);

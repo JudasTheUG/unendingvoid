@@ -4,13 +4,25 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { useDiceSync, publishRoll, getStoredRolls } from '../../hooks/useDiceSync';
 
-// Synthesize a realistic sci-fi mechanical clatter sound using Web Audio API
+// Synthesize a realistic sci-fi mechanical clatter sound using Web Audio API (singleton)
+let sharedAudioCtx = null;
+function getAudioContext() {
+  if (!sharedAudioCtx && typeof window !== 'undefined') {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      sharedAudioCtx = new AudioCtx();
+    }
+  }
+  if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+    sharedAudioCtx.resume().catch(() => {});
+  }
+  return sharedAudioCtx;
+}
+
 function playDiceClatterSound() {
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    if (ctx.state === 'suspended') ctx.resume();
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
     for (let i = 0; i < 4; i++) {
       const delay = i * 0.08 + Math.random() * 0.03;
@@ -149,17 +161,27 @@ export function getOrLoadCoinGeometry() {
   return coinLoadPromise;
 }
 
+// High-performance texture cache across all dice rolls (prevents allocating hundreds of HTML canvases)
+const textureCache = new Map();
+
 /**
- * Generate high-resolution canvas texture with engraved glowing numbers.
+ * Generate high-resolution canvas texture with engraved glowing numbers (memoized).
  * When isHighlighted=true, renders an intensely illuminated radiant halo and targeting aura for the winning face.
  */
 function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighlighted = false) {
+  const cacheKey = `${dieType}_${label}_${isBoxFace ? '1' : '0'}_${isHighlighted ? '1' : '0'}`;
+  if (textureCache.has(cacheKey)) {
+    return textureCache.get(cacheKey);
+  }
+
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   if (!ctx) {
-    return new THREE.CanvasTexture(canvas);
+    const fallback = new THREE.CanvasTexture(canvas);
+    textureCache.set(cacheKey, fallback);
+    return fallback;
   }
   const theme = DIE_THEMES[dieType] || DIE_THEMES.d20;
 
@@ -230,6 +252,7 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
+  textureCache.set(cacheKey, texture);
   return texture;
 }
 
@@ -440,6 +463,128 @@ function createD20Data() {
   return { geometry, faces };
 }
 
+// ──────────────── GEOMETRY & MATERIAL CACHES ────────────────
+let cachedD4Data = null;
+let cachedD8Data = null;
+let cachedD10Data = null;
+let cachedD10PercentileData = null;
+let cachedD12Data = null;
+let cachedD20Data = null;
+const cachedBoxGeometries = new Map();
+const cachedPlaneGeometries = new Map();
+const cachedEdgeGeometries = new Map();
+const cachedBaseMaterials = new Map();
+const cachedEdgeMaterials = new Map();
+
+function getD4Data() {
+  if (!cachedD4Data) cachedD4Data = createD4Data();
+  return cachedD4Data;
+}
+function getD8Data() {
+  if (!cachedD8Data) cachedD8Data = createD8Data();
+  return cachedD8Data;
+}
+function getD10Data() {
+  if (!cachedD10Data) cachedD10Data = createD10Data(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+  return cachedD10Data;
+}
+function getD10PercentileData() {
+  if (!cachedD10PercentileData) cachedD10PercentileData = createD10Data(['00', '10', '20', '30', '40', '50', '60', '70', '80', '90']);
+  return cachedD10PercentileData;
+}
+function getD12Data() {
+  if (!cachedD12Data) cachedD12Data = createD12Data();
+  return cachedD12Data;
+}
+function getD20Data() {
+  if (!cachedD20Data) cachedD20Data = createD20Data();
+  return cachedD20Data;
+}
+
+function getPlaneGeometry(size) {
+  if (!cachedPlaneGeometries.has(size)) {
+    cachedPlaneGeometries.set(size, new THREE.PlaneGeometry(size, size));
+  }
+  return cachedPlaneGeometries.get(size);
+}
+
+function getEdgesGeometry(key, baseGeometry, threshold = 15) {
+  if (!cachedEdgeGeometries.has(key)) {
+    cachedEdgeGeometries.set(key, new THREE.EdgesGeometry(baseGeometry, threshold));
+  }
+  return cachedEdgeGeometries.get(key);
+}
+
+function getBaseMaterial(dieType) {
+  if (!cachedBaseMaterials.has(dieType)) {
+    const theme = DIE_THEMES[dieType] || DIE_THEMES.d20;
+    cachedBaseMaterials.set(
+      dieType,
+      new THREE.MeshStandardMaterial({
+        color: theme.baseColor,
+        roughness: 0.18,
+        metalness: 0.88,
+        emissive: new THREE.Color(theme.border),
+        emissiveIntensity: 0.15,
+        side: THREE.FrontSide,
+      })
+    );
+  }
+  return cachedBaseMaterials.get(dieType);
+}
+
+function getEdgeMaterial(dieType) {
+  if (!cachedEdgeMaterials.has(dieType)) {
+    const theme = DIE_THEMES[dieType] || DIE_THEMES.d20;
+    cachedEdgeMaterials.set(
+      dieType,
+      new THREE.LineBasicMaterial({
+        color: new THREE.Color(theme.border),
+        linewidth: 2,
+        transparent: true,
+        opacity: 0.85,
+      })
+    );
+  }
+  return cachedEdgeMaterials.get(dieType);
+}
+
+let cachedCoinCylinder = null;
+function getCoinGeometry() {
+  if (cachedCoinGeometry) return cachedCoinGeometry;
+  if (!cachedCoinCylinder) {
+    cachedCoinCylinder = new THREE.CylinderGeometry(2.3, 2.3, 0.45, 36).rotateX(Math.PI / 2);
+  }
+  return cachedCoinCylinder;
+}
+
+let cachedSilverMat = null;
+function getCoinMaterial() {
+  if (!cachedSilverMat) {
+    cachedSilverMat = new THREE.MeshStandardMaterial({
+      color: 0xd2dbe4, // Antique Silver
+      roughness: 0.28,
+      metalness: 0.9,
+      emissive: new THREE.Color(0x15222e),
+      emissiveIntensity: 0.15,
+    });
+  }
+  return cachedSilverMat;
+}
+
+let cachedCoinEdgeMat = null;
+function getCoinEdgeMaterial() {
+  if (!cachedCoinEdgeMat) {
+    cachedCoinEdgeMat = new THREE.LineBasicMaterial({
+      color: new THREE.Color(0xdce7f3),
+      linewidth: 1,
+      transparent: true,
+      opacity: 0.4,
+    });
+  }
+  return cachedCoinEdgeMat;
+}
+
 export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 }) {
   const { t } = useTranslation();
   const isViewerDM = Boolean(
@@ -453,15 +598,36 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const diceGroupRef = useRef(null);
+  const rendererRef = useRef(null);
   const animFrameRef = useRef(null);
   const bannerTimerRef = useRef(null);
   const isDiceHoveredRef = useRef(false);
+  const ensureAnimationRunningRef = useRef(null);
 
   const [activeRollBanner, setActiveRollBanner] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
   const [isArenaActive, setIsArenaActive] = useState(false);
   const [recentRolls, setRecentRolls] = useState(() => getStoredRolls());
   const [showHistory, setShowHistory] = useState(false);
+
+  // Close Quantum Roll Ledger when TAC-COMMS or other full overlays open
+  useEffect(() => {
+    const handleCloseLedger = () => {
+      setShowHistory(false);
+    };
+    window.addEventListener('unendingvoid:close_ledger', handleCloseLedger);
+    return () => window.removeEventListener('unendingvoid:close_ledger', handleCloseLedger);
+  }, []);
+
+  const toggleHistory = () => {
+    setShowHistory((prev) => {
+      const next = !prev;
+      if (next) {
+        window.dispatchEvent(new CustomEvent('unendingvoid:close_tac_comms'));
+      }
+      return next;
+    });
+  };
 
   // Bottom Dice Multi-Quantity Popover
   const [quantityPopover, setQuantityPopover] = useState(null);
@@ -480,6 +646,13 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     if (isDiceHoveredRef.current) {
       document.body.style.cursor = 'default';
       isDiceHoveredRef.current = false;
+    }
+    if (rendererRef.current) {
+      if (typeof rendererRef.current.clear === 'function') {
+        rendererRef.current.clear();
+      } else if (sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
     }
   }, []);
 
@@ -504,6 +677,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.9);
@@ -521,22 +695,20 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     scene.add(diceGroup);
     diceGroupRef.current = diceGroup;
 
-    const handleResize = () => {
-      if (!container) return;
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
-
+    let isLoopRunning = false;
     let lastTime = performance.now();
+
+    const renderScene = () => {
+      renderer.render(scene, camera);
+    };
+
     const animate = (time) => {
       const dt = Math.min((time - lastTime) / 1000, 0.05);
       lastTime = time;
 
-      if (diceGroup && diceGroup.children.length > 0) {
+      const hasDice = diceGroup && diceGroup.children.length > 0;
+
+      if (hasDice) {
         diceGroup.children.forEach((die) => {
           die.userData.elapsed = (die.userData.elapsed || 0) + dt;
 
@@ -672,53 +844,83 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
             }
           }
         }
-      }
 
-      renderer.render(scene, camera);
-      animFrameRef.current = requestAnimationFrame(animate);
+        renderScene();
+        animFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        // Zero active dice: sleep the render loop and free GPU/CPU cycles
+        if (typeof renderer.clear === 'function') {
+          renderer.clear();
+        } else {
+          renderScene();
+        }
+        isLoopRunning = false;
+        animFrameRef.current = null;
+      }
     };
-    animFrameRef.current = requestAnimationFrame(animate);
+
+    const ensureAnimationRunning = () => {
+      if (!isLoopRunning) {
+        isLoopRunning = true;
+        lastTime = performance.now();
+        animFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+    ensureAnimationRunningRef.current = ensureAnimationRunning;
+
+    const handleResize = () => {
+      if (!container) return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      if (!isLoopRunning && diceGroup && diceGroup.children.length > 0) {
+        renderScene();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Reusable vector and raycaster to eliminate garbage collection pauses on mouse move
+    const reusableMouse = new THREE.Vector2();
+    const reusableRaycaster = new THREE.Raycaster();
 
     const handlePointerDown = (e) => {
-      if (!diceGroup || diceGroup.children.length === 0) return;
-      if (!cameraRef.current) return;
+      if (!diceGroup || diceGroup.children.length === 0 || !cameraRef.current) return;
 
-      const mouse = new THREE.Vector2(
+      reusableMouse.set(
         (e.clientX / window.innerWidth) * 2 - 1,
         -(e.clientY / window.innerHeight) * 2 + 1
       );
+      reusableRaycaster.setFromCamera(reusableMouse, cameraRef.current);
 
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, cameraRef.current);
-
-      const intersects = raycaster.intersectObjects(diceGroup.children, true);
+      const intersects = reusableRaycaster.intersectObjects(diceGroup.children, true);
       if (intersects.length > 0) {
         clearDice();
       }
     };
 
     const handlePointerMove = (e) => {
-      if (!diceGroup || diceGroup.children.length === 0) {
+      if (!diceGroup || diceGroup.children.length === 0 || !cameraRef.current) {
         if (isDiceHoveredRef.current) {
           document.body.style.cursor = 'default';
           isDiceHoveredRef.current = false;
         }
         return;
       }
-      if (!cameraRef.current) return;
 
-      const mouse = new THREE.Vector2(
+      reusableMouse.set(
         (e.clientX / window.innerWidth) * 2 - 1,
         -(e.clientY / window.innerHeight) * 2 + 1
       );
+      reusableRaycaster.setFromCamera(reusableMouse, cameraRef.current);
 
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, cameraRef.current);
-
-      const intersects = raycaster.intersectObjects(diceGroup.children, true);
+      const intersects = reusableRaycaster.intersectObjects(diceGroup.children, true);
       if (intersects.length > 0) {
-        document.body.style.cursor = 'pointer';
-        isDiceHoveredRef.current = true;
+        if (!isDiceHoveredRef.current) {
+          document.body.style.cursor = 'pointer';
+          isDiceHoveredRef.current = true;
+        }
       } else if (isDiceHoveredRef.current) {
         document.body.style.cursor = 'default';
         isDiceHoveredRef.current = false;
@@ -757,30 +959,15 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       const targetSide = String(targetResult).toLowerCase() === 'heads' ? 'heads' : 'tails';
       const isHeads = targetSide === 'heads';
 
-      const coinGeo = cachedCoinGeometry
-        ? cachedCoinGeometry.clone()
-        : new THREE.CylinderGeometry(2.3, 2.3, 0.45, 36).rotateX(Math.PI / 2);
-
-      // Antique silver metal material
-      const silverMat = new THREE.MeshStandardMaterial({
-        color: 0xd2dbe4, // Antique Silver
-        roughness: 0.28,
-        metalness: 0.9,
-        emissive: new THREE.Color(0x15222e),
-        emissiveIntensity: 0.15,
-      });
+      const coinGeo = getCoinGeometry();
+      const silverMat = getCoinMaterial();
 
       const coinMesh = new THREE.Mesh(coinGeo, silverMat);
       dieRoot.add(coinMesh);
 
       // Silver perimeter edge ring
-      const edgeGeo = new THREE.EdgesGeometry(coinGeo, 30);
-      const edgeMat = new THREE.LineBasicMaterial({
-        color: new THREE.Color(0xdce7f3),
-        linewidth: 1,
-        transparent: true,
-        opacity: 0.4,
-      });
+      const edgeGeo = getEdgesGeometry('coin_edges', coinGeo, 30);
+      const edgeMat = getCoinEdgeMaterial();
       dieRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
 
       // In the Lucifer Coin STL:
@@ -805,7 +992,10 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     } else if (dieType === 'd6') {
       // ──────────────── D6 CUBE (BoxGeometry) ────────────────
       const size = 2.4;
-      const geometry = new THREE.BoxGeometry(size, size, size);
+      if (!cachedBoxGeometries.has(size)) {
+        cachedBoxGeometries.set(size, new THREE.BoxGeometry(size, size, size));
+      }
+      const geometry = cachedBoxGeometries.get(size);
       const targetNum = Number(targetResult) || 1;
 
       const materials = [
@@ -820,13 +1010,8 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       const cubeMesh = new THREE.Mesh(geometry, materials);
       dieRoot.add(cubeMesh);
 
-      const edgeGeo = new THREE.EdgesGeometry(geometry, 15);
-      const edgeMat = new THREE.LineBasicMaterial({
-        color: new THREE.Color(theme.border),
-        linewidth: 2,
-        transparent: true,
-        opacity: 0.85,
-      });
+      const edgeGeo = getEdgesGeometry('d6_edges', geometry, 15);
+      const edgeMat = getEdgeMaterial('d6');
       dieRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
 
       const d6Faces = {
@@ -842,7 +1027,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       dieRoot.userData.targetQuaternion = computeSettlingQuaternion(targetFace.normal, targetFace.up, cameraLookDir);
 
       if (isHighlightEligible) {
-        const hlGeo = new THREE.PlaneGeometry(2.35, 2.35);
+        const hlGeo = getPlaneGeometry(2.35);
         const hlMat = new THREE.MeshStandardMaterial({
           map: createEngravedFaceTexture(targetNum, 'd6', true, false),
           transparent: true,
@@ -882,35 +1067,35 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 
       switch (dieType) {
         case 'd4': {
-          const data = createD4Data();
+          const data = getD4Data();
           geometry = data.geometry;
           faces = data.faces;
           planeSize = 1.35;
           break;
         }
         case 'd8': {
-          const data = createD8Data();
+          const data = getD8Data();
           geometry = data.geometry;
           faces = data.faces;
           planeSize = 1.25;
           break;
         }
         case 'd10': {
-          const data = createD10Data(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+          const data = getD10Data();
           geometry = data.geometry;
           faces = data.faces;
           planeSize = 1.15;
           break;
         }
         case 'd10percentile': {
-          const data = createD10Data(['00', '10', '20', '30', '40', '50', '60', '70', '80', '90']);
+          const data = getD10PercentileData();
           geometry = data.geometry;
           faces = data.faces;
           planeSize = 1.15;
           break;
         }
         case 'd12': {
-          const data = createD12Data();
+          const data = getD12Data();
           geometry = data.geometry;
           faces = data.faces;
           planeSize = 1.25;
@@ -918,7 +1103,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
         }
         case 'd20':
         default: {
-          const data = createD20Data();
+          const data = getD20Data();
           geometry = data.geometry;
           faces = data.faces;
           planeSize = 1.05;
@@ -926,24 +1111,12 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
         }
       }
 
-      const baseMaterial = new THREE.MeshStandardMaterial({
-        color: theme.baseColor,
-        roughness: 0.18,
-        metalness: 0.88,
-        emissive: new THREE.Color(theme.border),
-        emissiveIntensity: 0.15,
-        side: THREE.FrontSide,
-      });
+      const baseMaterial = getBaseMaterial(dieType);
       const bodyMesh = new THREE.Mesh(geometry, baseMaterial);
       dieRoot.add(bodyMesh);
 
-      const edgeGeo = new THREE.EdgesGeometry(geometry, 15);
-      const edgeMat = new THREE.LineBasicMaterial({
-        color: new THREE.Color(theme.border),
-        linewidth: 2,
-        transparent: true,
-        opacity: 0.85,
-      });
+      const edgeGeo = getEdgesGeometry(dieType, geometry, 15);
+      const edgeMat = getEdgeMaterial(dieType);
       dieRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
 
       const targetStr = String(targetResult);
@@ -952,8 +1125,9 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
         faces.find((f) => Number(f.label) === Number(targetResult)) ||
         faces[0];
 
+      const plateGeo = getPlaneGeometry(planeSize);
+
       faces.forEach((f) => {
-        const plateGeo = new THREE.PlaneGeometry(planeSize, planeSize);
         const plateMat = new THREE.MeshStandardMaterial({
           map: createEngravedFaceTexture(f.label, dieType, false, false),
           transparent: true,
@@ -1015,6 +1189,10 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 
     while (diceGroup.children.length > 0) {
       diceGroup.remove(diceGroup.children[0]);
+    }
+
+    if (ensureAnimationRunningRef.current) {
+      ensureAnimationRunningRef.current();
     }
 
     playDiceClatterSound();
@@ -1129,7 +1307,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
   }, [clearDice]);
 
   // Listen for real-time multiplayer rolls and roll ledger history
-  useDiceSync(
+  const handleIncomingRoll = useCallback(
     (incomingRoll) => {
       const isFromSelf =
         incomingRoll.playerId === (user?.uid || 'guest') &&
@@ -1153,23 +1331,27 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
         setRecentRolls((prev) => [incomingRoll, ...prev.filter((r) => r.id !== incomingRoll.id)].slice(0, 30));
       }
     },
-    (historicalRolls) => {
-      if (Array.isArray(historicalRolls) && historicalRolls.length > 0) {
-        setRecentRolls((prev) => {
-          const map = new Map();
-          historicalRolls.forEach((r) => {
-            const key = r.id || `${r.playerId}_${r.clientTimestamp || r.timestamp}`;
-            map.set(key, r);
-          });
-          prev.forEach((r) => {
-            const key = r.id || `${r.playerId}_${r.clientTimestamp || r.timestamp}`;
-            if (!map.has(key)) map.set(key, r);
-          });
-          return Array.from(map.values()).slice(0, 30);
-        });
-      }
-    }
+    [user?.uid, isViewerDM, trigger3DVisual]
   );
+
+  const handleHistoricalRolls = useCallback((historicalRolls) => {
+    if (Array.isArray(historicalRolls) && historicalRolls.length > 0) {
+      setRecentRolls((prev) => {
+        const map = new Map();
+        historicalRolls.forEach((r) => {
+          const key = r.id || `${r.playerId}_${r.clientTimestamp || r.timestamp}`;
+          map.set(key, r);
+        });
+        prev.forEach((r) => {
+          const key = r.id || `${r.playerId}_${r.clientTimestamp || r.timestamp}`;
+          if (!map.has(key)) map.set(key, r);
+        });
+        return Array.from(map.values()).slice(0, 30);
+      });
+    }
+  }, []);
+
+  useDiceSync(handleIncomingRoll, handleHistoricalRolls);
 
   // Cross-tab & local multiplayer sync listener
   useEffect(() => {
@@ -1519,24 +1701,26 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
         </div>
       )}
 
-      {/* Floating Quick Dice Bar */}
-      <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2">
+      {/* Floating Quick Dice Bar - Mobile-optimized & responsive */}
+      <div className="fixed bottom-2 right-2 sm:right-5 sm:bottom-5 z-50 flex items-center justify-end gap-1.5 sm:gap-2 max-w-[calc(100vw-1rem)] pointer-events-none">
         <button
-          onClick={() => setShowHistory(!showHistory)}
-          className={`p-2.5 rounded-xl bg-[#070b14] text-gray-300 hover:text-neon-cyan border-2 border-slate-700 hover:border-neon-cyan transition-all text-xs font-mono shadow-xl ${showHistory ? 'border-neon-cyan text-neon-cyan' : ''}`}
+          onClick={toggleHistory}
+          className={`pointer-events-auto shrink-0 p-2 sm:p-2.5 rounded-xl bg-[#070b14] text-gray-300 hover:text-neon-cyan border-2 border-slate-700 hover:border-neon-cyan transition-all text-xs font-mono shadow-xl ${showHistory ? 'border-neon-cyan text-neon-cyan' : ''}`}
           title="Toggle Quantum Roll Ledger"
         >
           📜
         </button>
 
         {/* Die Selector Buttons + Lucifer's Silver Coin */}
-        <div className="bg-[#070b14] px-3 py-1.5 flex items-center gap-1.5 border-2 border-slate-700 rounded-xl shadow-xl">
+        <div className="pointer-events-auto bg-[#070b14] px-1.5 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 border-2 border-slate-700 rounded-xl shadow-xl overflow-x-auto no-scrollbar max-w-[calc(100vw-4.25rem)] sm:max-w-none">
           {isViewerDM && (
             <span
-              className="px-2 py-1 rounded text-[10px] font-mono font-bold uppercase bg-purple-900/40 text-purple-300 border border-purple-500/50 flex items-center gap-1 shadow-sm shrink-0"
+              className="px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[9px] sm:text-[10px] font-mono font-bold uppercase bg-purple-900/40 text-purple-300 border border-purple-500/50 flex items-center gap-1 shadow-sm shrink-0 whitespace-nowrap"
               title="DM Screen Active: Your rolls are hidden from player terminals"
             >
-              🛡️ {t('dice.dmPrivateMode') || 'DM Screen (Secret)'}
+              <span>🛡️</span>
+              <span className="hidden sm:inline">{t('dice.dmPrivateMode') || 'DM Screen (Secret)'}</span>
+              <span className="sm:hidden text-[9px] font-bold">DM</span>
             </span>
           )}
 
@@ -1555,7 +1739,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
               }}
               disabled={isRolling}
               title={`Left-click: Roll 1${d} · Right-click: Choose quantity`}
-              className={`px-2 py-1 rounded text-xs font-mono font-bold uppercase transition-all
+              className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[11px] sm:text-xs font-mono font-bold uppercase transition-all shrink-0
                          ${d === 'd20'
                            ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 shadow-[0_0_8px_rgba(0,240,255,0.3)]'
                            : d === 'd100'
@@ -1580,10 +1764,11 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
             }}
             disabled={isRolling}
             title="Left-click: Flip Lucifer's Silver Coin · Right-click: Flip multiple"
-            className="px-2.5 py-1 rounded text-xs font-mono font-bold uppercase transition-all bg-slate-300/20 text-slate-200 border border-slate-300/50 shadow-[0_0_10px_rgba(203,213,225,0.35)] hover:scale-105 active:scale-95 flex items-center gap-1"
+            className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded text-[11px] sm:text-xs font-mono font-bold uppercase transition-all bg-slate-300/20 text-slate-200 border border-slate-300/50 shadow-[0_0_10px_rgba(203,213,225,0.35)] hover:scale-105 active:scale-95 flex items-center gap-1 shrink-0"
           >
             <span>🪙</span>
-            <span>Silver Coin</span>
+            <span className="hidden sm:inline">Silver Coin</span>
+            <span className="sm:hidden">Coin</span>
           </button>
         </div>
       </div>
@@ -1670,7 +1855,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 
       {/* Roll History Drawer - 100% Opaque Military Telemetry Ledger */}
       {showHistory && (
-        <div className="fixed bottom-24 right-5 w-84 max-h-[26rem] bg-[#070b14] p-4 z-50 shadow-[0_0_35px_rgba(0,0,0,0.95)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
+        <div className="fixed bottom-14 sm:bottom-24 left-2 right-2 sm:left-auto sm:right-[12.5rem] w-auto sm:w-84 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2.5rem)] max-h-[75vh] sm:max-h-[26rem] bg-[#070b14] p-3 sm:p-4 z-50 shadow-[0_0_35px_rgba(0,0,0,0.95)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
           <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span>

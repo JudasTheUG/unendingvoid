@@ -35,9 +35,11 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // ── Tactical Broadcasts / Intel Comms ──
+    // ── Tactical Broadcasts / Intel Comms (Permanent Historical Ledger) ──
     match /broadcasts/{broadcastId} {
-      allow read, write: if true;
+      allow read, create: if true;
+      allow update: if isAuth();
+      allow delete: if false;
     }
 
     // ── Sessions ──

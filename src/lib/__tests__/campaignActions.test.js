@@ -87,15 +87,17 @@ describe('campaignActions', () => {
   });
 
   it('requestInitiative sets initiativeRequested flag and resets rolls', async () => {
-    const res = await requestInitiative('camp-123');
+    const res = await requestInitiative('camp-123', ['player-kael', 'player-lyra']);
 
     expect(res.initiativeRequested).toBe(true);
     expect(res.combatActive).toBe(false);
+    expect(res.targetPlayerIds).toEqual(['player-kael', 'player-lyra']);
     expect(updateDoc).toHaveBeenCalledWith(
       { id: 'mock-doc-ref' },
       expect.objectContaining({
         initiativeRequested: true,
         initiativeRolls: {},
+        targetPlayerIds: ['player-kael', 'player-lyra'],
       })
     );
   });

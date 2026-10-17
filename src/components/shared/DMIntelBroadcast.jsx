@@ -43,7 +43,16 @@ export function getStoredBroadcasts() {
 
 export function saveLocalBroadcast(broadcast) {
   const current = getStoredBroadcasts();
-  const updated = [broadcast, ...current].slice(0, 30);
+  const map = new Map();
+  if (broadcast && broadcast.id) {
+    map.set(broadcast.id, broadcast);
+  }
+  current.forEach((b) => {
+    if (b && b.id && !map.has(b.id)) {
+      map.set(b.id, b);
+    }
+  });
+  const updated = Array.from(map.values()).slice(0, 500);
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('unendingvoid:new_broadcast', { detail: broadcast }));
@@ -137,18 +146,50 @@ export default function DMIntelBroadcast({
   const [savedIds, setSavedIds] = useState(new Set());
   const [hasNewUnread, setHasNewUnread] = useState(false);
 
-  // Sync broadcasts from Firestore (with local fallback)
+  // Sync broadcasts from Firestore (with permanent local fallback & caching)
   useEffect(() => {
     let unsubscribe = null;
     try {
       if (db) {
-        const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(25));
+        const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(500));
         unsubscribe = onSnapshot(
           q,
           (snapshot) => {
             if (!snapshot.empty) {
-              const live = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-              setBroadcasts(live);
+              const live = snapshot.docs.map((d) => {
+                const data = d.data();
+                return {
+                  id: d.id,
+                  ...data,
+                  createdMillis:
+                    data.createdAt?.toMillis
+                      ? data.createdAt.toMillis()
+                      : data.createdAt?.seconds
+                        ? data.createdAt.seconds * 1000
+                        : Number(data.createdMillis || data.createdAt) || Date.now(),
+                };
+              });
+
+              setBroadcasts((prev) => {
+                const map = new Map();
+                // Add existing local broadcasts
+                prev.forEach((b) => {
+                  if (b && b.id) map.set(b.id, b);
+                });
+                // Add live broadcasts from Firestore (authoritative)
+                live.forEach((b) => {
+                  if (b && b.id) map.set(b.id, b);
+                });
+                const merged = Array.from(map.values()).sort((a, b) => {
+                  const tA = a.createdMillis || (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : Number(a.createdAt) || 0);
+                  const tB = b.createdMillis || (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : Number(b.createdAt) || 0);
+                  return tB - tA;
+                });
+                try {
+                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged.slice(0, 500)));
+                } catch (_) {}
+                return merged;
+              });
             }
           },
           (err) => {
@@ -161,7 +202,13 @@ export default function DMIntelBroadcast({
     }
 
     const handleCustomBroadcast = (e) => {
-      setBroadcasts((prev) => [e.detail, ...prev.filter((b) => b.id !== e.detail.id)]);
+      setBroadcasts((prev) => {
+        const updated = [e.detail, ...prev.filter((b) => b.id !== e.detail.id)];
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated.slice(0, 500)));
+        } catch (_) {}
+        return updated;
+      });
       if (!isOpen) setHasNewUnread(true);
     };
 
@@ -173,8 +220,23 @@ export default function DMIntelBroadcast({
     };
   }, [isOpen]);
 
+  // Listen for close_tac_comms (e.g. when Quantum Roll Ledger opens)
+  useEffect(() => {
+    const handleCloseComms = () => {
+      setIsOpen(false);
+    };
+    window.addEventListener('unendingvoid:close_tac_comms', handleCloseComms);
+    return () => window.removeEventListener('unendingvoid:close_tac_comms', handleCloseComms);
+  }, []);
+
   const handleOpen = () => {
-    setIsOpen(!isOpen);
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        window.dispatchEvent(new CustomEvent('unendingvoid:close_ledger'));
+      }
+      return next;
+    });
     setHasNewUnread(false);
   };
 
@@ -198,10 +260,10 @@ export default function DMIntelBroadcast({
   return (
     <>
       {/* Floating Tactical Comms Toggle Button - Far Right Above Dice Bar with comfortable margin */}
-      <div className="fixed bottom-24 right-5 z-40">
+      <div className="fixed bottom-14 right-2 sm:bottom-24 sm:right-5 z-40">
         <button
           onClick={handleOpen}
-          className={`px-3.5 py-2.5 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-[0_0_25px_rgba(0,0,0,0.9)]
+          className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 shadow-[0_0_25px_rgba(0,0,0,0.9)]
                      ${isOpen
                        ? 'border-amber-500 text-amber-400 bg-amber-500/15 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
                        : hasNewUnread
@@ -209,12 +271,12 @@ export default function DMIntelBroadcast({
                          : 'border-slate-700 text-gray-300 hover:text-white hover:border-slate-500 hover:bg-[#0e1628]'}`}
           title="Open DM Tactical Comms Feed"
         >
-          <span className="text-base">📡</span>
+          <span className="text-sm sm:text-base">📡</span>
           <span>{t('intel.feedTitle') || 'TAC-COMMS'}</span>
           {hasNewUnread && (
             <span className="w-2 h-2 rounded-full bg-neon-cyan animate-ping"></span>
           )}
-          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-gray-200 border border-slate-700 font-bold">
+          <span className="px-1.5 sm:px-2 py-0.5 rounded bg-slate-800 text-[9px] sm:text-[10px] text-gray-200 border border-slate-700 font-bold">
             {broadcasts.length}
           </span>
         </button>
@@ -222,7 +284,7 @@ export default function DMIntelBroadcast({
 
       {/* 100% Opaque Tactical Intel Feed Panel - Expanded Size with clean margin above dice bar */}
       {isOpen && (
-        <div className="fixed bottom-24 right-5 w-96 sm:w-[32rem] max-w-[calc(100vw-2.5rem)] max-h-[36rem] bg-[#070b14] p-4.5 z-50 shadow-[0_0_50px_rgba(0,0,0,0.98)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
+        <div className="fixed bottom-14 right-2 left-2 sm:left-auto sm:bottom-24 sm:right-5 w-auto sm:w-[32rem] max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2.5rem)] max-h-[75vh] sm:max-h-[36rem] bg-[#070b14] p-3 sm:p-4.5 z-50 shadow-[0_0_50px_rgba(0,0,0,0.98)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
           {/* Header Bar */}
           <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
             <div className="flex items-center gap-2">

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
 import { submitInitiativeRoll } from '../../lib/campaignActions';
 import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
@@ -17,6 +19,7 @@ export default function InitiativeRollModal({
   const [isRolling, setIsRolling] = useState(false);
   const [rollResult, setRollResult] = useState(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const lastPromptTimestamp = useRef(0);
 
   const initData = calculateInitiativeBonus(character, traits, items);
   const totalBonus = initData.totalBonus;
@@ -25,20 +28,88 @@ export default function InitiativeRollModal({
   const bonusSources = initData.bonusSources;
   const charId = character?.id || character?.uid || 'operative';
   const charName = character?.displayName || character?.name || 'Operative';
+  const candidateIds = [character?.id, character?.uid, character?.characterId].filter(Boolean);
+  const effectiveCampaignId = campaignId || character?.campaignId || character?.initiativeCampaignId;
 
-  // Listen for DM's "Ask Initiative" broadcast
+  const isCandidateTarget = (targetIds) => {
+    if (!targetIds || targetIds.length === 0) return true;
+    return candidateIds.some((id) => targetIds.includes(id));
+  };
+
+  const triggerPrompt = (timestamp = Date.now()) => {
+    if (timestamp && timestamp <= lastPromptTimestamp.current) return;
+    lastPromptTimestamp.current = timestamp || Date.now();
+    setRollResult(null);
+    setHasSubmitted(false);
+    setIsRolling(false);
+    setIsOpen(true);
+  };
+
+  // 1. Listen for character doc initiativeRequested flag (real-time from Firestore)
+  useEffect(() => {
+    if (character?.initiativeRequested) {
+      const reqAt = character.initiativeRequestedAt || Date.now();
+      if (reqAt > lastPromptTimestamp.current || lastPromptTimestamp.current === 0) {
+        triggerPrompt(reqAt);
+      }
+    } else if (character?.initiativeRequested === false) {
+      lastPromptTimestamp.current = 0;
+    }
+  }, [character?.initiativeRequested, character?.initiativeRequestedAt]);
+
+  // 2. Listen to Campaign doc in Firestore for real-time multiplayer initiative requests
+  useEffect(() => {
+    if (!effectiveCampaignId || !db) return;
+
+    try {
+      const unsub = onSnapshot(
+        doc(db, 'campaigns', effectiveCampaignId),
+        (snap) => {
+          if (!snap.exists()) return;
+          const camp = snap.data();
+          if (camp.initiativeRequested) {
+            const reqAt = camp.initiativeRequestedAt || 0;
+            const targetIds = camp.targetPlayerIds || [];
+            const isTarget = isCandidateTarget(targetIds);
+            const alreadyRolled = candidateIds.some((id) => Boolean(camp.initiativeRolls?.[id]));
+
+            if (isTarget && !alreadyRolled && (reqAt > lastPromptTimestamp.current || lastPromptTimestamp.current === 0)) {
+              triggerPrompt(reqAt);
+            }
+          } else if (camp.combatActive || camp.initiativeRequested === false) {
+            lastPromptTimestamp.current = 0;
+            setIsOpen(false);
+          }
+        },
+        (err) => console.warn('[InitiativeRollModal] Campaign snapshot notice:', err.message)
+      );
+
+      return () => unsub();
+    } catch (e) {
+      console.warn('[InitiativeRollModal] Listener setup error:', e);
+    }
+  }, [effectiveCampaignId, charId]);
+
+  // 3. Listen for DM's "Ask Initiative" broadcast locally / storage
   useEffect(() => {
     const handleAskInitiative = (e) => {
-      // Reset and open modal
-      setRollResult(null);
-      setHasSubmitted(false);
-      setIsRolling(false);
-      setIsOpen(true);
+      const targetIds = e.detail?.targetPlayerIds;
+      if (isCandidateTarget(targetIds)) {
+        triggerPrompt(e.detail?.timestamp || Date.now());
+      }
     };
 
     const handleStorageChange = (e) => {
       if (e.key === 'unendingvoid:initiative_request' && e.newValue) {
-        handleAskInitiative();
+        try {
+          const parsed = JSON.parse(e.newValue);
+          const targetIds = parsed.targetPlayerIds;
+          if (isCandidateTarget(targetIds)) {
+            triggerPrompt(parsed.timestamp || Date.now());
+          }
+        } catch (_) {
+          triggerPrompt();
+        }
       }
     };
 
@@ -49,7 +120,7 @@ export default function InitiativeRollModal({
       window.removeEventListener('unendingvoid:ask_initiative', handleAskInitiative);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [charId]);
 
   useEffect(() => {
     if (forceOpen) setIsOpen(true);
@@ -80,7 +151,7 @@ export default function InitiativeRollModal({
 
     // Transmit the exact same result to DM
     try {
-      await submitInitiativeRoll(campaignId, {
+      await submitInitiativeRoll(effectiveCampaignId, {
         playerId: charId,
         playerName: charName,
         roll: d20,

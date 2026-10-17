@@ -14,9 +14,14 @@ export default function DnDCharacterHeader({
   onUpdateHp,
 }) {
   const { t } = useTranslation();
-  const [healAmount, setHealAmount] = useState('');
-  const [damageAmount, setDamageAmount] = useState('');
+  const [customAmount, setCustomAmount] = useState('10');
+  const [justSaved, setJustSaved] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
+
+  const flashSaved = () => {
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2000);
+  };
 
   const stats = character.stats || {};
   const dexMod = Math.floor(((stats.dexterity || 10) - 10) / 2);
@@ -26,9 +31,10 @@ export default function DnDCharacterHeader({
   const profBonus = character.proficiencyBonus || Math.floor(((character.level || 1) - 1) / 4) + 2;
   const passivePerception = 10 + wisMod + (character.skillProficiencies?.includes('perception') ? profBonus : 0);
 
-  const handleApplyDamage = () => {
-    const dmg = Number(damageAmount);
-    if (!dmg || isNaN(dmg)) return;
+  const handleApplyDamage = (amount) => {
+    const val = amount !== undefined ? amount : customAmount;
+    const dmg = Number(val);
+    if (!dmg || isNaN(dmg) || dmg <= 0) return;
 
     // First absorb with shields, then HP
     let remaining = dmg;
@@ -49,17 +55,40 @@ export default function DnDCharacterHeader({
       newHp = Math.max(0, newHp - remaining);
     }
 
-    onUpdateHp(newHp, newShields);
-    setDamageAmount('');
+    if (onUpdateHp) onUpdateHp(newHp, newShields);
+    flashSaved();
   };
 
-  const handleApplyHeal = () => {
-    const heal = Number(healAmount);
-    if (!heal || isNaN(heal)) return;
+  const handleApplyHeal = (amount) => {
+    const val = amount !== undefined ? amount : customAmount;
+    const heal = Number(val);
+    if (!heal || isNaN(heal) || heal <= 0) return;
 
     const newHp = Math.min(character.maxHp || 100, (character.hp || 0) + heal);
-    onUpdateHp(newHp, character.shields);
-    setHealAmount('');
+    if (onUpdateHp) onUpdateHp(newHp, character.shields || 0);
+    flashSaved();
+  };
+
+  const handleQuickMedStim = () => {
+    const newHp = Math.min(character.maxHp || 100, (character.hp || 0) + 20);
+    if (onUpdateHp) onUpdateHp(newHp, character.shields || 0);
+    flashSaved();
+  };
+
+  const handleShieldSurge = () => {
+    const newShields = Math.min(character.maxShields || 50, (character.shields || 0) + 15);
+    if (onUpdateHp) onUpdateHp(character.hp || 0, newShields);
+    flashSaved();
+  };
+
+  const handleShortRestClick = () => {
+    if (onShortRest) onShortRest();
+    flashSaved();
+  };
+
+  const handleLongRestClick = () => {
+    if (onLongRest) onLongRest();
+    flashSaved();
   };
 
   const handleRollInitiative = (rollMode = 'normal') => {
@@ -141,70 +170,108 @@ export default function DnDCharacterHeader({
         </div>
       </div>
 
-      {/* Vitals Cluster & Resting Tools */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
-        <div className="lg:col-span-2 space-y-3">
-          <VitalBar
-            label={t('vitals.hullHealth', 'Hull & Health (HP)')}
-            current={character.hp || 0}
-            max={character.maxHp || 100}
-            type="hp"
-          />
-          <VitalBar
-            label={t('vitals.defensiveShields', 'Defensive Energy Shields')}
-            current={character.shields || 0}
-            max={character.maxShields || 50}
-            type="shield"
-          />
+      {/* Vitals Cluster & Operative Damage Control Console */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-1 items-start">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-1">
+            <VitalBar
+              label={t('vitals.hullHealth', 'Hull & Health (HP)')}
+              current={character.hp || 0}
+              max={character.maxHp || 100}
+              type="hp"
+            />
+          </div>
+          <div className="space-y-1">
+            <VitalBar
+              label={t('vitals.defensiveShields', 'Defensive Energy Shields')}
+              current={character.shields || 0}
+              max={character.maxShields || 50}
+              type="shield"
+            />
+          </div>
         </div>
 
-        {/* Quick Damage / Heal / Rest Console */}
-        <div className="bg-black/40 p-3 rounded-lg border border-white/10 space-y-2 text-xs font-mono">
-          <div className="flex items-center gap-1.5">
-            <input
-              type="number"
-              placeholder={t('vitals.damage', 'Damage')}
-              value={damageAmount}
-              onChange={(e) => setDamageAmount(e.target.value)}
-              className="w-20 bg-void-bg border border-white/10 rounded px-2 py-1 text-neon-red text-center focus:outline-none"
-            />
-            <button
-              onClick={handleApplyDamage}
-              className="px-2.5 py-1 bg-neon-red/20 text-neon-red border border-neon-red/40 hover:bg-neon-red/30 rounded font-bold uppercase text-[10px]"
-            >
-              {t('vitals.damage', 'Damage')}
-            </button>
+        {/* Operative Damage Control Console (Matches Ship Engineering Damage Control) */}
+        <div className="bg-[#070b14] p-4 rounded-lg border border-slate-700 space-y-3 text-xs font-mono">
+          <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 font-bold">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+              {t('vitals.damageControl', 'Operative Damage Control')}
+            </span>
+            {justSaved && (
+              <span className="text-[10px] font-mono text-neon-green animate-pulse">
+                ✓ {t('vitals.vitalsSynced', 'Vitals Saved')}
+              </span>
+            )}
+          </div>
 
-            <input
-              type="number"
-              placeholder={t('vitals.heal', 'Heal')}
-              value={healAmount}
-              onChange={(e) => setHealAmount(e.target.value)}
-              className="w-20 bg-void-bg border border-white/10 rounded px-2 py-1 text-neon-green text-center focus:outline-none ml-2"
-            />
+          {/* Quick Med-Stim & Shield Surge Buttons */}
+          <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={handleApplyHeal}
-              className="px-2.5 py-1 bg-neon-green/20 text-neon-green border border-neon-green/40 hover:bg-neon-green/30 rounded font-bold uppercase text-[10px]"
+              type="button"
+              onClick={handleQuickMedStim}
+              className="py-2 px-2 rounded bg-emerald-950/60 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/60 font-bold text-[11px] uppercase transition-all shadow-[0_0_10px_rgba(16,185,129,0.2)]"
             >
-              {t('vitals.heal', 'Heal')}
+              💉 {t('vitals.medStim', 'Med-Stim (+20)')}
+            </button>
+            <button
+              type="button"
+              onClick={handleShieldSurge}
+              className="py-2 px-2 rounded bg-cyan-950/60 hover:bg-cyan-900/70 text-cyan-300 border border-cyan-500/60 font-bold text-[11px] uppercase transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]"
+            >
+              ⚡ {t('vitals.shieldSurge', 'Shield Surge (+15)')}
             </button>
           </div>
 
-          <div className="flex items-center justify-between pt-1 border-t border-white/5">
-            <span className="text-[10px] text-gray-500">{t('vitals.hitDice', 'Hit Dice')}: {character.level || 1}d10</span>
+          {/* Combat Damage & Heal Simulator */}
+          <div className="pt-2 border-t border-slate-800 space-y-2">
             <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                max="200"
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                placeholder="10"
+                className="w-16 px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-center font-mono text-xs text-white focus:outline-none focus:border-neon-cyan"
+                title={t('vitals.amount', 'Amount')}
+              />
               <button
-                onClick={onShortRest}
-                className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 text-gray-300 text-[10px] uppercase font-bold"
+                type="button"
+                onClick={() => handleApplyDamage()}
+                className="flex-1 py-1.5 px-2 rounded bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-500/60 font-bold text-[11px] uppercase transition-all"
               >
-                {t('vitals.shortRest', 'Short Rest')}
+                💥 {t('vitals.damage', 'Damage')}
               </button>
               <button
-                onClick={onLongRest}
-                className="px-2 py-0.5 rounded bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/40 text-[10px] uppercase font-bold"
+                type="button"
+                onClick={() => handleApplyHeal()}
+                className="py-1.5 px-2 rounded bg-emerald-950/50 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 font-bold text-[11px] uppercase transition-all"
               >
-                {t('vitals.longRest', 'Long Rest')}
+                🩹 {t('vitals.heal', 'Heal')}
               </button>
+            </div>
+
+            {/* Rest & Recovery Buttons */}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+              <span className="text-[10px] text-slate-400 font-mono">
+                {t('vitals.hitDice', 'Hit Dice')}: <span className="text-neon-cyan font-bold">{character.level || 1}d10</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleShortRestClick}
+                  className="py-1 px-2.5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-600/60 font-bold text-[10px] uppercase tracking-wider transition-all"
+                >
+                  ☕ {t('vitals.shortRest', 'Short Rest')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLongRestClick}
+                  className="py-1 px-2.5 rounded bg-indigo-950/60 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/50 font-bold text-[10px] uppercase tracking-wider transition-all shadow-[0_0_10px_rgba(99,102,241,0.2)]"
+                >
+                  🏥 {t('vitals.longRest', 'Long Rest')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -64,7 +64,8 @@
     "overrideStats": "Override Stats",
     "startCombat": "Start Combat",
     "endCombat": "End Combat",
-    "nextTurn": "Next Turn"
+    "nextTurn": "Next Turn",
+    "commandConsole": "Master Command Console"
   },
   "combat": {
     "alertHeader": "TACTICAL ALERT // ENGAGEMENT IMMINENT",
@@ -80,7 +81,14 @@
     "startCombat": "Start Combat",
     "endCombat": "End Combat",
     "rolling": "ROLLING...",
-    "allPlayersReady": "All Players Ready"
+    "allPlayersReady": "All Players Ready",
+    "autoRollAllOperatives": "Auto-Roll Pending Operatives",
+    "autoRollHostiles": "Auto-Roll Hostile Initiatives",
+    "rollForPlayer": "Roll for Player",
+    "operativeInitiativeStatus": "Operative Initiative Status",
+    "hostileCombatants": "Hostile Combatants",
+    "hostileAutoRollHint": "Auto-roll or manual initiative",
+    "finalizeTurnOrder": "Finalize Turn Order & Engage Combat"
   },
   "dice": {
     "roll": "Roll",
@@ -336,7 +344,12 @@
     "heal": "Heal",
     "hitDice": "Hit Dice",
     "shortRest": "Short Rest",
-    "longRest": "Long Rest"
+    "longRest": "Long Rest",
+    "damageControl": "Operative Damage Control",
+    "vitalsSynced": "Vitals Saved",
+    "medStim": "Med-Stim (+20)",
+    "shieldSurge": "Shield Surge (+15)",
+    "amount": "Amount"
   },
   "sheetTabs": {
     "actions": "Actions & Attacks",
@@ -482,5 +495,30 @@
     "cyberneticsTraits": "Cybernetics & Genetic Traits",
     "active": "Active",
     "noTraits": "No genetic augmentations or psychological traits recorded."
+  },
+  "flow": {
+    "tabTitle": "Live Flow",
+    "headerTitle": "Tactical Flow // Comms & Quantum Rolls",
+    "headerSubtitle": "Real-time dual stream telemetry of fleet transmissions and quantum dice outcomes",
+    "commsColumnTitle": "TAC-COMMS Stream",
+    "rollsColumnTitle": "Quantum Roll Ledger Stream",
+    "allChannels": "All Channels",
+    "priorityEmergency": "Emergency",
+    "priorityHigh": "High Priority",
+    "priorityRoutine": "Routine",
+    "noBroadcasts": "No tactical comms recorded yet.",
+    "noRolls": "No dice rolls logged in current session.",
+    "totalRolls": "Total Rolls",
+    "averageRoll": "Average Result",
+    "highestRoll": "Peak Roll",
+    "criticalCount": "Crit (Nat 20/100)",
+    "filterAll": "All Rolls",
+    "filterMine": "My Rolls",
+    "quickRoll": "Quick Roll",
+    "saveToNotes": "Save to Field Notes",
+    "saved": "Saved",
+    "broadcastNow": "Broadcast Comms",
+    "dmScreenBadge": "DM Secret",
+    "dualViewActive": "Live Dual Telemetry Stream Active"
   }
 }

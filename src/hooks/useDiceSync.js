@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -23,12 +23,20 @@ export function getStoredRolls() {
  * @param {function} onHistoryLoaded - Callback when initial historical rolls are loaded
  */
 export function useDiceSync(onNewRoll, onHistoryLoaded) {
+  const onNewRollRef = useRef(onNewRoll);
+  const onHistoryLoadedRef = useRef(onHistoryLoaded);
+
+  useEffect(() => {
+    onNewRollRef.current = onNewRoll;
+    onHistoryLoadedRef.current = onHistoryLoaded;
+  });
+
   useEffect(() => {
     // 1. Initial cached history load
     try {
       const cached = getStoredRolls();
-      if (cached.length > 0 && onHistoryLoaded) {
-        onHistoryLoaded(cached);
+      if (cached.length > 0 && onHistoryLoadedRef.current) {
+        onHistoryLoadedRef.current(cached);
       }
     } catch (e) {}
 
@@ -52,8 +60,8 @@ export function useDiceSync(onNewRoll, onHistoryLoaded) {
 
         if (isInitial) {
           isInitial = false;
-          if (onHistoryLoaded && loadedRolls.length > 0) {
-            onHistoryLoaded(loadedRolls);
+          if (onHistoryLoadedRef.current && loadedRolls.length > 0) {
+            onHistoryLoadedRef.current(loadedRolls);
           }
           return;
         }
@@ -62,7 +70,7 @@ export function useDiceSync(onNewRoll, onHistoryLoaded) {
           if (change.type === 'added') {
             const data = change.doc.data();
             const rollObj = { id: change.doc.id, ...data };
-            if (onNewRoll) onNewRoll(rollObj);
+            if (onNewRollRef.current) onNewRollRef.current(rollObj);
           }
         });
       },
@@ -72,7 +80,7 @@ export function useDiceSync(onNewRoll, onHistoryLoaded) {
     );
 
     return unsub;
-  }, [onNewRoll, onHistoryLoaded]);
+  }, []);
 }
 
 /**

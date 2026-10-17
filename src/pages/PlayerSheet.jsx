@@ -17,6 +17,7 @@ import EESysMarketplace, { EE_CATALOG_ITEMS, MEMBERSHIP_ITEM } from '../componen
 import TraitsList from '../components/player/TraitsList';
 import PlayerNotesTab from '../components/player/PlayerNotesTab';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
+import CommsAndRollsFlow from '../components/shared/CommsAndRollsFlow';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer } from '../lib/playerActions';
@@ -73,6 +74,23 @@ export default function PlayerSheet() {
     setLocalCredits(null);
     setLocalInventory(null);
   }, [targetId]);
+
+  // Listen for combat initialization
+  React.useEffect(() => {
+    const handleCombatStart = (e) => {
+      const data = e.detail;
+      if (data && data.campaignId) {
+        // Auto-open combat board in a new tab/window when combat starts
+        // Or show a prominent alert/button
+        // Using window.open might be blocked by popup blocker, but let's attempt it
+        window.open(`/combat/${data.campaignId}`, '_blank');
+      }
+    };
+    window.addEventListener('unendingvoid:combat_order_set', handleCombatStart);
+    return () => {
+      window.removeEventListener('unendingvoid:combat_order_set', handleCombatStart);
+    };
+  }, []);
 
   const equippedShip = allItems.find(
     (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
@@ -305,7 +323,32 @@ export default function PlayerSheet() {
           <span>🏪</span>
           <span>E.E.Sys</span>
         </button>
+
+        {/* Far Right Side Tab: Live Comms & Quantum Rolls Flow */}
+        <div className="ml-auto flex items-center pl-2">
+          <button
+            onClick={() => setMainTab('flow')}
+            className={`px-4 py-2.5 rounded-xl font-display font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap
+                       ${mainTab === 'flow'
+                         ? 'bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                         : 'text-gray-400 hover:text-emerald-300 hover:bg-emerald-950/20 border border-white/10 hover:border-emerald-500/40'}`}
+          >
+            <span>📡📜</span>
+            <span>{t('flow.tabTitle', 'Live Flow')}</span>
+          </button>
+        </div>
       </div>
+
+      {effectivePlayer?.campaignId && (
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => window.open(`/combat/${effectivePlayer.campaignId}`, '_blank')}
+            className="w-full sm:w-auto px-6 py-2 rounded-xl bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 text-xs font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)]"
+          >
+            ▤ Enter Tactical Combat Board
+          </button>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* TAB 1: CHARACTER OPERATIVE SHEET (Named with player's name)       */}
@@ -475,6 +518,18 @@ export default function PlayerSheet() {
           inventoryItems={inventoryItems}
           onUpdateCredits={(credits) => setLocalCredits(credits)}
           onUpdateInventory={(updatedInv) => setLocalInventory(updatedInv)}
+        />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* TAB 4: LIVE DUAL TELEMETRY FLOW (COMMS + QUANTUM ROLLS)           */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {mainTab === 'flow' && (
+        <CommsAndRollsFlow
+          isDM={false}
+          user={user}
+          profile={effectivePlayer}
+          onSaveToNotes={handleAddNote}
         />
       )}
 

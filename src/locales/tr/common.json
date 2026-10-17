@@ -64,7 +64,8 @@
     "overrideStats": "İstatistik Düzenle",
     "startCombat": "Savaşı Başlat",
     "endCombat": "Savaşı Bitir",
-    "nextTurn": "Sonraki Tur"
+    "nextTurn": "Sonraki Tur",
+    "commandConsole": "Ana Komuta Konsolu"
   },
   "combat": {
     "alertHeader": "TAKTİK ALARM // ÇATIŞMA KAÇINILMAZ",
@@ -80,7 +81,14 @@
     "startCombat": "Savaşı Başlat",
     "endCombat": "Savaşı Bitir",
     "rolling": "ATILIYOR...",
-    "allPlayersReady": "Tüm Oyuncular Hazır"
+    "allPlayersReady": "Tüm Oyuncular Hazır",
+    "autoRollAllOperatives": "Bekleyen Ajanlara Otomatik Zar At",
+    "autoRollHostiles": "Düşman İnisiyatiflerini Otomatik At",
+    "rollForPlayer": "Oyuncu İçin Zar At",
+    "operativeInitiativeStatus": "Ajan İnisiyatif Durumu",
+    "hostileCombatants": "Düşman Savaşçılar",
+    "hostileAutoRollHint": "Otomatik at veya elle inisiyatif gir",
+    "finalizeTurnOrder": "Sırayı Tamamla ve Savaşa Gir"
   },
   "dice": {
     "roll": "At",
@@ -336,7 +344,12 @@
     "heal": "İyileş",
     "hitDice": "Can Zarı",
     "shortRest": "Kısa Mola",
-    "longRest": "Uzun Mola"
+    "longRest": "Uzun Mola",
+    "damageControl": "Operatif Hasar Kontrolü",
+    "vitalsSynced": "Hayati Değerler Kaydedildi",
+    "medStim": "Med-Stim (+20)",
+    "shieldSurge": "Kalkan Dalgası (+15)",
+    "amount": "Miktar"
   },
   "sheetTabs": {
     "actions": "Eylemler ve Saldırılar",
@@ -482,5 +495,30 @@
     "cyberneticsTraits": "Sibernetik ve Genetik Nitelikler",
     "active": "Aktif",
     "noTraits": "Kayıtlı genetik modifikasyon veya psikolojik nitelik bulunmuyor."
+  },
+  "flow": {
+    "tabTitle": "Canlı Akış",
+    "headerTitle": "Taktiksel Akış // Telsiz & Kuantum Zarlar",
+    "headerSubtitle": "Filo yayınları ve kuantum zar sonuçlarının eşzamanlı çift akış telemetrisi",
+    "commsColumnTitle": "TAC-COMMS Akışı",
+    "rollsColumnTitle": "Kuantum Zar Defteri Akışı",
+    "allChannels": "Tüm Kanallar",
+    "priorityEmergency": "Acil Durum",
+    "priorityHigh": "Yüksek Öncelik",
+    "priorityRoutine": "Rutin",
+    "noBroadcasts": "Henüz taktiksel telsiz mesajı kaydedilmedi.",
+    "noRolls": "Mevcut oturumda kaydedilmiş zar atışı yok.",
+    "totalRolls": "Toplam Atış",
+    "averageRoll": "Ortalama Sonuç",
+    "highestRoll": "Zirve Atış",
+    "criticalCount": "Kritik (Doğal 20/100)",
+    "filterAll": "Tüm Atışlar",
+    "filterMine": "Benim Atışlarım",
+    "quickRoll": "Hızlı Zar",
+    "saveToNotes": "Saha Notlarına Kaydet",
+    "saved": "Kaydedildi",
+    "broadcastNow": "Telsiz Yayını Yap",
+    "dmScreenBadge": "DM Gizli",
+    "dualViewActive": "Canlı Çift Telemetri Akışı Aktif"
   }
 }

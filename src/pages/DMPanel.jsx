@@ -11,6 +11,7 @@ import ItemSpawner from '../components/dm/ItemSpawner';
 import TraitAssigner from '../components/dm/TraitAssigner';
 import IntelBroadcaster from '../components/dm/IntelBroadcaster';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
+import CommsAndRollsFlow from '../components/shared/CommsAndRollsFlow';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -29,6 +30,7 @@ export default function DMPanel() {
   const { docs: traits = [] } = useCollection('traits');
   const { docs: items = [] } = useCollection('items');
 
+  const [mainTab, setMainTab] = useState('console');
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [levelUpModalPlayer, setLevelUpModalPlayer] = useState(null);
   const [shipModalPlayer, setShipModalPlayer] = useState(null);
@@ -209,8 +211,38 @@ export default function DMPanel() {
         </div>
       </header>
 
-      {/* Combat & Initiative Bar */}
-      <CombatTracker
+      {/* TOP-LEVEL TABS: Command Console on left, Live Flow on far right side */}
+      <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 overflow-x-auto">
+        <button
+          onClick={() => setMainTab('console')}
+          className={`px-5 py-2.5 rounded-xl font-display font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap
+                     ${mainTab === 'console'
+                       ? 'bg-neon-magenta/20 text-neon-magenta border-2 border-neon-magenta shadow-[0_0_20px_rgba(255,0,170,0.4)]'
+                       : 'text-gray-400 hover:text-white hover:bg-white/5 border border-white/10'}`}
+        >
+          <span>👑</span>
+          <span>{t('dm.commandConsole', 'Master Command Console')}</span>
+        </button>
+
+        {/* Far Right Side: Live Comms & Quantum Rolls Flow */}
+        <div className="ml-auto flex items-center pl-2">
+          <button
+            onClick={() => setMainTab('flow')}
+            className={`px-4 py-2.5 rounded-xl font-display font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap
+                       ${mainTab === 'flow'
+                         ? 'bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                         : 'text-gray-400 hover:text-emerald-300 hover:bg-emerald-950/20 border border-white/10 hover:border-emerald-500/40'}`}
+          >
+            <span>📡📜</span>
+            <span>{t('flow.tabTitle', 'Live Flow')}</span>
+          </button>
+        </div>
+      </div>
+
+      {mainTab === 'console' && (
+        <>
+          {/* Combat & Initiative Bar */}
+          <CombatTracker
         campaignId={campaign?.id || campaignId}
         players={partyCharacters}
         traits={traits}
@@ -389,9 +421,20 @@ export default function DMPanel() {
           traits={traits}
         />
       </div>
+      </>
+    )}
 
-      {/* Floating Tactical Comms Monitor */}
-      <DMIntelBroadcast isDM={true} />
+    {/* Live Dual Telemetry Flow: TAC-COMMS + Quantum Roll Ledger */}
+    {mainTab === 'flow' && (
+      <CommsAndRollsFlow
+        isDM={true}
+        user={user}
+        profile={profile || user}
+      />
+    )}
+
+    {/* Floating Tactical Comms Monitor */}
+    <DMIntelBroadcast isDM={true} />
 
       {/* ──────────────── MODAL: DM LEVEL UP OPERATIVE ──────────────── */}
       {levelUpModalPlayer && (

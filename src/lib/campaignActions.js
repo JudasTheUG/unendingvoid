@@ -162,23 +162,41 @@ export async function createCharacter({
 /**
  * DM requests all operatives to roll initiative.
  */
-export async function requestInitiative(campaignId) {
+export async function requestInitiative(campaignId, targetPlayers = []) {
+  let playerIds = (targetPlayers || [])
+    .map((p) => (typeof p === 'object' ? p.id || p.uid : p))
+    .filter(Boolean);
+
+  // If no players explicitly supplied, query campaign roster from Firestore
+  if (playerIds.length === 0 && campaignId && db) {
+    try {
+      const campSnap = await getDoc(doc(db, 'campaigns', campaignId));
+      if (campSnap.exists()) {
+        const active = campSnap.data()?.activeCharacters || [];
+        playerIds = active.map((ac) => ac.characterId || ac.uid).filter(Boolean);
+      }
+    } catch (e) {
+      console.warn('[campaignActions] Notice fetching campaign active characters:', e.message);
+    }
+  }
+
   const payload = {
     initiativeRequested: true,
     initiativeRequestedAt: Date.now(),
     initiativeRolls: {},
     combatActive: false,
+    targetPlayerIds: playerIds,
     updatedAt: serverTimestamp(),
   };
 
   try {
     localStorage.setItem(
       'unendingvoid:initiative_request',
-      JSON.stringify({ campaignId, timestamp: Date.now() })
+      JSON.stringify({ campaignId, targetPlayerIds: playerIds, timestamp: Date.now() })
     );
     localStorage.removeItem('unendingvoid:initiative_rolls');
     window.dispatchEvent(
-      new CustomEvent('unendingvoid:ask_initiative', { detail: { campaignId, timestamp: Date.now() } })
+      new CustomEvent('unendingvoid:ask_initiative', { detail: { campaignId, targetPlayerIds: playerIds, timestamp: Date.now() } })
     );
   } catch (e) {
     console.warn('Local broadcast failed:', e);
@@ -191,6 +209,25 @@ export async function requestInitiative(campaignId) {
     } catch (err) {
       console.warn('[campaignActions] Firestore update error in requestInitiative:', err.message);
     }
+  }
+
+  // Also broadcast to each operative's personal document in Firestore so remote clients listening trigger immediately
+  if (playerIds.length > 0 && db) {
+    await Promise.all(
+      playerIds.map(async (pId) => {
+        try {
+          const pRef = doc(db, 'players', pId);
+          await updateDoc(pRef, {
+            initiativeRequested: true,
+            initiativeRequestedAt: Date.now(),
+            initiativeCampaignId: campaignId,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (err) {
+          console.warn(`[campaignActions] Error notifying player ${pId} in Firestore:`, err.message);
+        }
+      })
+    );
   }
 
   return payload;
@@ -234,17 +271,36 @@ export async function submitInitiativeRoll(campaignId, { playerId, playerName, r
     }
   }
 
+  if (playerId && db) {
+    try {
+      const pRef = doc(db, 'players', playerId);
+      await updateDoc(pRef, {
+        initiativeRequested: false,
+        lastInitiativeRoll: rollData,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn(`[campaignActions] Error updating player ${playerId} on submit:`, err.message);
+    }
+  }
+
   return rollData;
 }
 
 /**
  * DM finalizes turn order after player and enemy initiatives are calculated.
  */
-export async function setCombatTurnOrder(campaignId, turnOrder) {
+export async function setCombatTurnOrder(campaignId, turnOrder, combatMode = 'ground', enemies = []) {
   const payload = {
     turnOrder,
     currentTurn: 0,
     combatActive: true,
+    combatMode,
+    enemies,
+    combatState: {
+      tokens: {}, // e.g. { "charId": { x: 5, y: 5 }, "en_1": { x: 10, y: 10 } }
+      targets: {}, // e.g. { "charId": "en_1" }
+    },
     initiativeRequested: false,
     updatedAt: serverTimestamp(),
   };
@@ -252,10 +308,10 @@ export async function setCombatTurnOrder(campaignId, turnOrder) {
   try {
     localStorage.setItem(
       'unendingvoid:combat_order',
-      JSON.stringify({ campaignId, turnOrder, timestamp: Date.now() })
+      JSON.stringify({ campaignId, turnOrder, combatMode, enemies, timestamp: Date.now() })
     );
     window.dispatchEvent(
-      new CustomEvent('unendingvoid:combat_order_set', { detail: { campaignId, turnOrder } })
+      new CustomEvent('unendingvoid:combat_order_set', { detail: { campaignId, turnOrder, combatMode, enemies } })
     );
   } catch (e) {
     console.warn('Local combat order broadcast failed:', e);
@@ -271,6 +327,78 @@ export async function setCombatTurnOrder(campaignId, turnOrder) {
   }
 
   return payload;
+}
+
+export async function updateTokenPosition(campaignId, tokenId, x, y) {
+  if (!campaignId || !db) return;
+  const campaignRef = doc(db, 'campaigns', campaignId);
+  try {
+    await updateDoc(campaignRef, {
+      [`combatState.tokens.${tokenId}`]: { x, y },
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.error('Failed to update token position:', err);
+  }
+}
+
+export async function setCombatTarget(campaignId, sourceId, targetId) {
+  if (!campaignId || !db) return;
+  const campaignRef = doc(db, 'campaigns', campaignId);
+  try {
+    if (targetId) {
+      await updateDoc(campaignRef, {
+        [`combatState.targets.${sourceId}`]: targetId,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await updateDoc(campaignRef, {
+        [`combatState.targets.${sourceId}`]: null,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (err) {
+    console.error('Failed to set combat target:', err);
+  }
+}
+
+export async function updateCombatantStats(campaignId, combatantId, isEnemy, stats) {
+  if (!campaignId || !db) return;
+  const campaignRef = doc(db, 'campaigns', campaignId);
+  try {
+    if (isEnemy) {
+      const campSnap = await getDoc(campaignRef);
+      if (campSnap.exists()) {
+        const enemies = campSnap.data().enemies || [];
+        const updatedEnemies = enemies.map((e) => {
+          if (e.id === combatantId) {
+            return { ...e, ...stats };
+          }
+          return e;
+        });
+        await updateDoc(campaignRef, {
+          enemies: updatedEnemies,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    } else {
+      if (stats.effect !== undefined) {
+        await updateDoc(campaignRef, {
+          [`combatState.playerEffects.${combatantId}`]: stats.effect || null,
+          updatedAt: serverTimestamp(),
+        });
+      }
+      if (stats.hp !== undefined) {
+         const playerRef = doc(db, 'players', combatantId);
+         await updateDoc(playerRef, {
+           hp: stats.hp,
+           updatedAt: serverTimestamp()
+         });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to update combatant stats:', err);
+  }
 }
 
 /**

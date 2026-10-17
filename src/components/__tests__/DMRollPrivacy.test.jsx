@@ -235,5 +235,40 @@ describe('DM Roll Privacy vs Player Roll Visibility', () => {
     expect(screen.getByTestId('holographic-dice-arena')).toBeInTheDocument();
     unmount();
   });
+
+  it('closes Quantum Roll Ledger when unendingvoid:close_ledger event is fired and dispatches close_tac_comms on ledger open', () => {
+    const closeCommsSpy = vi.fn();
+    window.addEventListener('unendingvoid:close_tac_comms', closeCommsSpy);
+
+    const { unmount } = render(
+      <DiceOverlay
+        user={{ uid: 'p_1' }}
+        profile={{ role: 'player', displayName: 'Nova' }}
+        isDM={false}
+      />
+    );
+
+    const ledgerBtn = screen.getByTitle(/Toggle Quantum Roll Ledger/i);
+    fireEvent.click(ledgerBtn);
+
+    // Ledger is open and dispatches close_tac_comms
+    expect(screen.getByText(/Quantum Roll Ledger/i)).toBeInTheDocument();
+    expect(closeCommsSpy).toHaveBeenCalled();
+
+    // Verify ledger has sm:right-[12.5rem] offset so it does not block the right-5 TAC-COMMS button
+    const ledgerDrawer = screen.getByText(/Quantum Roll Ledger/i).closest('.fixed');
+    expect(ledgerDrawer.className).toContain('sm:right-[12.5rem]');
+
+    // Now fire unendingvoid:close_ledger
+    act(() => {
+      window.dispatchEvent(new CustomEvent('unendingvoid:close_ledger'));
+    });
+
+    // Ledger should now be closed
+    expect(screen.queryByText(/Quantum Roll Ledger/i)).not.toBeInTheDocument();
+
+    window.removeEventListener('unendingvoid:close_tac_comms', closeCommsSpy);
+    unmount();
+  });
 });
 

@@ -64,7 +64,8 @@
     "overrideStats": "Attribute überschreiben",
     "startCombat": "Kampf beginnen",
     "endCombat": "Kampf beenden",
-    "nextTurn": "Nächster Zug"
+    "nextTurn": "Nächster Zug",
+    "commandConsole": "Meister-Befehlskonsole"
   },
   "combat": {
     "alertHeader": "TAKTISCHER ALARM // GEFECHT UNVERMEIDLICH",
@@ -80,7 +81,14 @@
     "startCombat": "Kampf beginnen",
     "endCombat": "Kampf beenden",
     "rolling": "WIRD GEWÜRFELT...",
-    "allPlayersReady": "Alle Spieler bereit"
+    "allPlayersReady": "Alle Spieler bereit",
+    "autoRollAllOperatives": "Ausstehende Agenten automatisch würfeln",
+    "autoRollHostiles": "Feindliche Initiativen automatisch würfeln",
+    "rollForPlayer": "Für Spieler würfeln",
+    "operativeInitiativeStatus": "Initiativestatus der Einsatzkräfte",
+    "hostileCombatants": "Feindliche Kämpfer",
+    "hostileAutoRollHint": "Automatisch oder manuell würfeln",
+    "finalizeTurnOrder": "Reihenfolge festlegen & Kampf beginnen"
   },
   "dice": {
     "roll": "Würfeln",
@@ -336,7 +344,12 @@
     "heal": "Heilen",
     "hitDice": "Trefferwürfel",
     "shortRest": "Kurze Rast",
-    "longRest": "Lange Rast"
+    "longRest": "Lange Rast",
+    "damageControl": "Operative Schadenskontrolle",
+    "vitalsSynced": "Vitalwerte gespeichert",
+    "medStim": "Med-Stim (+20)",
+    "shieldSurge": "Schildschub (+15)",
+    "amount": "Menge"
   },
   "sheetTabs": {
     "actions": "Aktionen & Angriffe",
@@ -482,5 +495,30 @@
     "cyberneticsTraits": "Kybernetik & Genetische Merkmale",
     "active": "Aktiv",
     "noTraits": "Keine genetischen Augmentierungen oder psychologischen Merkmale erfasst."
+  },
+  "flow": {
+    "tabTitle": "Live-Feed",
+    "headerTitle": "Taktischer Feed // Funk & Quantenwürfel",
+    "headerSubtitle": "Echtzeit-Doppelstream-Telemetrie von Flottenübertragungen und Quantenwürfelergebnissen",
+    "commsColumnTitle": "TAC-COMMS Stream",
+    "rollsColumnTitle": "Quantenwürfel-Ledger Stream",
+    "allChannels": "Alle Kanäle",
+    "priorityEmergency": "Notfall",
+    "priorityHigh": "Hohe Priorität",
+    "priorityRoutine": "Routine",
+    "noBroadcasts": "Noch keine taktischen Funksprüche erfasst.",
+    "noRolls": "In dieser Sitzung wurden noch keine Würfe protokolliert.",
+    "totalRolls": "Gesamtwürfe",
+    "averageRoll": "Durchschnittswert",
+    "highestRoll": "Höchster Wurf",
+    "criticalCount": "Kritisch (Nat 20/100)",
+    "filterAll": "Alle Würfe",
+    "filterMine": "Meine Würfe",
+    "quickRoll": "Schnellwurf",
+    "saveToNotes": "In Feldnotizen speichern",
+    "saved": "Gespeichert",
+    "broadcastNow": "Funkspruch senden",
+    "dmScreenBadge": "DM Geheim",
+    "dualViewActive": "Live-Doppeltelemetriestrom Aktiv"
   }
 }

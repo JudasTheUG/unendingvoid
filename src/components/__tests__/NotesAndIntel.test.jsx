@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import PlayerNotesTab from '../player/PlayerNotesTab';
-import DMIntelBroadcast from '../shared/DMIntelBroadcast';
+import DMIntelBroadcast, { saveLocalBroadcast, getStoredBroadcasts } from '../shared/DMIntelBroadcast';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -124,5 +124,44 @@ describe('DMIntelBroadcast', () => {
         title: 'Epstein Drive Plume Detected // Sector 4',
       })
     );
+  });
+
+  it('preserves extensive broadcast history in saveLocalBroadcast without 30-item truncation', () => {
+    localStorage.clear();
+    for (let i = 0; i < 45; i++) {
+      saveLocalBroadcast({
+        id: `intel_hist_${i}`,
+        title: `Transmission #${i}`,
+        content: `Log payload ${i}`,
+        createdAt: Date.now() + i * 1000,
+      });
+    }
+    const stored = getStoredBroadcasts();
+    expect(stored.length).toBeGreaterThanOrEqual(45);
+  });
+
+  it('closes TAC-COMMS when unendingvoid:close_tac_comms event is triggered', () => {
+    render(<DMIntelBroadcast />);
+    const toggleBtn = screen.getByTitle('Open DM Tactical Comms Feed');
+    fireEvent.click(toggleBtn);
+    expect(screen.getByText('intel.readOnly')).toBeInTheDocument();
+
+    // Trigger close_tac_comms
+    act(() => {
+      window.dispatchEvent(new CustomEvent('unendingvoid:close_tac_comms'));
+    });
+    expect(screen.queryByText('intel.readOnly')).not.toBeInTheDocument();
+  });
+
+  it('dispatches unendingvoid:close_ledger event when opening TAC-COMMS', () => {
+    const closeLedgerSpy = vi.fn();
+    window.addEventListener('unendingvoid:close_ledger', closeLedgerSpy);
+
+    render(<DMIntelBroadcast />);
+    const toggleBtn = screen.getByTitle('Open DM Tactical Comms Feed');
+    fireEvent.click(toggleBtn);
+
+    expect(closeLedgerSpy).toHaveBeenCalled();
+    window.removeEventListener('unendingvoid:close_ledger', closeLedgerSpy);
   });
 });
