@@ -44,10 +44,14 @@ export default function DMPanel() {
   const [selectedStatASI, setSelectedStatASI] = useState('strength');
   const [levelingUp, setLevelingUp] = useState(false);
 
-  if (playersLoading) return <LoadingSpinner />;
-
   // Active campaign
   const campaign = campaigns.find((c) => c.id === campaignId) || campaigns.find((c) => c.dmId === user?.uid);
+
+  useEffect(() => {
+    if (campaign?.combatActive !== undefined) {
+      setCombatActive(Boolean(campaign.combatActive));
+    }
+  }, [campaign?.combatActive]);
 
   // Characters in this campaign, or all non-DM characters if no campaign specified
   let partyCharacters = [];
@@ -62,11 +66,7 @@ export default function DMPanel() {
 
   const turnOrder = customTurnOrder || partyCharacters.map((p) => p.id || p.uid);
 
-  useEffect(() => {
-    if (campaign?.combatActive !== undefined) {
-      setCombatActive(Boolean(campaign.combatActive));
-    }
-  }, [campaign?.combatActive]);
+  if (playersLoading) return <LoadingSpinner />;
 
   const handleToggleCombat = async () => {
     const nextState = !combatActive;
