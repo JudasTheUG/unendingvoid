@@ -197,8 +197,8 @@ export default function DMIntelBroadcast({
 
   return (
     <>
-      {/* Floating Tactical Comms Toggle Button - Far Right Above Dice Bar */}
-      <div className="fixed bottom-20 right-5 z-40">
+      {/* Floating Tactical Comms Toggle Button - Far Right Above Dice Bar with comfortable margin */}
+      <div className="fixed bottom-24 right-5 z-40">
         <button
           onClick={handleOpen}
           className={`px-3.5 py-2.5 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-[0_0_25px_rgba(0,0,0,0.9)]
@@ -220,9 +220,9 @@ export default function DMIntelBroadcast({
         </button>
       </div>
 
-      {/* 100% Opaque Tactical Intel Feed Panel - Expanded Size */}
+      {/* 100% Opaque Tactical Intel Feed Panel - Expanded Size with clean margin above dice bar */}
       {isOpen && (
-        <div className="fixed bottom-20 right-5 w-96 sm:w-[32rem] max-w-[calc(100vw-2.5rem)] max-h-[38rem] bg-[#070b14] p-4.5 z-50 shadow-[0_0_50px_rgba(0,0,0,0.98)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
+        <div className="fixed bottom-24 right-5 w-96 sm:w-[32rem] max-w-[calc(100vw-2.5rem)] max-h-[36rem] bg-[#070b14] p-4.5 z-50 shadow-[0_0_50px_rgba(0,0,0,0.98)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
           {/* Header Bar */}
           <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
             <div className="flex items-center gap-2">
