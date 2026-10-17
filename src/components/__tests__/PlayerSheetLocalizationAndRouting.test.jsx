@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import i18n from '../../lib/i18n';
 import DnDCharacterHeader from '../player/DnDCharacterHeader';
 import DnDAbilitySidebar from '../player/DnDAbilitySidebar';
@@ -81,10 +81,35 @@ describe('Player Sheet Multi-Language Localization Engine', () => {
     // Controls
     expect(screen.getByText(/Kısa Mola/i)).toBeInTheDocument();
     expect(screen.getByText(/Uzun Mola/i)).toBeInTheDocument();
+    expect(screen.getByText(/Operatif Hasar Kontrolü/i)).toBeInTheDocument();
+    expect(screen.getByText(/Med-Stim/i)).toBeInTheDocument();
+    expect(screen.getByText(/Kalkan Dalgası/i)).toBeInTheDocument();
 
     // Localized class, species, background
     expect(screen.getByText(/Seviye 3 Ajan · Güçlendirilmiş İnsan/i)).toBeInTheDocument();
     expect(screen.getByText(/Geçmiş: Paralı Asker/i)).toBeInTheDocument();
+  });
+
+  it('handles Operative Damage Control actions (Med-Stim, Shield Surge)', () => {
+    const handleUpdateHp = vi.fn();
+    render(
+      <DnDCharacterHeader
+        character={{ ...mockCharacter, hp: 50, maxHp: 100, shields: 10, maxShields: 50 }}
+        onShortRest={vi.fn()}
+        onLongRest={vi.fn()}
+        onUpdateHp={handleUpdateHp}
+      />
+    );
+
+    // Med-stim adds 20 HP
+    const stimBtn = screen.getByRole('button', { name: /Med-Stim/i });
+    fireEvent.click(stimBtn);
+    expect(handleUpdateHp).toHaveBeenCalledWith(70, 10);
+
+    // Shield surge adds 15 Shields
+    const shieldBtn = screen.getByRole('button', { name: /Kalkan Dalgası|Shield Surge/i });
+    fireEvent.click(shieldBtn);
+    expect(handleUpdateHp).toHaveBeenCalledWith(50, 25);
   });
 
   it('renders DnDAbilitySidebar with Turkish ability labels and skills', async () => {

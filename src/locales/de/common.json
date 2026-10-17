@@ -343,7 +343,12 @@
     "heal": "Heilen",
     "hitDice": "Trefferwürfel",
     "shortRest": "Kurze Rast",
-    "longRest": "Lange Rast"
+    "longRest": "Lange Rast",
+    "damageControl": "Operative Schadenskontrolle",
+    "vitalsSynced": "Vitalwerte gespeichert",
+    "medStim": "Med-Stim (+20)",
+    "shieldSurge": "Schildschub (+15)",
+    "amount": "Menge"
   },
   "sheetTabs": {
     "actions": "Aktionen & Angriffe",

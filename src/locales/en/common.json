@@ -343,7 +343,12 @@
     "heal": "Heal",
     "hitDice": "Hit Dice",
     "shortRest": "Short Rest",
-    "longRest": "Long Rest"
+    "longRest": "Long Rest",
+    "damageControl": "Operative Damage Control",
+    "vitalsSynced": "Vitals Saved",
+    "medStim": "Med-Stim (+20)",
+    "shieldSurge": "Shield Surge (+15)",
+    "amount": "Amount"
   },
   "sheetTabs": {
     "actions": "Actions & Attacks",

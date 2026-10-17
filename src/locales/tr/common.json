@@ -343,7 +343,12 @@
     "heal": "İyileş",
     "hitDice": "Can Zarı",
     "shortRest": "Kısa Mola",
-    "longRest": "Uzun Mola"
+    "longRest": "Uzun Mola",
+    "damageControl": "Operatif Hasar Kontrolü",
+    "vitalsSynced": "Hayati Değerler Kaydedildi",
+    "medStim": "Med-Stim (+20)",
+    "shieldSurge": "Kalkan Dalgası (+15)",
+    "amount": "Miktar"
   },
   "sheetTabs": {
     "actions": "Eylemler ve Saldırılar",
