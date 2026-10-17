@@ -69,7 +69,12 @@
     "result": "Sonuç",
     "history": "Atış Geçmişi",
     "modifier": "Düzeltici",
-    "total": "Toplam"
+    "total": "Toplam",
+    "dmSecretBanner": "GM Zarı (Ekran Arkası)",
+    "dmSecretBadge": "GM Gizli",
+    "dmPrivateMode": "GM Ekranı (Gizli Zarlar)",
+    "publicRoll": "Ajan Zarı (Herkese Açık)",
+    "rollLedgerTitle": "Kuantum Atış Günlüğü"
   },
   "common": {
     "loading": "Yükleniyor...",

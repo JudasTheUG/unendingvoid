@@ -43,6 +43,9 @@ export function useDiceSync(onNewRoll) {
 export async function publishRoll({
   userId,
   playerName,
+  role = 'player',
+  isSecret = false,
+  isDMRoll = false,
   notation,
   results,
   total,
@@ -51,18 +54,42 @@ export async function publishRoll({
   physicsSeed = Math.floor(Math.random() * 1000000),
   velocities = [],
 }) {
-  return addDoc(collection(db, 'rolls'), {
+  const secretFlag = Boolean(isSecret || isDMRoll || role === 'dm');
+  const rollPayload = {
     playerId: userId,
     playerName: playerName || 'Unknown Operative',
+    role: role || (secretFlag ? 'dm' : 'player'),
+    isSecret: secretFlag,
+    isDMRoll: secretFlag,
     diceNotation: notation,
+    notation,
     results: Array.isArray(results) ? results : [results],
-    total: Number(total),
-    modifier: Number(modifier),
+    total: total,
+    modifier: Number(modifier) || 0,
     purpose,
     physics: {
       seed: physicsSeed,
       velocities: velocities.length > 0 ? velocities : [[Math.random() * 10, Math.random() * 10, Math.random() * 10]],
     },
-    timestamp: serverTimestamp(),
-  });
+    timestamp: Date.now(),
+  };
+
+  // Immediate multi-tab / local event broadcast
+  try {
+    localStorage.setItem('unendingvoid:latest_roll', JSON.stringify(rollPayload));
+    window.dispatchEvent(new CustomEvent('unendingvoid:multiplayer_roll', { detail: rollPayload }));
+  } catch (e) {}
+
+  if (db) {
+    try {
+      await addDoc(collection(db, 'rolls'), {
+        ...rollPayload,
+        timestamp: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[DiceSync] Firestore note:', err.message);
+    }
+  }
+
+  return rollPayload;
 }

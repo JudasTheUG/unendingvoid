@@ -114,7 +114,8 @@ export default function DMPanel() {
       {/* 3D Dice Layer */}
       <DiceOverlay
         user={user}
-        profile={profile || { displayName: 'Void Master (DM)' }}
+        profile={{ role: 'dm', ...profile, displayName: profile?.displayName || 'Void Master (DM)' }}
+        isDM={true}
         modifier={0}
       />
 

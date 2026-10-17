@@ -69,7 +69,12 @@
     "result": "Ergebnis",
     "history": "Wurfverlauf",
     "modifier": "Modifikator",
-    "total": "Gesamt"
+    "total": "Gesamt",
+    "dmSecretBanner": "Spielleiter-Wurf (Hinter dem Schirm)",
+    "dmSecretBadge": "SL Geheim",
+    "dmPrivateMode": "SL-Schirm (Verdeckte Würfe)",
+    "publicRoll": "Agenten-Wurf (Öffentlich)",
+    "rollLedgerTitle": "Quanten-Wurfprotokoll"
   },
   "common": {
     "loading": "Wird geladen...",

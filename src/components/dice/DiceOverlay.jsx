@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { useDiceSync, publishRoll } from '../../hooks/useDiceSync';
@@ -56,7 +57,11 @@ export function getOrLoadCoinGeometry() {
   if (coinLoadPromise) return coinLoadPromise;
 
   coinLoadPromise = new Promise((resolve) => {
-    if (typeof window === 'undefined' || typeof window.fetch !== 'function') {
+    if (
+      typeof window === 'undefined' ||
+      typeof window.fetch !== 'function' ||
+      (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test')
+    ) {
       const fallbackGeo = new THREE.CylinderGeometry(2.3, 2.3, 0.4, 36);
       fallbackGeo.rotateX(Math.PI / 2);
       cachedCoinGeometry = fallbackGeo;
@@ -97,6 +102,9 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
   const theme = DIE_THEMES[dieType] || DIE_THEMES.d20;
 
   ctx.clearRect(0, 0, 256, 256);
@@ -380,7 +388,15 @@ function createD20Data() {
   return { geometry, faces };
 }
 
-export default function DiceOverlay({ user, profile, modifier = 0 }) {
+export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 }) {
+  const { t } = useTranslation();
+  const isViewerDM = Boolean(
+    isDM ||
+    profile?.role === 'dm' ||
+    user?.role === 'dm' ||
+    profile?.displayName?.includes('(DM)') ||
+    (typeof window !== 'undefined' && window.location.pathname.startsWith('/dm'))
+  );
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
@@ -998,16 +1014,71 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
   // Listen for real-time multiplayer rolls
   useDiceSync((incomingRoll) => {
     if (incomingRoll.playerId !== user?.uid) {
+      const isRollSecretDM = Boolean(
+        incomingRoll.isSecret ||
+        incomingRoll.role === 'dm' ||
+        incomingRoll.isDMRoll ||
+        incomingRoll.playerName?.includes('(DM)')
+      );
+
+      // DM rolls are strictly private to the DM; player rolls are visible to everyone!
+      if (isRollSecretDM && !isViewerDM) {
+        return;
+      }
+
       trigger3DVisual(incomingRoll);
       setRecentRolls((prev) => [incomingRoll, ...prev.slice(0, 19)]);
     }
   });
 
+  // Cross-tab & local multiplayer sync listener
+  useEffect(() => {
+    const handleRemoteRoll = (data) => {
+      if (!data || data.playerId === user?.uid) return;
+
+      const isRollSecretDM = Boolean(
+        data.isSecret ||
+        data.role === 'dm' ||
+        data.isDMRoll ||
+        data.playerName?.includes('(DM)')
+      );
+
+      // DM rolls are strictly private to the DM!
+      if (isRollSecretDM && !isViewerDM) {
+        return;
+      }
+
+      trigger3DVisual(data);
+      setRecentRolls((prev) => [data, ...prev.slice(0, 19)]);
+    };
+
+    const handleCustomEvent = (e) => {
+      handleRemoteRoll(e.detail);
+    };
+
+    const handleStorageEvent = (e) => {
+      if (e.key === 'unendingvoid:latest_roll' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          handleRemoteRoll(parsed);
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('unendingvoid:multiplayer_roll', handleCustomEvent);
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      window.removeEventListener('unendingvoid:multiplayer_roll', handleCustomEvent);
+      window.removeEventListener('storage', handleStorageEvent);
+    };
+  }, [user?.uid, isViewerDM]);
+
   // Global trigger listener
   useEffect(() => {
     const handleGlobalRollEvent = (e) => {
-      const { notation: not, modifier: mod, label, rollMode: mode } = e.detail || {};
-      handleRoll(not || '1d20', mod !== undefined ? mod : modifier, label || 'action', mode || 'normal');
+      const { notation: not, modifier: mod, label, rollMode: mode, isSecret } = e.detail || {};
+      handleRoll(not || '1d20', mod !== undefined ? mod : modifier, label || 'action', mode || 'normal', null, isSecret);
     };
 
     window.addEventListener('unendingvoid:roll', handleGlobalRollEvent);
@@ -1020,14 +1091,20 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     customMod = null,
     purpose = 'action',
     rollMode = 'normal',
-    quantityOverride = null
+    quantityOverride = null,
+    secretOverride = null
   ) => {
     if (isRolling) return;
     setIsRolling(true);
 
+    const isSecretRoll = secretOverride !== null ? secretOverride : isViewerDM;
     const appliedMod = customMod !== null ? customMod : modifier;
     const seed = Math.floor(Math.random() * 1000000);
     const rollStr = String(targetNotation).toLowerCase();
+    const defaultPlayerName = isViewerDM
+      ? (profile?.displayName || 'Void Master (DM)')
+      : (profile?.displayName || user?.displayName || 'Void Operative');
+    const rollRole = isSecretRoll ? 'dm' : (profile?.role || 'player');
 
     let rollPayload;
 
@@ -1048,7 +1125,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
       rollPayload = {
         userId: user?.uid || 'guest',
-        playerName: profile?.displayName || user?.displayName || 'Void Operative',
+        playerName: defaultPlayerName,
+        role: rollRole,
+        isSecret: isSecretRoll,
+        isDMRoll: isSecretRoll,
         notation: formattedNotation,
         diceNotation: formattedNotation,
         results,
@@ -1078,7 +1158,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
       rollPayload = {
         userId: user?.uid || 'guest',
-        playerName: profile?.displayName || user?.displayName || 'Void Operative',
+        playerName: defaultPlayerName,
+        role: rollRole,
+        isSecret: isSecretRoll,
+        isDMRoll: isSecretRoll,
         notation: formattedNotation,
         diceNotation: formattedNotation,
         results: [raw100],
@@ -1105,7 +1188,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
       rollPayload = {
         userId: user?.uid || 'guest',
-        playerName: profile?.displayName || user?.displayName || 'Void Operative',
+        playerName: defaultPlayerName,
+        role: rollRole,
+        isSecret: isSecretRoll,
+        isDMRoll: isSecretRoll,
         notation: formattedNotation,
         diceNotation: formattedNotation,
         results,
@@ -1159,7 +1245,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
       rollPayload = {
         userId: user?.uid || 'guest',
-        playerName: profile?.displayName || user?.displayName || 'Void Operative',
+        playerName: defaultPlayerName,
+        role: rollRole,
+        isSecret: isSecretRoll,
+        isDMRoll: isSecretRoll,
         notation: formattedNotation,
         diceNotation: formattedNotation,
         results,
@@ -1189,20 +1278,36 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       <div ref={mountRef} className="fixed inset-0 pointer-events-none z-40 overflow-hidden" />
 
       {/* 100% Solid Opaque Roll Result Banner */}
-      {activeRollBanner && (
+      {activeRollBanner && ((!activeRollBanner.isSecret && !activeRollBanner.isDMRoll && activeRollBanner.role !== 'dm') || isViewerDM) && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto animate-bounce-short">
-          <div className="bg-[#060a14] border-2 border-neon-cyan shadow-[0_0_40px_rgba(0,240,255,0.7)] px-6 py-3.5 rounded-2xl flex items-center gap-4 text-white relative">
-            <div className="w-12 h-12 rounded-xl bg-neon-cyan/20 border-2 border-neon-cyan flex items-center justify-center font-display font-black text-neon-cyan text-xl shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-              {activeRollBanner.isCoin ? '🪙' : '🎲'}
+          <div className={`bg-[#060a14] border-2 ${
+            activeRollBanner.isSecret || activeRollBanner.isDMRoll || activeRollBanner.role === 'dm'
+              ? 'border-purple-500 shadow-[0_0_40px_rgba(168,85,247,0.7)]'
+              : 'border-neon-cyan shadow-[0_0_40px_rgba(0,240,255,0.7)]'
+          } px-6 py-3.5 rounded-2xl flex items-center gap-4 text-white relative`}>
+            <div className={`w-12 h-12 rounded-xl ${
+              activeRollBanner.isSecret || activeRollBanner.isDMRoll || activeRollBanner.role === 'dm'
+                ? 'bg-purple-500/20 border-2 border-purple-500 text-purple-300'
+                : 'bg-neon-cyan/20 border-2 border-neon-cyan text-neon-cyan'
+            } flex items-center justify-center font-display font-black text-xl shadow-[0_0_15px_rgba(0,240,255,0.4)]`}>
+              {activeRollBanner.isSecret || activeRollBanner.isDMRoll || activeRollBanner.role === 'dm'
+                ? '🛡️'
+                : (activeRollBanner.isCoin ? '🪙' : '🎲')}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-display font-bold text-sm text-white">
                   {activeRollBanner.playerName}
                 </span>
-                <span className="text-[10px] uppercase font-mono text-neon-cyan bg-neon-cyan/15 px-2 py-0.5 rounded border border-neon-cyan/35 font-bold">
-                  {activeRollBanner.purpose || activeRollBanner.notation}
-                </span>
+                {(activeRollBanner.isSecret || activeRollBanner.isDMRoll || activeRollBanner.role === 'dm') ? (
+                  <span className="text-[10px] uppercase font-mono text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded border border-purple-500/40 font-bold flex items-center gap-1">
+                    🛡️ {t('dice.dmSecretBanner') || 'DM Roll (Behind Screen)'}
+                  </span>
+                ) : (
+                  <span className="text-[10px] uppercase font-mono text-neon-cyan bg-neon-cyan/15 px-2 py-0.5 rounded border border-neon-cyan/35 font-bold">
+                    {activeRollBanner.purpose || activeRollBanner.notation}
+                  </span>
+                )}
               </div>
               <div className="text-xs text-gray-200 font-mono mt-1">
                 {activeRollBanner.isCoin ? (
@@ -1257,6 +1362,15 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
         {/* Die Selector Buttons + Lucifer's Silver Coin */}
         <div className="bg-[#070b14] px-3 py-1.5 flex items-center gap-1.5 border-2 border-slate-700 rounded-xl shadow-xl">
+          {isViewerDM && (
+            <span
+              className="px-2 py-1 rounded text-[10px] font-mono font-bold uppercase bg-purple-900/40 text-purple-300 border border-purple-500/50 flex items-center gap-1 shadow-sm shrink-0"
+              title="DM Screen Active: Your rolls are hidden from player terminals"
+            >
+              🛡️ {t('dice.dmPrivateMode') || 'DM Screen (Secret)'}
+            </span>
+          )}
+
           {['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'].map((d) => (
             <button
               key={d}
@@ -1410,38 +1524,63 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
           </div>
 
           <div className="overflow-y-auto space-y-2 pr-1 text-xs font-mono">
-            {recentRolls.length === 0 ? (
+            {recentRolls.filter((r) => {
+              const isSecret = Boolean(r.isSecret || r.role === 'dm' || r.isDMRoll || r.playerName?.includes('(DM)'));
+              if (isSecret && !isViewerDM) return false;
+              return true;
+            }).length === 0 ? (
               <div className="py-8 text-center text-gray-500 italic space-y-1">
                 <span className="text-xl block opacity-40">📊</span>
                 <p>No rolls logged in current session.</p>
               </div>
             ) : (
-              recentRolls.map((r, i) => (
-                <div
-                  key={i}
-                  className="bg-[#0e1628] hover:bg-[#141f36] p-2.5 rounded-lg border border-slate-700/70 flex items-center justify-between transition-colors shadow-sm"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-neon-cyan font-bold block text-[13px]">{r.playerName}</span>
-                    <span className="text-[10px] text-gray-300 block">
-                      {r.purpose || r.notation}{' '}
-                      <span className="text-amber-400 font-bold">
-                        {r.isCoin
-                          ? `[${r.results?.join(',')}]`
-                          : r.tensResult !== undefined
-                            ? `[${r.tensResult}, ${r.onesResult}]`
-                            : `[${r.results?.join(',')}]`}
+              recentRolls
+                .filter((r) => {
+                  const isSecret = Boolean(r.isSecret || r.role === 'dm' || r.isDMRoll || r.playerName?.includes('(DM)'));
+                  if (isSecret && !isViewerDM) return false;
+                  return true;
+                })
+                .map((r, i) => (
+                  <div
+                    key={i}
+                    className={`p-2.5 rounded-lg border flex items-center justify-between transition-colors shadow-sm ${
+                      r.isSecret || r.isDMRoll || r.role === 'dm'
+                        ? 'bg-[#181126] hover:bg-[#201633] border-purple-500/50'
+                        : 'bg-[#0e1628] hover:bg-[#141f36] border-slate-700/70'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-bold block text-[13px] ${
+                          r.isSecret || r.isDMRoll || r.role === 'dm' ? 'text-purple-300' : 'text-neon-cyan'
+                        }`}>
+                          {r.playerName}
+                        </span>
+                        {(r.isSecret || r.isDMRoll || r.role === 'dm') && (
+                          <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[9px] uppercase font-bold">
+                            🛡️ {t('dice.dmSecretBadge') || 'DM Secret'}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-300 block">
+                        {r.purpose || r.notation}{' '}
+                        <span className="text-amber-400 font-bold">
+                          {r.isCoin
+                            ? `[${r.results?.join(',')}]`
+                            : r.tensResult !== undefined
+                              ? `[${r.tensResult}, ${r.onesResult}]`
+                              : `[${r.results?.join(',')}]`}
+                        </span>
                       </span>
-                    </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-display font-black text-base text-white block">
+                        {r.total}
+                      </span>
+                      <span className="text-[9px] uppercase tracking-wider text-gray-400">Total</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-display font-black text-base text-white block">
-                      {r.total}
-                    </span>
-                    <span className="text-[9px] uppercase tracking-wider text-gray-400">Total</span>
-                  </div>
-                </div>
-              ))
+                ))
             )}
           </div>
         </div>
@@ -1451,12 +1590,12 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 }
 
 /**
- * Trigger a roll programmatically from anywhere in the app with exact die type, modifier, label, and rollMode.
+ * Trigger a roll programmatically from anywhere in the app with exact die type, modifier, label, rollMode, and secret flag.
  */
-export function triggerInteractiveRoll(notation, modifier = 0, label = 'Action', rollMode = 'normal') {
+export function triggerInteractiveRoll(notation, modifier = 0, label = 'Action', rollMode = 'normal', isSecret = null) {
   window.dispatchEvent(
     new CustomEvent('unendingvoid:roll', {
-      detail: { notation, modifier, label, rollMode },
+      detail: { notation, modifier, label, rollMode, isSecret },
     })
   );
 }

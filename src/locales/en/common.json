@@ -69,7 +69,12 @@
     "result": "Result",
     "history": "Roll History",
     "modifier": "Modifier",
-    "total": "Total"
+    "total": "Total",
+    "dmSecretBanner": "DM Roll (Behind Screen)",
+    "dmSecretBadge": "DM Secret",
+    "dmPrivateMode": "DM Screen (Private Rolls)",
+    "publicRoll": "Operative Roll (Public)",
+    "rollLedgerTitle": "Quantum Roll Ledger"
   },
   "common": {
     "loading": "Loading...",
