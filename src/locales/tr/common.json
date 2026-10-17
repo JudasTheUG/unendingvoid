@@ -597,6 +597,10 @@
     "targetedBy": "HEDEFLENDİ",
     "clickToTarget": "Hedeflemek İçin Tıkla",
     "operative": "Operatif",
-    "hostile": "Düşman"
+    "hostile": "Düşman",
+    "ac": "AC",
+    "shield": "Kalkan",
+    "unitAc": "Zırh Sınıfı (AC)",
+    "unitShields": "Kalkan Kapasitesi"
   }
 }

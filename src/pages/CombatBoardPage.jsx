@@ -18,18 +18,18 @@ import DiceOverlay from '../components/dice/DiceOverlay';
 const GRID_SIZE = 32;
 
 const PRESET_HOSTILES_GROUND = [
-  { name: 'Syndicate Sniper', hp: 35, dexMod: 3 },
-  { name: 'MCRN Shock Trooper', hp: 55, dexMod: 2 },
-  { name: 'Cyber-Security Hound', hp: 25, dexMod: 4 },
-  { name: 'Mercenary Enforcer', hp: 45, dexMod: 1 },
-  { name: 'Automated Defense Drone', hp: 20, dexMod: 2 },
+  { name: 'Syndicate Sniper', hp: 35, dexMod: 3, armorClass: 15, shields: 10, maxShields: 10 },
+  { name: 'MCRN Shock Trooper', hp: 55, dexMod: 2, armorClass: 16, shields: 20, maxShields: 20 },
+  { name: 'Cyber-Security Hound', hp: 25, dexMod: 4, armorClass: 13, shields: 0, maxShields: 0 },
+  { name: 'Mercenary Enforcer', hp: 45, dexMod: 1, armorClass: 14, shields: 15, maxShields: 15 },
+  { name: 'Automated Defense Drone', hp: 20, dexMod: 2, armorClass: 12, shields: 10, maxShields: 10 },
 ];
 
 const PRESET_HOSTILES_SPACE = [
-  { name: 'MCRN Escort Frigate', hp: 180, dexMod: 2 },
-  { name: 'Belter Scrap Raider', hp: 90, dexMod: 3 },
-  { name: 'Stealth Corvette', hp: 140, dexMod: 4 },
-  { name: 'Pirate Interceptor', hp: 60, dexMod: 3 },
+  { name: 'MCRN Escort Frigate', hp: 180, dexMod: 2, armorClass: 16, shields: 100, maxShields: 100 },
+  { name: 'Belter Scrap Raider', hp: 90, dexMod: 3, armorClass: 14, shields: 40, maxShields: 40 },
+  { name: 'Stealth Corvette', hp: 140, dexMod: 4, armorClass: 17, shields: 60, maxShields: 60 },
+  { name: 'Pirate Interceptor', hp: 60, dexMod: 3, armorClass: 15, shields: 30, maxShields: 30 },
 ];
 
 const STATUS_LIST = ['Normal', 'Unconscious', 'Dead'];
@@ -67,6 +67,8 @@ export default function CombatBoardPage() {
   const [customHostileName, setCustomHostileName] = useState('');
   const [customHostileHp, setCustomHostileHp] = useState(30);
   const [customHostileDex, setCustomHostileDex] = useState(2);
+  const [customHostileAc, setCustomHostileAc] = useState(14);
+  const [customHostileShields, setCustomHostileShields] = useState(10);
 
   // Dragging state
   const [draggedTokenId, setDraggedTokenId] = useState(null);
@@ -170,16 +172,32 @@ export default function CombatBoardPage() {
   const targets = combatState.targets || {};
 
   // Find the viewer's personal active character (if player)
-  const myPlayerChar = players.find((p) => p.uid === user?.uid || p.ownerId === user?.uid);
-  const myCharId = myPlayerChar?.id || myPlayerChar?.uid;
+  const myActiveChar = (campaign?.activeCharacters || []).find(
+    (ac) => ac.uid === user?.uid || ac.ownerId === user?.uid || ac.characterId === user?.uid
+  );
+  const myPlayerChar = players.find(
+    (p) => p.uid === user?.uid || p.ownerId === user?.uid || p.id === user?.uid || p.id === myActiveChar?.characterId
+  );
+  const myCharId = myPlayerChar?.id || myPlayerChar?.uid || myActiveChar?.characterId || myActiveChar?.uid;
 
-  // Build resolved combatants list with robust fallback names
+  // Build resolved combatants list with robust fallback names, AC, and Shields
   const allCombatants = turnOrder.map((id) => {
     const p = players.find((x) => x.id === id || x.uid === id);
     if (p) {
       const pName = p.displayName || p.name || p.characterName || 'Operative';
       const status = combatState.playerStatuses?.[id] || p.status || 'Normal';
       const effect = combatState.playerEffects?.[id] || p.effect || 'None';
+
+      let pAc = p.armorClass ?? p.ac;
+      let pShields = p.shields;
+      let pMaxShields = p.maxShields;
+      if (combatMode === 'ship' && (p.ship || p.spaceship)) {
+        const s = p.ship || p.spaceship;
+        pAc = s.armorClass ?? s.ac ?? pAc ?? 16;
+        pShields = s.shields ?? pShields ?? 100;
+        pMaxShields = s.maxShields ?? s.shields ?? pMaxShields ?? 100;
+      }
+
       return {
         ...p,
         id,
@@ -187,6 +205,9 @@ export default function CombatBoardPage() {
         displayName: pName,
         hp: p.hp ?? p.maxHp ?? 100,
         maxHp: p.maxHp ?? 100,
+        armorClass: pAc ?? (combatMode === 'ship' ? 16 : 14),
+        shields: pShields ?? (combatMode === 'ship' ? 100 : 15),
+        maxShields: pMaxShields ?? pShields ?? (combatMode === 'ship' ? 100 : 15),
         status,
         effect,
         isEnemy: false,
@@ -196,6 +217,9 @@ export default function CombatBoardPage() {
     const e = enemies.find((x) => x.id === id);
     if (e) {
       const eName = e.displayName || e.name || 'Hostile Unit';
+      const eAc = e.armorClass ?? e.ac ?? (combatMode === 'ship' ? 15 : 14);
+      const eShields = e.shields ?? (combatMode === 'ship' ? 40 : 10);
+      const eMaxShields = e.maxShields ?? e.shields ?? (combatMode === 'ship' ? 40 : 10);
       return {
         ...e,
         id,
@@ -203,6 +227,9 @@ export default function CombatBoardPage() {
         displayName: eName,
         hp: e.hp ?? 30,
         maxHp: e.maxHp ?? e.hp ?? 30,
+        armorClass: eAc,
+        shields: eShields,
+        maxShields: eMaxShields,
         status: e.status || 'Normal',
         effect: e.effect || 'None',
         isEnemy: true,
@@ -219,6 +246,9 @@ export default function CombatBoardPage() {
         displayName: acName,
         hp: ac.hp ?? 100,
         maxHp: ac.maxHp ?? 100,
+        armorClass: ac.armorClass ?? ac.ac ?? 14,
+        shields: ac.shields ?? 15,
+        maxShields: ac.maxShields ?? ac.shields ?? 15,
         status: combatState.playerStatuses?.[id] || 'Normal',
         effect: combatState.playerEffects?.[id] || 'None',
         isEnemy: false,
@@ -231,6 +261,9 @@ export default function CombatBoardPage() {
       displayName: 'Operative',
       hp: 100,
       maxHp: 100,
+      armorClass: 14,
+      shields: 15,
+      maxShields: 15,
       status: 'Normal',
       effect: 'None',
       isEnemy: false,
@@ -316,10 +349,29 @@ export default function CombatBoardPage() {
     const c = allCombatants.find((x) => x.id === combatantId);
     if (!c) return;
 
-    const newHp = Math.max(0, (c.hp || 0) - amt);
+    let curShields = c.shields ?? 0;
+    let curHp = c.hp ?? 0;
+    let remainingDmg = amt;
+
+    let newShields = curShields;
+    if (curShields > 0) {
+      if (remainingDmg <= curShields) {
+        newShields = curShields - remainingDmg;
+        remainingDmg = 0;
+      } else {
+        remainingDmg -= curShields;
+        newShields = 0;
+      }
+    }
+
+    const newHp = Math.max(0, curHp - remainingDmg);
     const newStatus = newHp === 0 ? 'Dead' : c.status;
 
-    await updateCombatantStats(campaignId, combatantId, isEnemy, { hp: newHp, status: newStatus });
+    await updateCombatantStats(campaignId, combatantId, isEnemy, {
+      hp: newHp,
+      shields: newShields,
+      status: newStatus,
+    });
     setManualHpInputs((prev) => ({ ...prev, [combatantId]: '' }));
   };
 
@@ -331,10 +383,24 @@ export default function CombatBoardPage() {
     if (!c) return;
 
     const maxHp = c.maxHp || 100;
-    const newHp = Math.min(maxHp, (c.hp || 0) + amt);
+    const curHp = c.hp || 0;
+    const maxShields = c.maxShields || 0;
+    const curShields = c.shields || 0;
+
+    let newHp = Math.min(maxHp, curHp + amt);
+    let overflow = Math.max(0, (curHp + amt) - maxHp);
+    let newShields = curShields;
+    if (overflow > 0 && maxShields > 0) {
+      newShields = Math.min(maxShields, curShields + overflow);
+    }
+
     const newStatus = newHp > 0 && c.status === 'Dead' ? 'Normal' : c.status;
 
-    await updateCombatantStats(campaignId, combatantId, isEnemy, { hp: newHp, status: newStatus });
+    await updateCombatantStats(campaignId, combatantId, isEnemy, {
+      hp: newHp,
+      shields: newShields,
+      status: newStatus,
+    });
     setManualHpInputs((prev) => ({ ...prev, [combatantId]: '' }));
   };
 
@@ -348,12 +414,31 @@ export default function CombatBoardPage() {
 
   // Spawn dynamic hostile/NPC
   const handleSpawnHostile = async (preset = null) => {
-    const hostileData = preset || {
-      name: customHostileName.trim() || 'Syndicate Sniper',
-      hp: Number(customHostileHp) || 30,
-      maxHp: Number(customHostileHp) || 30,
-      dexMod: Number(customHostileDex) || 2,
-    };
+    const hostileData = preset
+      ? {
+          name: preset.name,
+          hp: preset.hp,
+          maxHp: preset.hp,
+          dexMod: preset.dexMod,
+          armorClass: preset.armorClass ?? 14,
+          shields: preset.shields ?? 0,
+          maxShields: preset.shields ?? 0,
+          status: 'Normal',
+          effect: 'None',
+          isEnemy: true,
+        }
+      : {
+          name: customHostileName.trim() || 'Custom Hostile',
+          hp: Number(customHostileHp) || 30,
+          maxHp: Number(customHostileHp) || 30,
+          dexMod: Number(customHostileDex) || 2,
+          armorClass: Number(customHostileAc) || 14,
+          shields: Number(customHostileShields) || 0,
+          maxShields: Number(customHostileShields) || 0,
+          status: 'Normal',
+          effect: 'None',
+          isEnemy: true,
+        };
 
     await addCombatantToCombat(campaignId, hostileData);
     setShowSpawnModal(false);
@@ -388,6 +473,7 @@ export default function CombatBoardPage() {
         const isTargeted = tokenCombatant && targetedEnemyIds.has(tokenCombatant.id);
         const isMyChar = tokenCombatant && tokenCombatant.id === myCharId;
         const canDrag = isDM || isMyChar;
+        const canSeeTokenStats = isDM || isMyChar;
 
         cells.push(
           <div
@@ -411,7 +497,11 @@ export default function CombatBoardPage() {
               <div
                 draggable={canDrag}
                 onDragStart={(e) => canDrag && handleDragStart(e, tokenCombatant.id)}
-                title={`${tokenCombatant.name} (${tokenCombatant.isEnemy ? 'Hostile' : 'Operative'})\n${isDM ? `HP: ${tokenCombatant.hp}/${tokenCombatant.maxHp || 100}\n` : ''}Status: ${tokenCombatant.status}\nEffect: ${tokenCombatant.effect}`}
+                title={`${tokenCombatant.name} (${tokenCombatant.isEnemy ? 'Hostile' : 'Operative'})\n${
+                  canSeeTokenStats
+                    ? `HP: ${tokenCombatant.hp}/${tokenCombatant.maxHp || 100}\nAC: ${tokenCombatant.armorClass ?? 14} · Shield: ${tokenCombatant.shields ?? 0}/${tokenCombatant.maxShields ?? tokenCombatant.shields ?? 0}\n`
+                    : ''
+                }Status: ${tokenCombatant.status}\nEffect: ${tokenCombatant.effect}`}
                 className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex flex-col items-center justify-center select-none cursor-pointer transition-transform relative ${
                   isSilhouette ? 'opacity-40 border-2 border-dashed border-neon-cyan animate-pulse' : 'opacity-100 shadow-md'
                 } ${
@@ -561,6 +651,10 @@ export default function CombatBoardPage() {
             {allCombatants.map((c, idx) => {
               const isActive = idx === currentTurn;
               const isTargeted = Object.values(targets).includes(c.id);
+              const isMyCharacter = Boolean(
+                myCharId && (c.id === myCharId || c.uid === myCharId || c.characterId === myCharId)
+              );
+              const canViewInfo = isDM || isMyCharacter;
 
               return (
                 <div
@@ -593,26 +687,70 @@ export default function CombatBoardPage() {
                     </span>
                   </div>
 
-                  {/* Health Section - STRICTLY DM ONLY */}
-                  {isDM && (
-                    <div className="space-y-1 mb-2.5">
-                      <div className="flex justify-between text-xs text-gray-300 font-mono">
-                        <span className="text-[10px] uppercase text-gray-500">{t('combatBoard.hp', 'HP')}</span>
-                        <span className="font-bold">
-                          {c.hp} / {c.maxHp || 100}
-                        </span>
+                  {/* Health, AC and Shield Section - for DM all shown, for player only his own information */}
+                  {canViewInfo && (
+                    <div className="space-y-2 mb-2.5">
+                      {/* Health Section */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-gray-300 font-mono">
+                          <span className="text-[10px] uppercase text-gray-400 font-bold">{t('combatBoard.hp', 'HP')}</span>
+                          <span className="font-bold">
+                            {c.hp} / {c.maxHp || 100}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-black/60 rounded-full overflow-hidden border border-slate-700/60">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              c.hp / (c.maxHp || 100) > 0.5
+                                ? 'bg-neon-green'
+                                : c.hp / (c.maxHp || 100) > 0.25
+                                  ? 'bg-amber-400'
+                                  : 'bg-red-500'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(0, (c.hp / (c.maxHp || 100)) * 100))}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="h-1.5 w-full bg-black/60 rounded-full overflow-hidden border border-slate-700/60">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            c.hp / (c.maxHp || 100) > 0.5
-                              ? 'bg-neon-green'
-                              : c.hp / (c.maxHp || 100) > 0.25
-                                ? 'bg-amber-400'
-                                : 'bg-red-500'
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(0, (c.hp / (c.maxHp || 100)) * 100))}%` }}
-                        ></div>
+
+                      {/* AC and Shield Row */}
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-black/50 rounded-lg p-2 border border-slate-800">
+                        {/* AC */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-neon-cyan text-sm">🛡️</span>
+                          <div>
+                            <span className="text-[9px] uppercase text-gray-400 block leading-tight font-bold">
+                              {t('combatBoard.ac', 'AC')}
+                            </span>
+                            <span className="font-bold text-white text-xs">
+                              {c.armorClass ?? 14}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Shield */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-cyan-400 text-sm">⚡</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center text-[9px] uppercase text-gray-400 leading-tight">
+                              <span className="font-bold truncate">{t('combatBoard.shield', 'Shield')}</span>
+                              <span className="font-bold text-cyan-300 font-mono text-[10px] ml-1 shrink-0">
+                                {c.shields ?? 0} / {c.maxShields ?? c.shields ?? 0}
+                              </span>
+                            </div>
+                            <div className="h-1 w-full bg-black/60 rounded-full overflow-hidden border border-cyan-900/60 mt-0.5">
+                              <div
+                                className="h-full bg-cyan-400 transition-all duration-300 shadow-[0_0_8px_rgba(0,240,255,0.6)]"
+                                style={{
+                                  width: `${
+                                    (c.maxShields ?? c.shields ?? 0) > 0
+                                      ? Math.min(100, Math.max(0, ((c.shields ?? 0) / (c.maxShields || c.shields || 1)) * 100))
+                                      : 0
+                                  }%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -855,7 +993,7 @@ export default function CombatBoardPage() {
                   >
                     <span className="font-bold text-white block truncate">{pr.name}</span>
                     <span className="text-[10px] text-gray-400">
-                      HP: <strong className="text-red-400">{pr.hp}</strong> · DEX: +{pr.dexMod}
+                      HP: <strong className="text-red-400">{pr.hp}</strong> · AC: <strong className="text-neon-cyan">{pr.armorClass || 14}</strong> · ⚡ <strong className="text-cyan-300">{pr.shields || 0}</strong>
                     </span>
                   </button>
                 ))}
@@ -875,8 +1013,8 @@ export default function CombatBoardPage() {
                   onChange={(e) => setCustomHostileName(e.target.value)}
                   className="w-full bg-black/60 border border-slate-700 rounded px-2.5 py-1.5 text-white placeholder-gray-600 focus:border-red-500 focus:outline-none"
                 />
-                <div className="flex gap-2">
-                  <div className="flex-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
                     <span className="text-[9px] text-gray-500 block">{t('combatBoard.unitHp', 'Max HP')}</span>
                     <input
                       type="number"
@@ -885,7 +1023,28 @@ export default function CombatBoardPage() {
                       className="w-full bg-black/60 border border-slate-700 rounded px-2 py-1 text-white font-bold focus:border-red-500 focus:outline-none"
                     />
                   </div>
-                  <div className="flex-1">
+                  <div>
+                    <span className="text-[9px] text-gray-500 block">{t('combatBoard.unitAc', 'Armor Class (AC)')}</span>
+                    <input
+                      type="number"
+                      value={customHostileAc}
+                      onChange={(e) => setCustomHostileAc(e.target.value)}
+                      className="w-full bg-black/60 border border-slate-700 rounded px-2 py-1 text-white font-bold focus:border-red-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[9px] text-gray-500 block">{t('combatBoard.unitShields', 'Shields')}</span>
+                    <input
+                      type="number"
+                      value={customHostileShields}
+                      onChange={(e) => setCustomHostileShields(e.target.value)}
+                      className="w-full bg-black/60 border border-slate-700 rounded px-2 py-1 text-white font-bold focus:border-red-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
                     <span className="text-[9px] text-gray-500 block">{t('combatBoard.unitDex', 'DEX Modifier')}</span>
                     <input
                       type="number"

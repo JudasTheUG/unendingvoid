@@ -597,6 +597,10 @@
     "targetedBy": "TARGETED",
     "clickToTarget": "Click to Target",
     "operative": "Operative",
-    "hostile": "Hostile"
+    "hostile": "Hostile",
+    "ac": "AC",
+    "shield": "Shield",
+    "unitAc": "Armor Class (AC)",
+    "unitShields": "Shields"
   }
 }

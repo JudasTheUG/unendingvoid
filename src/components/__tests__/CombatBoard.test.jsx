@@ -183,7 +183,7 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
       'camp_alpha',
       'char_ugur',
       false,
-      expect.objectContaining({ hp: 90 })
+      expect.objectContaining({ shields: 5, hp: 100 })
     );
   });
 
@@ -234,7 +234,7 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
     );
   });
 
-  it('displays HP numbers, health bars, and damage/heal controls to the DM', () => {
+  it('displays HP, AC, Shield, health bars, and damage/heal controls for all combatants to the DM', () => {
     render(<CombatBoardPage />);
 
     // DM can see HP for combatants
@@ -242,11 +242,15 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
     expect(screen.getByText(/35 \/ 35/i)).toBeInTheDocument();
     expect(screen.getAllByText('HP').length).toBeGreaterThan(0);
 
+    // DM sees AC and Shield on all combatant cards (3 combatants)
+    expect(screen.getAllByText('AC').length).toBe(3);
+    expect(screen.getAllByText('Shield').length).toBe(3);
+
     // Damage and heal controls are present for DM
     expect(screen.getAllByPlaceholderText(/Amt/i).length).toBeGreaterThan(0);
   });
 
-  it('strictly hides all HP numbers, HP labels, health bars, and damage/heal controls from players', () => {
+  it('strictly hides all HP, AC, and Shield info from non-owner players on enemy cards and other player cards', () => {
     mockAuth = {
       user: { uid: 'player_user_99', displayName: 'Player One' },
       profile: { role: 'player' },
@@ -258,10 +262,12 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
     expect(screen.getAllByText(/Uğur GELEÇ/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/MCRN Sniper/i)).toBeInTheDocument();
 
-    // HP labels and numerical HP are NOT visible on the cards
+    // HP, AC, and Shield are NOT visible on any cards when the user owns none of them
     expect(screen.queryByText(/100 \/ 100/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/35 \/ 35/i)).not.toBeInTheDocument();
     expect(screen.queryByText('HP')).not.toBeInTheDocument();
+    expect(screen.queryByText('AC')).not.toBeInTheDocument();
+    expect(screen.queryByText('Shield')).not.toBeInTheDocument();
 
     // Manual damage and heal controls are NOT rendered for players
     expect(screen.queryByPlaceholderText(/Amt/i)).not.toBeInTheDocument();
@@ -270,5 +276,25 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
 
     // Players see Status badge
     expect(screen.getAllByText('Normal').length).toBeGreaterThan(0);
+  });
+
+  it('shows AC, Shield, and HP to a player strictly on their own character card, while hiding them on other player and enemy cards', () => {
+    mockAuth = {
+      user: { uid: 'char_ugur', displayName: 'Uğur GELEÇ' },
+      profile: { role: 'player' },
+    };
+
+    render(<CombatBoardPage />);
+
+    // Player sees their own HP, AC, and Shield (1 card)
+    expect(screen.getByText(/100 \/ 100/i)).toBeInTheDocument();
+    expect(screen.getAllByText('AC').length).toBe(1);
+    expect(screen.getAllByText('Shield').length).toBe(1);
+
+    // Enemy HP (35 / 35) is NOT visible
+    expect(screen.queryByText(/35 \/ 35/i)).not.toBeInTheDocument();
+
+    // Manual damage and heal controls are NOT rendered for players
+    expect(screen.queryByPlaceholderText(/Amt/i)).not.toBeInTheDocument();
   });
 });

@@ -597,6 +597,10 @@
     "targetedBy": "ANGEVISIERT",
     "clickToTarget": "Klicken zum Anvisieren",
     "operative": "Operative",
-    "hostile": "Feindlich"
+    "hostile": "Feindlich",
+    "ac": "RK",
+    "shield": "Schild",
+    "unitAc": "Rüstungsklasse (RK)",
+    "unitShields": "Schildkapazität"
   }
 }

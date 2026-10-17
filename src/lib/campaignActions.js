@@ -491,14 +491,17 @@ export async function updateCombatantStats(campaignId, combatantId, isEnemy, sta
       }
       await updateDoc(campaignRef, updates);
 
-      if (stats.hp !== undefined) {
+      const playerUpdates = {};
+      if (stats.hp !== undefined) playerUpdates.hp = stats.hp;
+      if (stats.shields !== undefined) playerUpdates.shields = stats.shields;
+      if (stats.armorClass !== undefined) playerUpdates.armorClass = stats.armorClass;
+      if (stats.status !== undefined) playerUpdates.status = stats.status;
+      if (stats.effect !== undefined) playerUpdates.effect = stats.effect;
+
+      if (Object.keys(playerUpdates).length > 0) {
         const playerRef = doc(db, 'players', combatantId);
-        await updateDoc(playerRef, {
-          hp: stats.hp,
-          ...(stats.status !== undefined ? { status: stats.status } : {}),
-          ...(stats.effect !== undefined ? { effect: stats.effect } : {}),
-          updatedAt: serverTimestamp(),
-        });
+        playerUpdates.updatedAt = serverTimestamp();
+        await updateDoc(playerRef, playerUpdates);
       }
     }
   } catch (err) {
