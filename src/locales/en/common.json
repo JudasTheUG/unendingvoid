@@ -24,7 +24,15 @@
     "invalidCredentials": "Invalid username or password.",
     "passwordMinLength": "Password must be at least 6 characters.",
     "usernameMinLength": "Username must be at least 3 characters.",
-    "userExists": "Username is already registered. Please sign in."
+    "userExists": "Username is already registered. Please sign in.",
+    "usernameInputPlaceholder": "e.g. void_pilot",
+    "emailPlaceholder": "pilot@void.net",
+    "invalidEmail": "Please enter a valid email address.",
+    "invalidUsernameFormat": "Username can only contain letters, numbers, and underscores (3-20 characters).",
+    "usernameTaken": "This username is already taken. Please choose another.",
+    "emailInUse": "This email is already in use. Please sign in instead.",
+    "checkingAvailability": "Checking availability...",
+    "usernameAvailable": "Username is available"
   },
   "player": {
     "sheet": "Character Sheet",

@@ -44,5 +44,11 @@ service cloud.firestore {
     match /sessions/{sessionId} {
       allow read, write: if isAuth();
     }
+
+    // ── Usernames Registry (for uniqueness control & lookups) ──
+    match /usernames/{username} {
+      allow read: if true;
+      allow create, update: if isAuth();
+    }
   }
 }

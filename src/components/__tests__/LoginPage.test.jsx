@@ -22,12 +22,12 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-describe('LoginPage - Local Username and Password Authentication', () => {
+describe('LoginPage - Registration with Username, Mail & Password', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders username and password inputs with local access buttons', () => {
+  it('renders login fields by default', () => {
     render(
       <BrowserRouter>
         <LoginPage />
@@ -37,55 +37,9 @@ describe('LoginPage - Local Username and Password Authentication', () => {
     expect(screen.getByLabelText(/auth\.usernameOrEmail/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/auth\.password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /auth\.login/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /auth\.localGuest/i })).toBeInTheDocument();
   });
 
-  it('allows user to sign in with username and password', async () => {
-    const signInSpy = vi.spyOn(authService, 'signInEmail').mockResolvedValueOnce({
-      user: { uid: 'u_123', username: 'void_runner' },
-    });
-
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
-
-    const usernameInput = screen.getByLabelText(/auth\.usernameOrEmail/i);
-    const passwordInput = screen.getByLabelText(/auth\.password/i);
-    const submitBtn = screen.getByRole('button', { name: /auth\.login/i });
-
-    fireEvent.change(usernameInput, { target: { value: 'void_runner' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(signInSpy).toHaveBeenCalledWith('void_runner', 'password123');
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
-    });
-  });
-
-  it('supports quick local guest login', async () => {
-    const guestSpy = vi.spyOn(authService, 'loginLocalGuest').mockResolvedValueOnce({
-      user: { uid: 'guest_123', displayName: 'Void Operative' },
-    });
-
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
-
-    const guestBtn = screen.getByRole('button', { name: /auth\.localGuest/i });
-    fireEvent.click(guestBtn);
-
-    await waitFor(() => {
-      expect(guestSpy).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
-    });
-  });
-
-  it('allows toggling to registration mode with callsign input', () => {
+  it('switches to registration form with Username, Email, Password and Callsign', () => {
     render(
       <BrowserRouter>
         <LoginPage />
@@ -95,7 +49,88 @@ describe('LoginPage - Local Username and Password Authentication', () => {
     const toggleBtn = screen.getByRole('button', { name: /auth\.register/i });
     fireEvent.click(toggleBtn);
 
+    expect(screen.getByLabelText(/^auth\.username$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^auth\.email$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^auth\.password$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/auth\.displayName/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/auth\.username/i)).toBeInTheDocument();
+  });
+
+  it('validates email format before registering', async () => {
+    render(
+      <BrowserRouter>
+        <LoginPage />
+      </BrowserRouter>
+    );
+
+    // Switch to register mode
+    fireEvent.click(screen.getByRole('button', { name: /auth\.register/i }));
+
+    const usernameInput = screen.getByLabelText(/^auth\.username$/i);
+    const emailInput = screen.getByLabelText(/^auth\.email$/i);
+    const passwordInput = screen.getByLabelText(/^auth\.password$/i);
+    const submitBtn = screen.getByRole('button', { name: /auth\.register/i });
+
+    fireEvent.change(usernameInput, { target: { value: 'commander_99' } });
+    fireEvent.change(emailInput, { target: { value: 'not-a-valid-email' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(submitBtn);
+
+    expect(screen.getByText('auth.invalidEmail')).toBeInTheDocument();
+  });
+
+  it('successfully calls registerWithCredentials when registration form is valid', async () => {
+    const registerSpy = vi.spyOn(authService, 'registerWithCredentials').mockResolvedValueOnce({
+      user: { uid: 'u_test_99', username: 'star_pilot', email: 'pilot@void.net' },
+    });
+
+    render(
+      <BrowserRouter>
+        <LoginPage />
+      </BrowserRouter>
+    );
+
+    // Switch to register mode
+    fireEvent.click(screen.getByRole('button', { name: /auth\.register/i }));
+
+    fireEvent.change(screen.getByLabelText(/^auth\.username$/i), { target: { value: 'star_pilot' } });
+    fireEvent.change(screen.getByLabelText(/^auth\.email$/i), { target: { value: 'pilot@void.net' } });
+    fireEvent.change(screen.getByLabelText(/^auth\.password$/i), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText(/auth\.displayName/i), { target: { value: 'Captain Star' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /auth\.register/i }));
+
+    await waitFor(() => {
+      expect(registerSpy).toHaveBeenCalledWith({
+        username: 'star_pilot',
+        email: 'pilot@void.net',
+        password: 'password123',
+        displayName: 'Captain Star',
+      });
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  it('displays error if username is already taken', async () => {
+    vi.spyOn(authService, 'registerWithCredentials').mockRejectedValueOnce(
+      new Error('USERNAME_TAKEN')
+    );
+
+    render(
+      <BrowserRouter>
+        <LoginPage />
+      </BrowserRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /auth\.register/i }));
+
+    fireEvent.change(screen.getByLabelText(/^auth\.username$/i), { target: { value: 'already_taken' } });
+    fireEvent.change(screen.getByLabelText(/^auth\.email$/i), { target: { value: 'pilot@void.net' } });
+    fireEvent.change(screen.getByLabelText(/^auth\.password$/i), { target: { value: 'password123' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /auth\.register/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('auth.usernameTaken')).toBeInTheDocument();
+    });
   });
 });

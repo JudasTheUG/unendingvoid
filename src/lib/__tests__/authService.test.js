@@ -1,135 +1,190 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+  validateEmail,
+  validateUsername,
   normalizeUsernameToEmail,
   extractUsername,
   getLocalAccounts,
   saveLocalAccount,
   setActiveSession,
   clearActiveSession,
+  isUsernameAvailable,
+  registerWithCredentials,
   signInEmail,
-  registerEmail,
   loginLocalGuest,
   logout,
   STORAGE_ACTIVE_USER,
-  STORAGE_LOCAL_ACCOUNTS,
 } from '../authService';
 
-describe('authService - Username and Local Authentication Engine', () => {
+describe('authService - Registration Validation & Uniqueness Engine', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
   });
 
-  describe('Username and Email Normalization', () => {
-    it('should convert raw username into internal email format', () => {
-      expect(normalizeUsernameToEmail('commander')).toBe('commander@unendingvoid.local');
-      expect(normalizeUsernameToEmail('JudasTheUG')).toBe('judastheug@unendingvoid.local');
-      expect(normalizeUsernameToEmail('void_pilot.99')).toBe('void_pilot.99@unendingvoid.local');
+  describe('Email & Username Format Validation', () => {
+    it('should validate proper email formats correctly', () => {
+      expect(validateEmail('pilot@void.net')).toBe(true);
+      expect(validateEmail('operative.strike-1@galaxy.org')).toBe(true);
+      expect(validateEmail('commander@sub.domain.co.uk')).toBe(true);
+
+      expect(validateEmail('notanemail')).toBe(false);
+      expect(validateEmail('pilot@')).toBe(false);
+      expect(validateEmail('@void.net')).toBe(false);
+      expect(validateEmail('pilot@void')).toBe(false);
+      expect(validateEmail('')).toBe(false);
     });
 
-    it('should preserve standard emails as lowercase', () => {
-      expect(normalizeUsernameToEmail('pilot@void.net')).toBe('pilot@void.net');
-      expect(normalizeUsernameToEmail('COMMANDER@STARFLEET.COM')).toBe('commander@starfleet.com');
-    });
+    it('should validate username constraints (3-20 chars, alphanumeric, _ and -)', () => {
+      expect(validateUsername('void_pilot')).toBe(true);
+      expect(validateUsername('Judas-99')).toBe(true);
+      expect(validateUsername('operative123')).toBe(true);
 
-    it('should extract usernames properly from identifiers', () => {
-      expect(extractUsername('operative_01')).toBe('operative_01');
-      expect(extractUsername('cyber_samurai@domain.org')).toBe('cyber_samurai');
-      expect(extractUsername('')).toBe('Operative');
+      expect(validateUsername('ab')).toBe(false); // Too short
+      expect(validateUsername('a'.repeat(25))).toBe(false); // Too long
+      expect(validateUsername('pilot space')).toBe(false); // Spaces not allowed
+      expect(validateUsername('pilot@net')).toBe(false); // @ not allowed in username
+      expect(validateUsername('')).toBe(false);
     });
   });
 
-  describe('Local Account Storage and Matching', () => {
-    it('should save and retrieve local accounts from localStorage', () => {
-      const account = {
-        uid: 'local_test_1',
-        username: 'cyberpunk_runner',
-        displayName: 'Cyberpunk Runner',
-        email: 'cyberpunk_runner@unendingvoid.local',
+  describe('Username Uniqueness Control', () => {
+    it('should report available for new usernames', async () => {
+      const available = await isUsernameAvailable('fresh_operative');
+      expect(available).toBe(true);
+    });
+
+    it('should detect when a username is already taken locally', async () => {
+      saveLocalAccount({
+        uid: 'local_1',
+        username: 'existing_hero',
+        email: 'hero@void.net',
         password: 'password123',
-      };
-
-      saveLocalAccount(account);
-      const accounts = getLocalAccounts();
-      expect(accounts['cyberpunk_runner']).toBeDefined();
-      expect(accounts['cyberpunk_runner'].displayName).toBe('Cyberpunk Runner');
-    });
-
-    it('should set and clear active user session', () => {
-      const user = { uid: 'u123', displayName: 'Pilot Test' };
-      const profile = { hp: 100, maxHp: 100 };
-
-      setActiveSession(user, profile);
-      expect(JSON.parse(localStorage.getItem(STORAGE_ACTIVE_USER))).toEqual(user);
-
-      clearActiveSession();
-      expect(localStorage.getItem(STORAGE_ACTIVE_USER)).toBeNull();
-    });
-
-    it('should authenticate locally registered accounts with matching password', async () => {
-      // Seed a local account
-      saveLocalAccount({
-        uid: 'local_operative_9',
-        username: 'operative_9',
-        displayName: 'Operative Nine',
-        email: 'operative_9@unendingvoid.local',
-        password: 'vault_password',
       });
 
-      const res = await signInEmail('operative_9', 'vault_password');
-      expect(res.user.uid).toBe('local_operative_9');
-      expect(res.user.username).toBe('operative_9');
-      expect(res.isLocal).toBe(true);
+      const available = await isUsernameAvailable('existing_hero');
+      expect(available).toBe(false);
+    });
+  });
 
-      const activeUser = JSON.parse(localStorage.getItem(STORAGE_ACTIVE_USER));
-      expect(activeUser.uid).toBe('local_operative_9');
+  describe('Full Registration with Credentials', () => {
+    it('should reject registration with invalid email', async () => {
+      await expect(
+        registerWithCredentials({
+          username: 'cyber_runner',
+          email: 'invalid-email-address',
+          password: 'password123',
+          displayName: 'Cyber Runner',
+        })
+      ).rejects.toThrow('INVALID_EMAIL');
     });
 
-    it('should reject local accounts with incorrect password', async () => {
+    it('should reject registration with invalid username format', async () => {
+      await expect(
+        registerWithCredentials({
+          username: 'ab', // too short
+          email: 'pilot@void.net',
+          password: 'password123',
+        })
+      ).rejects.toThrow('INVALID_USERNAME_FORMAT');
+    });
+
+    it('should reject registration with password shorter than 6 characters', async () => {
+      await expect(
+        registerWithCredentials({
+          username: 'cyber_runner',
+          email: 'runner@void.net',
+          password: '123',
+        })
+      ).rejects.toThrow('PASSWORD_TOO_SHORT');
+    });
+
+    it('should reject registration if username is already taken', async () => {
       saveLocalAccount({
-        uid: 'local_operative_10',
-        username: 'operative_10',
-        password: 'correct_password',
+        uid: 'local_taken',
+        username: 'taken_user',
+        email: 'original@void.net',
+        password: 'password123',
       });
 
-      await expect(signInEmail('operative_10', 'wrong_password')).rejects.toThrow('INVALID_PASSWORD');
+      await expect(
+        registerWithCredentials({
+          username: 'taken_user',
+          email: 'different@void.net',
+          password: 'password123',
+        })
+      ).rejects.toThrow('USERNAME_TAKEN');
     });
 
-    it('should register a fallback local account when offline or cloud fails', async () => {
-      const res = await registerEmail('new_explorer', 'securepass123', 'Star Explorer');
+    it('should successfully register valid credentials and create session', async () => {
+      const res = await registerWithCredentials({
+        username: 'star_scout',
+        email: 'scout@deepvoid.net',
+        password: 'securePassword99',
+        displayName: 'Star Scout Commander',
+      });
+
       expect(res.user).toBeDefined();
-      expect(res.user.username).toBe('new_explorer');
-      expect(res.user.displayName).toBe('Star Explorer');
+      expect(res.user.username).toBe('star_scout');
+      expect(res.user.email).toBe('scout@deepvoid.net');
+      expect(res.user.displayName).toBe('Star Scout Commander');
 
-      // Check it was cached in local accounts
-      const accounts = getLocalAccounts();
-      expect(accounts['new_explorer']).toBeDefined();
-      expect(accounts['new_explorer'].password).toBe('securepass123');
+      // Verify active session saved
+      const active = JSON.parse(localStorage.getItem(STORAGE_ACTIVE_USER));
+      expect(active.username).toBe('star_scout');
+      expect(active.email).toBe('scout@deepvoid.net');
     });
+  });
 
-    it('should reject registration if local account already exists', async () => {
+  describe('Login via Username or Email', () => {
+    it('should authenticate with username matching local account', async () => {
       saveLocalAccount({
-        uid: 'local_existing',
-        username: 'existing_user',
-        password: 'pass',
+        uid: 'local_valkyrie',
+        username: 'valkyrie',
+        email: 'valk@valhalla.space',
+        password: 'valk_password_123',
+        displayName: 'Valkyrie One',
       });
 
-      await expect(registerEmail('existing_user', 'newpass', 'Display')).rejects.toThrow('USER_EXISTS');
+      const res = await signInEmail('valkyrie', 'valk_password_123');
+      expect(res.user.uid).toBe('local_valkyrie');
+      expect(res.user.username).toBe('valkyrie');
+      expect(res.user.displayName).toBe('Valkyrie One');
     });
 
-    it('should support instant one-click local guest login', async () => {
-      const res = await loginLocalGuest('Guest Ranger');
-      expect(res.user).toBeDefined();
-      expect(res.user.displayName).toBe('Guest Ranger');
-      expect(res.user.uid).toMatch(/^local_guest_/);
-      expect(res.isLocal).toBe(true);
+    it('should authenticate with email matching local account', async () => {
+      saveLocalAccount({
+        uid: 'local_spectre',
+        username: 'spectre',
+        email: 'spectre@shadow.net',
+        password: 'ghost_protocol',
+      });
 
-      const storedUser = JSON.parse(localStorage.getItem(STORAGE_ACTIVE_USER));
-      expect(storedUser.displayName).toBe('Guest Ranger');
+      const res = await signInEmail('spectre@shadow.net', 'ghost_protocol');
+      expect(res.user.uid).toBe('local_spectre');
+      expect(res.user.username).toBe('spectre');
     });
 
-    it('should clear active session on logout', async () => {
-      await loginLocalGuest('Temporary Guest');
+    it('should reject wrong password', async () => {
+      saveLocalAccount({
+        uid: 'local_guard',
+        username: 'station_guard',
+        password: 'vault_code_999',
+      });
+
+      await expect(signInEmail('station_guard', 'wrong_code')).rejects.toThrow('INVALID_PASSWORD');
+    });
+  });
+
+  describe('Session Management & Guest Access', () => {
+    it('should login as a local guest without credentials', async () => {
+      const res = await loginLocalGuest('Guest Pilot');
+      expect(res.user.displayName).toBe('Guest Pilot');
+      expect(res.user.isLocal).toBe(true);
+    });
+
+    it('should clear session upon logout', async () => {
+      setActiveSession({ uid: 'test_u', username: 'temp' });
       expect(localStorage.getItem(STORAGE_ACTIVE_USER)).toBeTruthy();
 
       await logout();

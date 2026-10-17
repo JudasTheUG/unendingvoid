@@ -24,7 +24,15 @@
     "invalidCredentials": "Geçersiz kullanıcı adı veya şifre.",
     "passwordMinLength": "Şifre en az 6 karakter olmalıdır.",
     "usernameMinLength": "Kullanıcı adı en az 3 karakter olmalıdır.",
-    "userExists": "Bu kullanıcı adı zaten kayıtlı. Lütfen giriş yapın."
+    "userExists": "Bu kullanıcı adı zaten kayıtlı. Lütfen giriş yapın.",
+    "usernameInputPlaceholder": "örn. void_pilot",
+    "emailPlaceholder": "pilot@void.net",
+    "invalidEmail": "Lütfen geçerli bir e-posta adresi girin.",
+    "invalidUsernameFormat": "Kullanıcı adı yalnızca harf, rakam ve alt çizgi içerebilir (3-20 karakter).",
+    "usernameTaken": "Bu kullanıcı adı zaten alınmış. Lütfen başka bir ad seçin.",
+    "emailInUse": "Bu e-posta adresi zaten kullanımda. Lütfen giriş yapın.",
+    "checkingAvailability": "Kullanılabilirlik kontrol ediliyor...",
+    "usernameAvailable": "Kullanıcı adı müsait"
   },
   "player": {
     "sheet": "Karakter Sayfası",

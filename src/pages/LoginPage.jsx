@@ -1,29 +1,72 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { signInGoogle, signInEmail, registerEmail, loginLocalGuest } from '../lib/authService';
+import {
+  signInGoogle,
+  signInEmail,
+  registerWithCredentials,
+  loginLocalGuest,
+  validateEmail,
+  validateUsername,
+  isUsernameAvailable,
+} from '../lib/authService';
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+
+  // Login form state
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Register form state
+  const [regUsername, setRegUsername] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regDisplayName, setRegDisplayName] = useState('');
+
+  // Username live availability state
+  const [usernameStatus, setUsernameStatus] = useState(null); // 'available' | 'taken' | 'invalid' | null
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  // Check username availability when user finishes typing
+  const handleUsernameBlur = async () => {
+    const clean = regUsername.trim();
+    if (!clean) {
+      setUsernameStatus(null);
+      return;
+    }
+    if (!validateUsername(clean)) {
+      setUsernameStatus('invalid');
+      return;
+    }
+
+    setCheckingUsername(true);
+    try {
+      const available = await isUsernameAvailable(clean);
+      setUsernameStatus(available ? 'available' : 'taken');
+    } catch {
+      setUsernameStatus(null);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
+
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    const cleanIdentifier = identifier.trim();
+    const cleanIdentifier = loginIdentifier.trim();
     if (!cleanIdentifier || cleanIdentifier.length < 3) {
       setError(t('auth.usernameMinLength'));
       return;
     }
 
-    if (!password || password.length < 6) {
+    if (!loginPassword || loginPassword.length < 6) {
       setError(t('auth.passwordMinLength'));
       return;
     }
@@ -31,20 +74,72 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (isRegister) {
-        await registerEmail(cleanIdentifier, password, displayName || cleanIdentifier);
-      } else {
-        await signInEmail(cleanIdentifier, password);
-      }
+      await signInEmail(cleanIdentifier, loginPassword);
       navigate('/dashboard');
     } catch (err) {
-      console.error('[LoginPage] Auth error:', err);
-      if (err.message === 'INVALID_PASSWORD' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      console.error('[LoginPage] Login error:', err);
+      if (
+        err.message === 'INVALID_PASSWORD' ||
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-credential'
+      ) {
         setError(t('auth.invalidCredentials'));
-      } else if (err.message === 'USER_EXISTS' || err.code === 'auth/email-already-in-use') {
-        setError(t('auth.userExists'));
       } else {
-        setError(isRegister ? t('auth.registerError') : t('auth.loginError'));
+        setError(t('auth.loginError'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const cleanUsername = regUsername.trim();
+    const cleanEmail = regEmail.trim();
+
+    // 1. Username validation
+    if (!validateUsername(cleanUsername)) {
+      setError(t('auth.invalidUsernameFormat'));
+      return;
+    }
+
+    // 2. Email validation
+    if (!validateEmail(cleanEmail)) {
+      setError(t('auth.invalidEmail'));
+      return;
+    }
+
+    // 3. Password validation
+    if (!regPassword || regPassword.length < 6) {
+      setError(t('auth.passwordMinLength'));
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await registerWithCredentials({
+        username: cleanUsername,
+        email: cleanEmail,
+        password: regPassword,
+        displayName: regDisplayName.trim() || cleanUsername,
+      });
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[LoginPage] Register error:', err);
+      if (err.message === 'USERNAME_TAKEN') {
+        setError(t('auth.usernameTaken'));
+        setUsernameStatus('taken');
+      } else if (err.message === 'EMAIL_IN_USE' || err.code === 'auth/email-already-in-use') {
+        setError(t('auth.emailInUse'));
+      } else if (err.message === 'INVALID_EMAIL') {
+        setError(t('auth.invalidEmail'));
+      } else if (err.message === 'INVALID_USERNAME_FORMAT') {
+        setError(t('auth.invalidUsernameFormat'));
+      } else {
+        setError(t('auth.registerError'));
       }
     } finally {
       setLoading(false);
@@ -55,7 +150,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await loginLocalGuest(displayName || 'Void Operative');
+      await loginLocalGuest('Void Operative');
       navigate('/dashboard');
     } catch (err) {
       console.error('[LoginPage] Guest login error:', err);
@@ -118,7 +213,7 @@ export default function LoginPage() {
           ))}
         </div>
 
-        {/* Login card */}
+        {/* Login / Register Card */}
         <div className="glass-panel p-8 border border-neon-cyan/30 shadow-[0_0_25px_rgba(0,240,255,0.15)] rounded-xl">
           {/* Title */}
           <div className="text-center mb-6">
@@ -135,89 +230,202 @@ export default function LoginPage() {
 
           {/* Error message */}
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-neon-red/10 border border-neon-red/30 text-neon-red text-sm text-center font-mono">
+            <div className="mb-4 p-3 rounded-lg bg-neon-red/10 border border-neon-red/30 text-neon-red text-sm text-center font-mono animate-fade-in">
               {error}
             </div>
           )}
 
-          {/* Auth form: Username & Password */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegister && (
+          {isRegister ? (
+            /* ========================================================
+             * REGISTRATION FORM: Username + Email + Password + Callsign
+             * ======================================================== */
+            <form onSubmit={handleRegisterSubmit} noValidate className="space-y-4">
+              {/* Username Field */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label
+                    htmlFor="reg-username"
+                    className="block text-xs text-gray-400 uppercase tracking-wider"
+                  >
+                    {t('auth.username')}
+                  </label>
+                  {checkingUsername ? (
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {t('auth.checkingAvailability')}
+                    </span>
+                  ) : usernameStatus === 'available' ? (
+                    <span className="text-[10px] text-neon-green font-mono">
+                      ✓ {t('auth.usernameAvailable')}
+                    </span>
+                  ) : usernameStatus === 'taken' ? (
+                    <span className="text-[10px] text-neon-red font-mono">
+                      ✕ {t('auth.usernameTaken')}
+                    </span>
+                  ) : null}
+                </div>
+                <input
+                  id="reg-username"
+                  type="text"
+                  autoComplete="username"
+                  value={regUsername}
+                  onChange={(e) => {
+                    setRegUsername(e.target.value);
+                    if (usernameStatus) setUsernameStatus(null);
+                  }}
+                  onBlur={handleUsernameBlur}
+                  required
+                  minLength={3}
+                  maxLength={20}
+                  className={`w-full px-4 py-3 rounded-lg bg-void-surface border text-gray-200
+                             placeholder-gray-600 focus:outline-none focus:ring-1 transition-all duration-200 font-mono text-sm ${
+                               usernameStatus === 'taken'
+                                 ? 'border-neon-red/60 focus:border-neon-red focus:ring-neon-red/30'
+                                 : usernameStatus === 'available'
+                                 ? 'border-neon-green/60 focus:border-neon-green focus:ring-neon-green/30'
+                                 : 'border-void-border focus:border-neon-cyan/50 focus:ring-neon-cyan/30'
+                             }`}
+                  placeholder={t('auth.usernameInputPlaceholder')}
+                />
+              </div>
+
+              {/* Email Address Field */}
               <div>
                 <label
-                  htmlFor="displayName"
+                  htmlFor="reg-email"
+                  className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider"
+                >
+                  {t('auth.email')}
+                </label>
+                <input
+                  id="reg-email"
+                  type="email"
+                  autoComplete="email"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg bg-void-surface border border-void-border text-gray-200
+                             placeholder-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30
+                             transition-all duration-200 font-mono text-sm"
+                  placeholder={t('auth.emailPlaceholder')}
+                />
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label
+                  htmlFor="reg-password"
+                  className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider"
+                >
+                  {t('auth.password')}
+                </label>
+                <input
+                  id="reg-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-3 rounded-lg bg-void-surface border border-void-border text-gray-200
+                             placeholder-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30
+                             transition-all duration-200 font-mono text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {/* Callsign / Display Name Field */}
+              <div>
+                <label
+                  htmlFor="reg-displayName"
                   className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider"
                 >
                   {t('auth.displayName')}
                 </label>
                 <input
-                  id="displayName"
+                  id="reg-displayName"
                   type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  value={regDisplayName}
+                  onChange={(e) => setRegDisplayName(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg bg-void-surface border border-void-border text-gray-200
                              placeholder-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30
                              transition-all duration-200 font-mono text-sm"
                   placeholder="Commander Shepard"
                 />
               </div>
-            )}
 
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider"
+              {/* Submit Registration Button */}
+              <button
+                id="submit-auth"
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-lg bg-neon-cyan/20 text-neon-cyan font-semibold tracking-wider uppercase
+                           border border-neon-cyan/40 hover:bg-neon-cyan/30 hover:shadow-[0_0_20px_rgba(0,240,255,0.3)]
+                           disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
-                {isRegister ? t('auth.username') : t('auth.usernameOrEmail')}
-              </label>
-              <input
-                id="username"
-                type="text"
-                autoComplete="username"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                required
-                minLength={3}
-                className="w-full px-4 py-3 rounded-lg bg-void-surface border border-void-border text-gray-200
-                           placeholder-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30
-                           transition-all duration-200 font-mono text-sm"
-                placeholder={t('auth.usernamePlaceholder')}
-              />
-            </div>
+                {loading ? '...' : t('auth.register')}
+              </button>
+            </form>
+          ) : (
+            /* ========================================================
+             * LOGIN FORM: Username or Email + Password
+             * ======================================================== */
+            <form onSubmit={handleLoginSubmit} noValidate className="space-y-4">
+              <div>
+                <label
+                  htmlFor="login-username"
+                  className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider"
+                >
+                  {t('auth.usernameOrEmail')}
+                </label>
+                <input
+                  id="login-username"
+                  type="text"
+                  autoComplete="username"
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  required
+                  minLength={3}
+                  className="w-full px-4 py-3 rounded-lg bg-void-surface border border-void-border text-gray-200
+                             placeholder-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30
+                             transition-all duration-200 font-mono text-sm"
+                  placeholder={t('auth.usernamePlaceholder')}
+                />
+              </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider"
+              <div>
+                <label
+                  htmlFor="login-password"
+                  className="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider"
+                >
+                  {t('auth.password')}
+                </label>
+                <input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-3 rounded-lg bg-void-surface border border-void-border text-gray-200
+                             placeholder-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30
+                             transition-all duration-200 font-mono text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button
+                id="submit-auth"
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-lg bg-neon-cyan/20 text-neon-cyan font-semibold tracking-wider uppercase
+                           border border-neon-cyan/40 hover:bg-neon-cyan/30 hover:shadow-[0_0_20px_rgba(0,240,255,0.3)]
+                           disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
-                {t('auth.password')}
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete={isRegister ? 'new-password' : 'current-password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-4 py-3 rounded-lg bg-void-surface border border-void-border text-gray-200
-                           placeholder-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/30
-                           transition-all duration-200 font-mono text-sm"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <button
-              id="submit-auth"
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-lg bg-neon-cyan/20 text-neon-cyan font-semibold tracking-wider uppercase
-                         border border-neon-cyan/40 hover:bg-neon-cyan/30 hover:shadow-[0_0_20px_rgba(0,240,255,0.3)]
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              {loading ? '...' : isRegister ? t('auth.register') : t('auth.login')}
-            </button>
-          </form>
+                {loading ? '...' : t('auth.login')}
+              </button>
+            </form>
+          )}
 
           {/* Quick Local Guest Access */}
           <div className="mt-4">
@@ -285,6 +493,7 @@ export default function LoginPage() {
               onClick={() => {
                 setIsRegister(!isRegister);
                 setError('');
+                setUsernameStatus(null);
               }}
               className="text-neon-cyan hover:text-neon-cyan/80 transition-colors font-medium ml-1"
             >

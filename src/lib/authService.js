@@ -6,7 +6,7 @@ import {
   signInAnonymously,
   signOut,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 const googleProvider = new GoogleAuthProvider();
@@ -16,9 +16,27 @@ export const STORAGE_ACTIVE_USER = 'unendingvoid_active_user';
 export const STORAGE_ACTIVE_PROFILE = 'unendingvoid_active_profile';
 
 /**
- * Normalizes a username or email input into a valid email string for Firebase Auth.
- * If the input already contains '@', it is treated as an email.
- * Otherwise, it converts the username into a deterministic '@unendingvoid.local' format.
+ * Validates standard email address format using RFC 5322 compatible regex.
+ */
+export function validateEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return regex.test(email.trim());
+}
+
+/**
+ * Validates username format: 3-20 characters, alphanumeric, underscores, and hyphens.
+ */
+export function validateUsername(username) {
+  if (!username || typeof username !== 'string') return false;
+  const trimmed = username.trim();
+  if (trimmed.length < 3 || trimmed.length > 20) return false;
+  const regex = /^[a-zA-Z0-9_-]+$/;
+  return regex.test(trimmed);
+}
+
+/**
+ * Normalizes a username or email input into an internal safe email string if no email domain provided.
  */
 export function normalizeUsernameToEmail(identifier) {
   if (!identifier) return '';
@@ -26,7 +44,6 @@ export function normalizeUsernameToEmail(identifier) {
   if (trimmed.includes('@')) {
     return trimmed;
   }
-  // Sanitize username: keep alphanumeric, underscores, dots, and hyphens
   const safeUsername = trimmed.replace(/[^a-z0-9_.-]/g, '_');
   return `${safeUsername || 'user'}@unendingvoid.local`;
 }
@@ -62,7 +79,7 @@ export function getLocalAccounts() {
 export function saveLocalAccount(account) {
   try {
     const accounts = getLocalAccounts();
-    const key = (account.username || account.email || 'user').toLowerCase();
+    const key = (account.username || extractUsername(account.email) || 'user').toLowerCase();
     accounts[key] = {
       ...account,
       updatedAt: new Date().toISOString(),
@@ -73,6 +90,63 @@ export function saveLocalAccount(account) {
     console.warn('[authService] Error saving local account:', err);
     return account;
   }
+}
+
+/**
+ * Checks whether a given username is available (uniqueness control).
+ * Checks both local accounts in browser and cloud Firestore registry.
+ */
+export async function isUsernameAvailable(username) {
+  if (!validateUsername(username)) return false;
+  const key = username.trim().toLowerCase();
+
+  // 1. Check local accounts
+  const localAccounts = getLocalAccounts();
+  if (localAccounts[key]) {
+    return false;
+  }
+
+  // 2. Check Firestore /usernames collection
+  try {
+    const snap = await getDoc(doc(db, 'usernames', key));
+    if (snap.exists()) {
+      return false;
+    }
+  } catch (err) {
+    console.warn('[authService] isUsernameAvailable Firestore check notice:', err.message);
+  }
+
+  return true;
+}
+
+/**
+ * Resolves a username to its registered email address.
+ */
+export async function resolveIdentifierToEmail(identifier) {
+  if (!identifier) return '';
+  const trimmed = identifier.trim().toLowerCase();
+  if (trimmed.includes('@')) {
+    return trimmed;
+  }
+
+  // 1. Check local accounts
+  const localAccounts = getLocalAccounts();
+  if (localAccounts[trimmed]?.email) {
+    return localAccounts[trimmed].email;
+  }
+
+  // 2. Check Firestore /usernames/{username}
+  try {
+    const snap = await getDoc(doc(db, 'usernames', trimmed));
+    if (snap.exists() && snap.data()?.email) {
+      return snap.data().email;
+    }
+  } catch (err) {
+    console.warn('[authService] resolveIdentifierToEmail Firestore lookup notice:', err.message);
+  }
+
+  // 3. Fallback to deterministic internal domain
+  return normalizeUsernameToEmail(trimmed);
 }
 
 /**
@@ -129,7 +203,7 @@ export const signInGoogle = async () => {
 
 /**
  * Authenticates with a Username or Email and Password.
- * Supports cloud Firebase accounts, local accounts in browser storage, and offline fallbacks.
+ * Resolves usernames to emails and checks both cloud Firebase and local accounts.
  */
 export const signInEmail = async (identifier, password) => {
   if (!identifier || !password) {
@@ -137,40 +211,38 @@ export const signInEmail = async (identifier, password) => {
   }
 
   const username = extractUsername(identifier).toLowerCase();
-  const email = normalizeUsernameToEmail(identifier);
+  const email = await resolveIdentifierToEmail(identifier);
 
-  // 1. Try Firebase Auth first
+  // 1. Try Firebase Auth with resolved email
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     if (cred?.user) {
       const activeUser = {
         uid: cred.user.uid,
-        displayName: cred.user.displayName || extractUsername(identifier),
+        displayName: cred.user.displayName || username,
         email: cred.user.email,
         username,
         isLocal: false,
       };
       setActiveSession(activeUser);
-      // Cache locally for offline availability
       saveLocalAccount({
         uid: cred.user.uid,
         username,
         displayName: activeUser.displayName,
         email: cred.user.email,
-        password, // Cached for offline matching
+        password,
       });
       return cred;
     }
   } catch (firebaseErr) {
-    console.warn('[authService] Cloud sign-in attempt warning:', firebaseErr.code || firebaseErr.message);
+    console.warn('[authService] Cloud sign-in warning:', firebaseErr.code || firebaseErr.message);
 
-    // 2. Check local accounts for offline or local-registered credentials
+    // 2. Check local accounts for matching credentials
     const localAccounts = getLocalAccounts();
-    const localAcc = localAccounts[username] || localAccounts[email];
+    const localAcc = localAccounts[username] || localAccounts[email] || localAccounts[identifier.toLowerCase()];
 
     if (localAcc) {
       if (localAcc.password === password) {
-        // Password matched locally
         const activeUser = {
           uid: localAcc.uid,
           displayName: localAcc.displayName || username,
@@ -194,12 +266,9 @@ export const signInEmail = async (identifier, password) => {
           isLocal: true,
         };
 
-        // Try anonymous auth in background if Firebase is online so Firestore tokens are valid
         try {
           await signInAnonymously(auth);
-        } catch (_) {
-          // Offline mode continues safely
-        }
+        } catch (_) {}
 
         setActiveSession(activeUser, activeProfile);
         return { user: activeUser, isLocal: true };
@@ -208,39 +277,65 @@ export const signInEmail = async (identifier, password) => {
       }
     }
 
-    // Neither cloud nor local account matched
     throw firebaseErr;
   }
 };
 
 /**
- * Registers an operative account with Username or Email, Password, and Display Name.
- * Creates Cloud Firestore profile and saves to local account storage.
+ * Registers an operative with Username, Email, Password, and optional Callsign.
+ * Enforces email validation, username format, and username uniqueness.
  */
-export const registerEmail = async (identifier, password, displayName) => {
-  if (!identifier || !password) {
-    throw new Error('MISSING_CREDENTIALS');
+export const registerWithCredentials = async ({ username, email, password, displayName }) => {
+  if (!username || !email || !password) {
+    throw new Error('MISSING_FIELDS');
   }
 
-  const username = extractUsername(identifier).toLowerCase();
-  const email = normalizeUsernameToEmail(identifier);
-  const finalDisplayName = displayName?.trim() || extractUsername(identifier);
+  const cleanUsername = username.trim().toLowerCase();
+  const cleanEmail = email.trim().toLowerCase();
 
-  // 1. Check local accounts to avoid collisions
-  const localAccounts = getLocalAccounts();
-  if (localAccounts[username]) {
-    // Already registered locally
-    throw new Error('USER_EXISTS');
+  // 1. Username format control
+  if (!validateUsername(cleanUsername)) {
+    throw new Error('INVALID_USERNAME_FORMAT');
   }
 
-  // 2. Try Firebase Auth Registration
+  // 2. Email format validation
+  if (!validateEmail(cleanEmail)) {
+    throw new Error('INVALID_EMAIL');
+  }
+
+  // 3. Password length control
+  if (password.length < 6) {
+    throw new Error('PASSWORD_TOO_SHORT');
+  }
+
+  // 4. Username uniqueness control
+  const available = await isUsernameAvailable(cleanUsername);
+  if (!available) {
+    throw new Error('USERNAME_TAKEN');
+  }
+
+  const finalDisplayName = displayName?.trim() || cleanUsername;
+
+  // 5. Try Firebase Auth User Creation
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+
+    // Claim username in Firestore /usernames/{username}
+    try {
+      await setDoc(doc(db, 'usernames', cleanUsername), {
+        uid: cred.user.uid,
+        email: cleanEmail,
+        createdAt: serverTimestamp(),
+      });
+    } catch (uErr) {
+      console.warn('[authService] Usernames registry warning:', uErr.message);
+    }
 
     const initialData = {
       uid: cred.user.uid,
       displayName: finalDisplayName,
-      username,
+      username: cleanUsername,
+      email: cleanEmail,
       role: 'player',
       locale: 'en',
       hp: 100,
@@ -265,48 +360,45 @@ export const registerEmail = async (identifier, password, displayName) => {
       updatedAt: serverTimestamp(),
     };
 
-    // Create player doc in Firestore
     try {
       await setDoc(doc(db, 'players', cred.user.uid), initialData);
     } catch (fsErr) {
-      console.warn('[authService] Firestore doc creation warning:', fsErr.message);
+      console.warn('[authService] Firestore player doc creation warning:', fsErr.message);
     }
 
     const activeUser = {
       uid: cred.user.uid,
       displayName: finalDisplayName,
-      email: cred.user.email,
-      username,
+      email: cleanEmail,
+      username: cleanUsername,
       isLocal: false,
     };
 
     setActiveSession(activeUser, initialData);
 
-    // Save account locally
     saveLocalAccount({
       uid: cred.user.uid,
-      username,
+      username: cleanUsername,
       displayName: finalDisplayName,
-      email: cred.user.email,
+      email: cleanEmail,
       password,
     });
 
     return cred;
   } catch (firebaseErr) {
-    console.warn('[authService] Cloud registration failed, creating local operative profile:', firebaseErr.code || firebaseErr.message);
+    console.warn('[authService] Cloud registration warning:', firebaseErr.code || firebaseErr.message);
 
-    // If already registered in Firebase, bubble error
     if (firebaseErr.code === 'auth/email-already-in-use') {
-      throw firebaseErr;
+      throw new Error('EMAIL_IN_USE');
     }
 
-    // 3. Create Fallback Local Account (for offline, emulator down, or local-only mode)
-    const uid = `local_${username}_${Date.now().toString(36)}`;
+    // 6. Local Account Fallback (offline / emulator down)
+    const uid = `local_${cleanUsername}_${Date.now().toString(36)}`;
     const localUser = {
       uid,
-      username,
+      username: cleanUsername,
       displayName: finalDisplayName,
-      email,
+      email: cleanEmail,
       password,
       isLocal: true,
       createdAt: new Date().toISOString(),
@@ -315,7 +407,8 @@ export const registerEmail = async (identifier, password, displayName) => {
     const localProfile = {
       uid,
       displayName: finalDisplayName,
-      username,
+      username: cleanUsername,
+      email: cleanEmail,
       role: 'player',
       locale: 'en',
       hp: 100,
@@ -340,7 +433,6 @@ export const registerEmail = async (identifier, password, displayName) => {
       localStorage.setItem(`unendingvoid_player_${uid}`, JSON.stringify(localProfile));
     } catch (_) {}
 
-    // Try background anonymous login to allow Firestore access if available
     try {
       await signInAnonymously(auth);
     } catch (_) {}
@@ -348,6 +440,22 @@ export const registerEmail = async (identifier, password, displayName) => {
     setActiveSession(localUser, localProfile);
     return { user: localUser, isLocal: true };
   }
+};
+
+/**
+ * Backward compatibility wrapper for registerEmail.
+ */
+export const registerEmail = async (identifier, password, displayName) => {
+  const isEmail = identifier.includes('@');
+  const email = isEmail ? identifier : normalizeUsernameToEmail(identifier);
+  const username = extractUsername(identifier);
+
+  return registerWithCredentials({
+    username,
+    email,
+    password,
+    displayName,
+  });
 };
 
 /**
@@ -360,14 +468,13 @@ export const loginLocalGuest = async (customName = '') => {
 
   let uid = `local_guest_${Date.now().toString(36)}`;
 
-  // Attempt anonymous Firebase login if available
   try {
     const cred = await signInAnonymously(auth);
     if (cred?.user?.uid) {
       uid = cred.user.uid;
     }
   } catch (err) {
-    console.warn('[authService] Anonymous Firebase sign-in warning:', err.message);
+    console.warn('[authService] Anonymous Firebase sign-in notice:', err.message);
   }
 
   const guestUser = {

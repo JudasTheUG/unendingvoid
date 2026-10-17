@@ -24,7 +24,15 @@
     "invalidCredentials": "Ungültiger Benutzername oder Passwort.",
     "passwordMinLength": "Das Passwort muss mindestens 6 Zeichen lang sein.",
     "usernameMinLength": "Der Benutzername muss mindestens 3 Zeichen lang sein.",
-    "userExists": "Dieser Benutzername ist bereits vergeben. Bitte melden Sie sich an."
+    "userExists": "Dieser Benutzername ist bereits vergeben. Bitte melden Sie sich an.",
+    "usernameInputPlaceholder": "z. B. void_pilot",
+    "emailPlaceholder": "pilot@void.net",
+    "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "invalidUsernameFormat": "Der Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten (3-20 Zeichen).",
+    "usernameTaken": "Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen.",
+    "emailInUse": "Diese E-Mail-Adresse wird bereits verwendet. Bitte melden Sie sich an.",
+    "checkingAvailability": "Verfügbarkeit wird geprüft...",
+    "usernameAvailable": "Benutzername ist verfügbar"
   },
   "player": {
     "sheet": "Charakterbogen",

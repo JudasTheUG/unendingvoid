@@ -504,17 +504,19 @@ service cloud.firestore {
 
 ---
 
-### Phase 10: Routing, Shell, Navigation & Local Username/Password Authentication
+### Phase 10: Routing, Shell, Navigation & Registration with Username, Mail & Password
 
-> **Goal**: Responsive application shell with local/cloud username and password authentication, guest routing, and protected paths.
+> **Goal**: Responsive application shell with authenticated and guest routing, supporting registration with username, email, password, format validation, and uniqueness control.
 
-- **Username & Password Authentication Engine** (`src/lib/authService.js`):
-  - Normalizes clean handles (e.g. `commander`, `judas`) to internal email addresses for Firebase Auth.
-  - Implements browser `localStorage` account caching (`unendingvoid_local_accounts`) and active session persistence.
-  - Fully supports offline and emulator development with fallback local accounts when cloud connectivity is unavailable.
-  - One-click Quick Local Guest login (`loginLocalGuest()`) for instantaneous test access.
+- **Username, Email & Password Authentication Engine** (`src/lib/authService.js`):
+  - **Full Registration**: Operatives register with **Username**, **Email**, **Password**, and optional Callsign.
+  - **Email Format Validation**: Strict RFC-compliant regex validation (`validateEmail()`).
+  - **Username Uniqueness Control**: Validates availability against `/usernames/{username}` in Cloud Firestore and `unendingvoid_local_accounts` in browser storage (`isUsernameAvailable()`).
+  - **Dual Sign-In**: Operatives can authenticate using either their chosen Username OR Email with password.
+  - Implements browser `localStorage` account caching and active session persistence with offline fallback.
+  - One-click Quick Local Guest login (`loginLocalGuest()`) for instantaneous testing.
 - `src/router.jsx`: React Router v7 routes:
-  - `/login`: `LoginPage.jsx` (Username or email & password sign-in, account creation, and quick local guest access).
+  - `/login`: `LoginPage.jsx` (Username or email & password sign-in, registration with uniqueness control, and quick local guest access).
   - `/dashboard`: `DashboardPage.jsx` (Character selection, active campaign status, quick actions).
   - `/sheet/:characterId`: `PlayerSheet.jsx` (Operative Dossier).
   - `/dm/:campaignId`: `DMPanel.jsx` (DM Tactical Command Deck).
@@ -528,15 +530,15 @@ service cloud.firestore {
 
 > **Goal**: Run automated test suites to ensure 100% pass rate before deployment.
 
-#### 11.1 Test Suite Manifest (Must all pass - 17 suites, 113+ tests)
-1. `src/lib/__tests__/authService.test.js`: Username normalization, local account storage, password validation, guest login.
+#### 11.1 Test Suite Manifest (Must all pass - 17 suites, 117+ tests)
+1. `src/lib/__tests__/authService.test.js`: Email format validation, username format, uniqueness control, credentials registration, dual login.
 2. `src/lib/__tests__/playerActions.test.js`: Rest, damage, and character deletion tests.
 3. `src/lib/__tests__/campaignActions.test.js`: Campaign deletion and roster actions.
 4. `src/lib/__tests__/diceModifiers.test.js`: Trait modifiers and bonus rolls.
 5. `src/lib/__tests__/initiativeCalculator.test.js`: Initiative sorting and tie-breakers.
 6. `src/lib/__tests__/shipValidation.test.js`: Grid balance and thrust calculations.
 7. `src/lib/__tests__/i18n.test.js`: Tri-lingual completeness across EN, TR, DE.
-8. `src/components/__tests__/LoginPage.test.jsx`: Username & password form submission and guest login.
+8. `src/components/__tests__/LoginPage.test.jsx`: Registration with username, email, password, uniqueness check, and guest login.
 9. `src/components/__tests__/CombatAndInitiative.test.jsx`: Combat tracker state transitions.
 10. `src/components/__tests__/DMRollPrivacy.test.jsx`: Secret DM roll masking.
 11. `src/components/__tests__/ShipAssignmentAndShipyard.test.jsx`: Ship purchasing & assignment.
@@ -551,7 +553,7 @@ service cloud.firestore {
 ```powershell
 npm test -- --run
 ```
-Expected output: **All 17 test files passed, 113+ tests, 0 failures**.
+Expected output: **All 17 test files passed, 117+ tests, 0 failures**.
 
 ---
 
