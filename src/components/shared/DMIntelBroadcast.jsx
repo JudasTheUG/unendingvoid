@@ -220,8 +220,23 @@ export default function DMIntelBroadcast({
     };
   }, [isOpen]);
 
+  // Listen for close_tac_comms (e.g. when Quantum Roll Ledger opens)
+  useEffect(() => {
+    const handleCloseComms = () => {
+      setIsOpen(false);
+    };
+    window.addEventListener('unendingvoid:close_tac_comms', handleCloseComms);
+    return () => window.removeEventListener('unendingvoid:close_tac_comms', handleCloseComms);
+  }, []);
+
   const handleOpen = () => {
-    setIsOpen(!isOpen);
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        window.dispatchEvent(new CustomEvent('unendingvoid:close_ledger'));
+      }
+      return next;
+    });
     setHasNewUnread(false);
   };
 
