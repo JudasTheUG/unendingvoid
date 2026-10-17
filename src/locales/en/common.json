@@ -65,5 +65,34 @@
     "edit": "Edit",
     "back": "Back",
     "language": "Language"
+  },
+  "spaceship": {
+    "title": "Starship Console",
+    "builder": "Ship Builder",
+    "modules": "Ship Modules",
+    "hull": "Hull Frame",
+    "flightDeck": "Flight Deck / Bridge",
+    "thrusters": "Thruster Engines",
+    "warpDrive": "Warp Drive Core",
+    "fuelTanks": "Fuel Tanks",
+    "cargoBay": "Cargo Bay",
+    "scanning": "Scanning Components",
+    "landingSystems": "Landing Systems",
+    "weapons": "Weapon Batteries",
+    "assemble": "Assemble Vessel",
+    "orderParts": "Order Parts via E.E.Sys",
+    "flightReady": "Flight Ready",
+    "diagnostics": "Diagnostics",
+    "mass": "Total Mass",
+    "thrust": "Engine Thrust",
+    "power": "Reactor Grid"
+  },
+  "eesys": {
+    "marketplace": "E.E.Sys Marketplace",
+    "membership": "Equivalent Exchange Membership",
+    "membershipRequired": "An Equivalent Exchange Membership (E.E.Sys) is required to access the interstellar market terminal.",
+    "buy": "Buy",
+    "sell": "Sell",
+    "balance": "Available Balance"
   }
 }

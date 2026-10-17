@@ -65,5 +65,34 @@
     "edit": "Düzenle",
     "back": "Geri",
     "language": "Dil"
+  },
+  "spaceship": {
+    "title": "Uzay Gemisi Konsolu",
+    "builder": "Gemi Tasarımcısı",
+    "modules": "Gemi Modülleri",
+    "hull": "Gövde İskeleti",
+    "flightDeck": "Uçuş Güvertesi / Köprü",
+    "thrusters": "İtici Motorlar",
+    "warpDrive": "Warp Sürücü Çekirdeği",
+    "fuelTanks": "Yakıt Tankları",
+    "cargoBay": "Kargo Bölmesi",
+    "scanning": "Tarama Bileşenleri",
+    "landingSystems": "İniş Sistemleri",
+    "weapons": "Silah Bataryaları",
+    "assemble": "Gemiyi Birleştir",
+    "orderParts": "E.E.Sys ile Parçaları Sipariş Et",
+    "flightReady": "Uçuşa Hazır",
+    "diagnostics": "Sistem Teşhisi",
+    "mass": "Toplam Kütle",
+    "thrust": "Motor İtiş Gücü",
+    "power": "Reaktör Şebekesi"
+  },
+  "eesys": {
+    "marketplace": "E.E.Sys Pazarı",
+    "membership": "Eşdeğer Değişim Üyeliği",
+    "membershipRequired": "Yıldızlararası pazar terminaline erişmek için bir Eşdeğer Değişim Üyeliği (E.E.Sys) gereklidir.",
+    "buy": "Satın Al",
+    "sell": "Sat",
+    "balance": "Kullanılabilir Bakiye"
   }
 }

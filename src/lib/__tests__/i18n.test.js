@@ -13,6 +13,7 @@ describe('i18n integration', () => {
   it('should initialize with correct resources', () => {
     expect(i18n.hasResourceBundle('en', 'translation')).toBe(true);
     expect(i18n.hasResourceBundle('tr', 'translation')).toBe(true);
+    expect(i18n.hasResourceBundle('de', 'translation')).toBe(true);
     expect(i18n.hasResourceBundle('nl', 'translation')).toBe(true);
   });
 
@@ -26,6 +27,12 @@ describe('i18n integration', () => {
     await i18n.changeLanguage('tr');
     expect(i18n.t('app.title')).toBe('Sonsuz Boşluk');
     expect(i18n.t('auth.login')).toBe('Giriş Yap');
+  });
+
+  it('should translate keys correctly in German', async () => {
+    await i18n.changeLanguage('de');
+    expect(i18n.t('app.title')).toBe('Unendliche Leere');
+    expect(i18n.t('auth.login')).toBe('Anmelden');
   });
 
   it('should translate keys correctly in Dutch', async () => {
