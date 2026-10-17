@@ -48,6 +48,49 @@ const DIE_THEMES = {
   coin: { border: '#cbd5e1', glow: 'rgba(203, 213, 225, 0.85)', baseColor: 0x1e242b, label: 'LUCIFER COIN' },
 };
 
+// Central Bounded Rolling Field (5x5 to 6x6 square field in the middle of a 12x8 viewport)
+export const ARENA_CONFIG = {
+  halfWidth: 3.6,    // X bounds: [-3.6, +3.6] (width: 7.2 units)
+  halfHeight: 3.2,   // Y bounds: [-3.2, +3.2] (height: 6.4 units)
+  halfDepth: 1.8,    // Z bounds: [-1.8, +1.8] (depth: 3.6 units)
+  restitution: 0.62, // Wall collision restitution (bounciness)
+  gravity: -14.0,    // Gravitational acceleration towards lower field
+  damping: 0.65,     // Velocity damping
+};
+
+function setupDiePhysicsInArena(dieMesh, targetPos, seed = 0, index = 0, totalCount = 1) {
+  dieMesh.userData.targetPosition = targetPos.clone();
+
+  // Starting spawn within the upper-middle region of the central arena
+  const spawnAngle = (index * (Math.PI * 2 / Math.max(1, totalCount))) + ((seed % 100) / 20);
+  const startX = Math.max(-ARENA_CONFIG.halfWidth + 0.7, Math.min(ARENA_CONFIG.halfWidth - 0.7, targetPos.x + Math.cos(spawnAngle) * 1.4));
+  const startY = Math.max(-ARENA_CONFIG.halfHeight + 0.7, Math.min(ARENA_CONFIG.halfHeight - 0.7, targetPos.y + 0.6 + Math.abs(Math.sin(spawnAngle)) * 1.1));
+  const startZ = ((Math.sin(seed * 3 + index) * 0.8));
+
+  dieMesh.position.set(startX, startY, startZ);
+
+  // Energetic 3D throw velocity inside the arena
+  const throwAngle = spawnAngle + Math.PI * 0.75;
+  const throwSpeed = 9.0 + ((seed * 11 + index * 13) % 4.5);
+
+  dieMesh.userData.linVel = new THREE.Vector3(
+    Math.cos(throwAngle) * throwSpeed,
+    Math.sin(throwAngle) * throwSpeed * 0.65 + 2.0,
+    (Math.cos(seed * 5 + index) * 3.5)
+  );
+
+  dieMesh.userData.rotVel = new THREE.Vector3(
+    (18 + ((seed * 7 + index * 5) % 18)) * (Math.sin(seed + index) > 0 ? 1 : -1),
+    (20 + ((seed * 9 + index * 7) % 18)) * (Math.cos(seed + index) > 0 ? 1 : -1),
+    (16 + ((seed * 11 + index * 9) % 18)) * (Math.sin(seed * 2 + index) > 0 ? 1 : -1)
+  );
+
+  dieMesh.userData.animating = true;
+  dieMesh.userData.elapsed = 0;
+  dieMesh.userData.settleStartQuat = null;
+  dieMesh.userData.settleStartPos = null;
+}
+
 // Cached 3D Lucifer Pentecostal Coin Geometry
 let cachedCoinGeometry = null;
 let coinLoadPromise = null;
@@ -403,6 +446,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 
   const [activeRollBanner, setActiveRollBanner] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
+  const [isArenaActive, setIsArenaActive] = useState(false);
   const [recentRolls, setRecentRolls] = useState(() => getStoredRolls());
   const [showHistory, setShowHistory] = useState(false);
 
@@ -418,6 +462,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       }
     }
     setActiveRollBanner(null);
+    setIsArenaActive(false);
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
     if (isDiceHoveredRef.current) {
       document.body.style.cursor = 'default';
@@ -439,7 +484,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 1.5, 18);
+    camera.position.set(0, 0.5, 18);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -485,12 +530,37 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
           if (die.userData.animating) {
             die.position.x += die.userData.linVel.x * dt;
             die.position.y += die.userData.linVel.y * dt;
-            die.userData.linVel.y -= 14.0 * dt;
+            die.position.z += (die.userData.linVel.z || 0) * dt;
+            die.userData.linVel.y += ARENA_CONFIG.gravity * dt;
+            die.userData.linVel.multiplyScalar(Math.max(0, 1 - ARENA_CONFIG.damping * dt));
 
-            if (die.position.y < -1.8) {
-              die.position.y = -1.8;
-              die.userData.linVel.y *= -0.32;
-              die.userData.linVel.x *= 0.7;
+            // Bouncing against Central Arena boundaries (X, Y, Z walls of the 5x5 / 6x6 arena)
+            if (die.position.x < -ARENA_CONFIG.halfWidth) {
+              die.position.x = -ARENA_CONFIG.halfWidth;
+              die.userData.linVel.x = Math.abs(die.userData.linVel.x) * ARENA_CONFIG.restitution;
+              die.userData.rotVel.y += (Math.random() - 0.5) * 8;
+            } else if (die.position.x > ARENA_CONFIG.halfWidth) {
+              die.position.x = ARENA_CONFIG.halfWidth;
+              die.userData.linVel.x = -Math.abs(die.userData.linVel.x) * ARENA_CONFIG.restitution;
+              die.userData.rotVel.y += (Math.random() - 0.5) * 8;
+            }
+
+            if (die.position.y < -ARENA_CONFIG.halfHeight) {
+              die.position.y = -ARENA_CONFIG.halfHeight;
+              die.userData.linVel.y = Math.abs(die.userData.linVel.y) * ARENA_CONFIG.restitution;
+              die.userData.linVel.x *= 0.88;
+              die.userData.rotVel.multiplyScalar(0.9);
+            } else if (die.position.y > ARENA_CONFIG.halfHeight) {
+              die.position.y = ARENA_CONFIG.halfHeight;
+              die.userData.linVel.y = -Math.abs(die.userData.linVel.y) * ARENA_CONFIG.restitution;
+            }
+
+            if (die.position.z < -ARENA_CONFIG.halfDepth) {
+              die.position.z = -ARENA_CONFIG.halfDepth;
+              die.userData.linVel.z = Math.abs(die.userData.linVel.z) * ARENA_CONFIG.restitution;
+            } else if (die.position.z > ARENA_CONFIG.halfDepth) {
+              die.position.z = ARENA_CONFIG.halfDepth;
+              die.userData.linVel.z = -Math.abs(die.userData.linVel.z) * ARENA_CONFIG.restitution;
             }
 
             if (die.userData.elapsed < 0.75) {
@@ -506,17 +576,24 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
             } else if (die.userData.elapsed < 1.35) {
               if (!die.userData.settleStartQuat) {
                 die.userData.settleStartQuat = die.quaternion.clone();
+                die.userData.settleStartPos = die.position.clone();
               }
               const progress = Math.min(1, Math.max(0, (die.userData.elapsed - 0.75) / 0.6));
               const ease = 1 - Math.pow(1 - progress, 3);
               if (die.userData.targetQuaternion) {
                 die.quaternion.slerpQuaternions(die.userData.settleStartQuat, die.userData.targetQuaternion, ease);
               }
+              if (die.userData.targetPosition) {
+                die.position.lerpVectors(die.userData.settleStartPos, die.userData.targetPosition, ease);
+              }
               die.userData.linVel.multiplyScalar(0.7);
             } else {
               die.userData.animating = false;
               if (die.userData.targetQuaternion) {
                 die.quaternion.copy(die.userData.targetQuaternion);
+              }
+              if (die.userData.targetPosition) {
+                die.position.copy(die.userData.targetPosition);
               }
             }
           }
@@ -555,6 +632,33 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
             }
           }
         });
+
+        // Inter-dice dynamic collision & soft repulsion in the arena
+        if (diceGroup.children.length > 1) {
+          for (let i = 0; i < diceGroup.children.length; i++) {
+            for (let j = i + 1; j < diceGroup.children.length; j++) {
+              const d1 = diceGroup.children[i];
+              const d2 = diceGroup.children[j];
+              const dist = d1.position.distanceTo(d2.position);
+              const minDist = 2.4;
+              if (dist < minDist && dist > 0.001) {
+                const overlap = (minDist - dist) * 0.5;
+                const push = new THREE.Vector3().subVectors(d1.position, d2.position).normalize();
+                d1.position.addScaledVector(push, overlap);
+                d2.position.addScaledVector(push, -overlap);
+                if (d1.userData.animating && d2.userData.animating) {
+                  const relVel = new THREE.Vector3().subVectors(d1.userData.linVel, d2.userData.linVel);
+                  const sepVel = relVel.dot(push);
+                  if (sepVel < 0) {
+                    const impulse = -sepVel * 0.6;
+                    d1.userData.linVel.addScaledVector(push, impulse);
+                    d2.userData.linVel.addScaledVector(push, -impulse);
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       renderer.render(scene, camera);
@@ -631,7 +735,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
   const createDieMesh = (dieType, seed, targetResult, isHighlightEligible = true) => {
     const theme = DIE_THEMES[dieType] || DIE_THEMES.d20;
     const dieRoot = new THREE.Group();
-    const cameraLookDir = new THREE.Vector3(0, 0.171, 0.985);
+    const cameraLookDir = new THREE.Vector3(0, 0.08, 0.996).normalize();
 
     dieRoot.userData.isHighlightEligible = isHighlightEligible;
 
@@ -880,20 +984,9 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       }
     }
 
-    const prng = (Math.sin(seed) * 10000) % 1;
-    dieRoot.position.set(-5 + prng * 10, 6, -2);
+    dieRoot.position.set(0, 0, 0);
     dieRoot.userData.animating = true;
     dieRoot.userData.elapsed = 0;
-    dieRoot.userData.rotVel = new THREE.Vector3(
-      15 + Math.random() * 16,
-      17 + Math.random() * 16,
-      13 + Math.random() * 16
-    );
-    dieRoot.userData.linVel = new THREE.Vector3(
-      1.5 + Math.random() * 2,
-      3.0 + Math.random() * 2.5,
-      -1
-    );
 
     return dieRoot;
   };
@@ -903,6 +996,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     if (!diceGroupRef.current) return;
     const diceGroup = diceGroupRef.current;
 
+    setIsArenaActive(true);
     setActiveRollBanner(null);
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
 
@@ -918,6 +1012,30 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     const seed = rollData.physics?.seed || Math.random() * 1000;
     const rollMode = rollData.rollMode || 'normal';
 
+    // Helper to calculate target settlement position inside the middle 5x5 / 6x6 arena
+    const getTargetPosition = (index, totalCount) => {
+      if (totalCount === 1) {
+        return new THREE.Vector3(0, -0.3, 0);
+      }
+      if (totalCount === 2) {
+        return new THREE.Vector3(index === 0 ? -1.6 : 1.6, -0.3, 0);
+      }
+      if (totalCount === 3) {
+        return new THREE.Vector3((index - 1) * 2.3, -0.3, 0);
+      }
+      if (totalCount === 4) {
+        const col = index % 2;
+        const row = Math.floor(index / 2);
+        return new THREE.Vector3(col === 0 ? -1.3 : 1.3, row === 0 ? 0.9 : -1.3, 0);
+      }
+      const cols = Math.ceil(totalCount / 2);
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const x = (col - (cols - 1) / 2) * (cols > 4 ? 1.8 : 2.2);
+      const y = row === 0 ? 0.9 : -1.3;
+      return new THREE.Vector3(x, y, 0);
+    };
+
     if (isCoin) {
       // ──────────────── LUCIFER'S SILVER COIN TOSS ────────────────
       const results = rollData.results || ['HEADS'];
@@ -926,15 +1044,8 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       for (let i = 0; i < count; i++) {
         const coinSide = results[i] || 'HEADS';
         const coinMesh = createDieMesh('coin', seed + i * 47, coinSide, true);
-        if (count <= 4) {
-          coinMesh.position.x += (i - (count - 1) / 2) * 3.4;
-        } else {
-          const cols = Math.ceil(count / 2);
-          const row = Math.floor(i / cols);
-          const col = i % cols;
-          coinMesh.position.x += (col - (cols - 1) / 2) * 3.0;
-          coinMesh.position.y += row === 0 ? 1.2 : -1.2;
-        }
+        const targetPos = getTargetPosition(i, count);
+        setupDiePhysicsInArena(coinMesh, targetPos, seed, i, count);
         diceGroup.add(coinMesh);
       }
     } else if (isD100) {
@@ -943,11 +1054,11 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       const onesVal = rollData.onesResult !== undefined ? String(rollData.onesResult) : '0';
 
       const dieTens = createDieMesh('d10percentile', seed, tensVal, true);
-      dieTens.position.x = -2.4;
+      setupDiePhysicsInArena(dieTens, new THREE.Vector3(-1.6, -0.3, 0), seed, 0, 2);
       diceGroup.add(dieTens);
 
       const dieOnes = createDieMesh('d10', seed + 47, onesVal, true);
-      dieOnes.position.x = 2.4;
+      setupDiePhysicsInArena(dieOnes, new THREE.Vector3(1.6, -0.3, 0), seed + 47, 1, 2);
       diceGroup.add(dieOnes);
     } else if (rollMode === 'advantage' || rollMode === 'disadvantage') {
       // ──────────────── ADVANTAGE / DISADVANTAGE ────────────────
@@ -955,11 +1066,11 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       const winIdx = rollData.winningIndex !== undefined ? rollData.winningIndex : 0;
 
       const die1 = createDieMesh('d20', seed, results[0], winIdx === 0);
-      die1.position.x = -2.2;
+      setupDiePhysicsInArena(die1, new THREE.Vector3(-1.6, -0.3, 0), seed, 0, 2);
       diceGroup.add(die1);
 
       const die2 = createDieMesh('d20', seed + 73, results[1], winIdx === 1);
-      die2.position.x = 2.2;
+      setupDiePhysicsInArena(die2, new THREE.Vector3(1.6, -0.3, 0), seed + 73, 1, 2);
       diceGroup.add(die2);
     } else {
       // ──────────────── MULTIPLE STANDARD DICE ────────────────
@@ -972,15 +1083,8 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       for (let i = 0; i < count; i++) {
         const targetNum = results[i] || 1;
         const dieMesh = createDieMesh(dieSides, seed + i * 47, targetNum, true);
-        if (count <= 4) {
-          dieMesh.position.x += (i - (count - 1) / 2) * 3.2;
-        } else {
-          const cols = Math.ceil(count / 2);
-          const row = Math.floor(i / cols);
-          const col = i % cols;
-          dieMesh.position.x += (col - (cols - 1) / 2) * 2.8;
-          dieMesh.position.y += row === 0 ? 1.2 : -1.2;
-        }
+        const targetPos = getTargetPosition(i, count);
+        setupDiePhysicsInArena(dieMesh, targetPos, seed, i, count);
         diceGroup.add(dieMesh);
       }
     }
@@ -1309,6 +1413,22 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     <>
       {/* 3D WebGL Canvas Layer */}
       <div ref={mountRef} className="fixed inset-0 pointer-events-none z-40 overflow-hidden" />
+
+      {/* Central Holographic Tactical Rolling Arena (5x5 / 6x6 Field in the Middle of Screen) */}
+      {(isArenaActive || activeRollBanner || isRolling) && (
+        <div
+          data-testid="holographic-dice-arena"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] md:w-[480px] md:h-[480px] pointer-events-none z-30 transition-all duration-500 animate-fade-in"
+        >
+          {/* Subtle sci-fi corner brackets */}
+          <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-neon-cyan/40 rounded-tl shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
+          <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-neon-cyan/40 rounded-tr shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
+          <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-neon-cyan/40 rounded-bl shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
+          <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-neon-cyan/40 rounded-br shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
+          {/* Faint holographic boundary aura */}
+          <div className="absolute inset-0 rounded-2xl border border-neon-cyan/15 bg-cyan-950/[0.03] shadow-[0_0_30px_rgba(0,240,255,0.05)]" />
+        </div>
+      )}
 
       {/* 100% Solid Opaque Roll Result Banner */}
       {activeRollBanner && ((!activeRollBanner.isSecret && !activeRollBanner.isDMRoll && activeRollBanner.role !== 'dm') || isViewerDM) && (

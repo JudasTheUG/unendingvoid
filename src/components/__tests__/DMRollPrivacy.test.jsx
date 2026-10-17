@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import DiceOverlay from '../dice/DiceOverlay';
+import DiceOverlay, { ARENA_CONFIG } from '../dice/DiceOverlay';
 import { publishRoll } from '../../hooks/useDiceSync';
 
 // Mock Three.js WebGLRenderer to avoid WebGL context issues in jsdom
@@ -194,4 +194,43 @@ describe('DM Roll Privacy vs Player Roll Visibility', () => {
     expect(screen.getByText('Behind Screen Ambush Check')).toBeInTheDocument();
     expect(screen.getByText(/DM Secret/i)).toBeInTheDocument();
   });
+
+  it('exports ARENA_CONFIG constraining rolls to central 5x5 / 6x6 arena field', () => {
+    expect(ARENA_CONFIG).toBeDefined();
+    expect(ARENA_CONFIG.halfWidth).toBe(3.6); // 7.2 total width
+    expect(ARENA_CONFIG.halfHeight).toBe(3.2); // 6.4 total height
+    expect(ARENA_CONFIG.halfDepth).toBe(1.8);
+    expect(ARENA_CONFIG.restitution).toBeGreaterThan(0.5);
+  });
+
+  it('renders holographic central dice arena when a roll is displayed', () => {
+    const { unmount } = render(
+      <DiceOverlay
+        user={{ uid: 'p_1' }}
+        profile={{ role: 'player', displayName: 'Nova' }}
+        isDM={false}
+      />
+    );
+
+    // Trigger a multiplayer roll display
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:multiplayer_roll', {
+          detail: {
+            playerId: 'p_2',
+            playerName: 'Cipher',
+            notation: '1d20',
+            results: [15],
+            total: 15,
+            purpose: 'Perception',
+          },
+        })
+      );
+    });
+
+    // Holographic central arena field is displayed
+    expect(screen.getByTestId('holographic-dice-arena')).toBeInTheDocument();
+    unmount();
+  });
 });
+
