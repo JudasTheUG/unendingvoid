@@ -18,6 +18,8 @@ import {
   setPlayerEEMembership,
   assignShipToPlayer,
   removeShipFromPlayer,
+  updatePlayerInventory,
+  addPlayerDesign,
 } from '../playerActions';
 
 // Mock Firebase functions
@@ -231,5 +233,31 @@ describe('playerActions', () => {
       updatedAt: 'serverTimestampMock',
     });
   });
+
+  it('updatePlayerInventory calls updateDoc with new inventory array', async () => {
+    const newInv = ['item_1', 'mat_titanium_alloy'];
+    await updatePlayerInventory(mockUserId, newInv);
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      inventory: newInv,
+      updatedAt: 'serverTimestampMock',
+    });
+  });
+
+  it('addPlayerDesign calls updateDoc with designs and inventory arrayUnion', async () => {
+    const designId = 'item_plasma_carbine_mk2';
+    await addPlayerDesign(mockUserId, designId);
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(arrayUnion).toHaveBeenCalledWith(designId);
+    expect(arrayUnion).toHaveBeenCalledWith(`design_${designId}`);
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      designs: 'arrayUnion(item_plasma_carbine_mk2)',
+      inventory: 'arrayUnion(design_item_plasma_carbine_mk2)',
+      updatedAt: 'serverTimestampMock',
+    });
+  });
 });
+
 

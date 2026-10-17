@@ -88,3 +88,17 @@ export const removeShipFromPlayer = (userId) =>
     updatedAt: serverTimestamp(),
   });
 
+export const updatePlayerInventory = (userId, inventory) =>
+  updateDoc(doc(db, 'players', userId), {
+    inventory,
+    updatedAt: serverTimestamp(),
+  });
+
+export const addPlayerDesign = (userId, designId) =>
+  updateDoc(doc(db, 'players', userId), {
+    designs: arrayUnion(designId),
+    inventory: arrayUnion(`design_${designId}`),
+    updatedAt: serverTimestamp(),
+  });
+
+

@@ -130,6 +130,149 @@ describe('EESysMarketplace', () => {
 
     localStorage.removeItem(`unendingvoid:ee_membership:${mockId}`);
   });
+
+  it('filters catalog to display Materials & Components and allows purchasing materials', () => {
+    const handleUpdateCredits = vi.fn();
+    const handleUpdateInventory = vi.fn();
+
+    render(
+      <EESysMarketplace
+        player={{ displayName: 'Anthony', credits: 500, hasEEMembership: true }}
+        inventoryItems={[]}
+        onUpdateCredits={handleUpdateCredits}
+        onUpdateInventory={handleUpdateInventory}
+      />
+    );
+
+    // Click Materials & Components tab
+    const matTab = screen.getByRole('button', { name: /Materials & Components/i });
+    fireEvent.click(matTab);
+
+    // Verify raw materials appear in the catalog
+    expect(screen.getByText(/Titanium-Ceramite Ingot/i)).toBeInTheDocument();
+    expect(screen.getByText(/Plasma Compression Valve/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sub-Atomic Tachyon Crystal/i)).toBeInTheDocument();
+
+    // Purchase Titanium-Ceramite Ingot (costs 25 credits)
+    const buyButtons = screen.getAllByRole('button', { name: /Buy \(25 ₢\)/i });
+    expect(buyButtons.length).toBeGreaterThan(0);
+    fireEvent.click(buyButtons[0]);
+
+    expect(handleUpdateCredits).toHaveBeenCalledWith(475);
+    expect(handleUpdateInventory).toHaveBeenCalled();
+  });
+
+  it('allows synthesizing item for 0 credits when operative has components and design', () => {
+    const handleUpdateInventory = vi.fn();
+    const handleUpdateCredits = vi.fn();
+
+    // Pulse Carbine requires 2x mat_titanium_alloy and 2x mat_plasma_cell
+    const inventory = [
+      MEMBERSHIP_ITEM,
+      { id: 'mat_titanium_alloy', name: 'Titanium-Ceramite Ingot' },
+      { id: 'mat_titanium_alloy', name: 'Titanium-Ceramite Ingot' },
+      { id: 'mat_plasma_cell', name: 'Plasma Compression Valve' },
+      { id: 'mat_plasma_cell', name: 'Plasma Compression Valve' },
+    ];
+
+    render(
+      <EESysMarketplace
+        player={{
+          displayName: 'Anthony',
+          credits: 300,
+          hasEEMembership: true,
+          designs: ['item_plasma_carbine_mk2'],
+        }}
+        inventoryItems={inventory}
+        onUpdateInventory={handleUpdateInventory}
+        onUpdateCredits={handleUpdateCredits}
+      />
+    );
+
+    // Synthesize button should be available for 0 credits
+    const synthesizeBtn = screen.getByRole('button', { name: /Synthesize \(0 ₡\)/i });
+    expect(synthesizeBtn).toBeInTheDocument();
+
+    fireEvent.click(synthesizeBtn);
+
+    // Credits should NOT be deducted (free synthesis), inventory updated
+    expect(handleUpdateCredits).not.toHaveBeenCalled();
+    expect(handleUpdateInventory).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'item_plasma_carbine_mk2' })])
+    );
+  });
+
+  it('allows unlocking design and synthesizing when operative has components but lacks design', () => {
+    const handleUpdateInventory = vi.fn();
+    const handleUpdateCredits = vi.fn();
+
+    const inventory = [
+      MEMBERSHIP_ITEM,
+      { id: 'mat_titanium_alloy', name: 'Titanium-Ceramite Ingot' },
+      { id: 'mat_titanium_alloy', name: 'Titanium-Ceramite Ingot' },
+      { id: 'mat_plasma_cell', name: 'Plasma Compression Valve' },
+      { id: 'mat_plasma_cell', name: 'Plasma Compression Valve' },
+    ];
+
+    render(
+      <EESysMarketplace
+        player={{
+          displayName: 'Anthony',
+          credits: 300,
+          hasEEMembership: true,
+          designs: [], // No design owned
+        }}
+        inventoryItems={inventory}
+        onUpdateInventory={handleUpdateInventory}
+        onUpdateCredits={handleUpdateCredits}
+      />
+    );
+
+    // Unlock Design & Synthesize button should be visible with design cost (45 credits)
+    const unlockAndCraftBtn = screen.getByRole('button', { name: /Unlock Design & Synthesize \(45 ₢\)/i });
+    expect(unlockAndCraftBtn).toBeInTheDocument();
+
+    fireEvent.click(unlockAndCraftBtn);
+
+    // Deducts design cost (300 - 45 = 255)
+    expect(handleUpdateCredits).toHaveBeenCalledWith(255);
+    expect(handleUpdateInventory).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'item_plasma_carbine_mk2' })])
+    );
+  });
+
+  it('allows direct system requisition when operative lacks components and design', () => {
+    const handleUpdateInventory = vi.fn();
+    const handleUpdateCredits = vi.fn();
+
+    render(
+      <EESysMarketplace
+        player={{
+          displayName: 'Anthony',
+          credits: 500,
+          hasEEMembership: true,
+          designs: [],
+        }}
+        inventoryItems={[MEMBERSHIP_ITEM]}
+        onUpdateInventory={handleUpdateInventory}
+        onUpdateCredits={handleUpdateCredits}
+      />
+    );
+
+    // Filter to weapons
+    const weaponsTab = screen.getByRole('button', { name: /Weapons/i });
+    fireEvent.click(weaponsTab);
+
+    // Direct Requisition buttons should be available
+    const directBuyButtons = screen.getAllByRole('button', { name: /Direct Requisition/i });
+    expect(directBuyButtons.length).toBeGreaterThan(0);
+
+    // Requisition first weapon (Pulse Carbine costs 150)
+    fireEvent.click(directBuyButtons[0]);
+
+    expect(handleUpdateCredits).toHaveBeenCalledWith(350);
+    expect(handleUpdateInventory).toHaveBeenCalled();
+  });
 });
 
 describe('SpaceshipSheet', () => {
