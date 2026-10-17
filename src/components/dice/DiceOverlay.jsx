@@ -585,7 +585,7 @@ function getCoinEdgeMaterial() {
   return cachedCoinEdgeMat;
 }
 
-export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 }) {
+export default function DiceOverlay({ user, profile, isDM = false, modifier = 0, showToolbar = true }) {
   const { t } = useTranslation();
   const isViewerDM = Boolean(
     isDM ||
@@ -1726,14 +1726,15 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       )}
 
       {/* Floating Quick Dice Bar - Mobile-optimized & responsive */}
-      <div className="fixed bottom-2 right-2 sm:right-5 sm:bottom-5 z-50 flex items-center justify-end gap-1.5 sm:gap-2 max-w-[calc(100vw-1rem)] pointer-events-none">
-        <button
-          onClick={toggleHistory}
-          className={`pointer-events-auto shrink-0 p-2 sm:p-2.5 rounded-xl bg-[#070b14] text-gray-300 hover:text-neon-cyan border-2 border-slate-700 hover:border-neon-cyan transition-all text-xs font-mono shadow-xl ${showHistory ? 'border-neon-cyan text-neon-cyan' : ''}`}
-          title="Toggle Quantum Roll Ledger"
-        >
-          📜
-        </button>
+      {showToolbar && (
+        <div className="fixed bottom-2 right-2 sm:right-5 sm:bottom-5 z-50 flex items-center justify-end gap-1.5 sm:gap-2 max-w-[calc(100vw-1rem)] pointer-events-none">
+          <button
+            onClick={toggleHistory}
+            className={`pointer-events-auto shrink-0 p-2 sm:p-2.5 rounded-xl bg-[#070b14] text-gray-300 hover:text-neon-cyan border-2 border-slate-700 hover:border-neon-cyan transition-all text-xs font-mono shadow-xl ${showHistory ? 'border-neon-cyan text-neon-cyan' : ''}`}
+            title="Toggle Quantum Roll Ledger"
+          >
+            📜
+          </button>
 
         {/* Die Selector Buttons + Lucifer's Silver Coin */}
         <div className="pointer-events-auto bg-[#070b14] px-1.5 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 border-2 border-slate-700 rounded-xl shadow-xl overflow-x-auto no-scrollbar max-w-[calc(100vw-4.25rem)] sm:max-w-none">
@@ -1796,9 +1797,10 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
           </button>
         </div>
       </div>
+      )}
 
       {/* Right-Click Multi-Dice Quantity Popover */}
-      {quantityPopover && (
+      {showToolbar && quantityPopover && (
         <div
           style={{
             left: `${Math.min(quantityPopover.x - 60, window.innerWidth - 250)}px`,
@@ -1878,7 +1880,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       )}
 
       {/* Roll History Drawer - 100% Opaque Military Telemetry Ledger */}
-      {showHistory && (
+      {showToolbar && showHistory && (
         <div className="fixed bottom-14 sm:bottom-24 left-2 right-2 sm:left-auto sm:right-[12.5rem] w-auto sm:w-84 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2.5rem)] max-h-[75vh] sm:max-h-[26rem] bg-[#070b14] p-3 sm:p-4 z-50 shadow-[0_0_35px_rgba(0,0,0,0.95)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
           <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
             <div className="flex items-center gap-2">

@@ -356,15 +356,36 @@ export async function submitInitiativeRoll(campaignId, { playerId, playerName, r
  * DM finalizes turn order after player and enemy initiatives are calculated.
  */
 export async function setCombatTurnOrder(campaignId, turnOrder, combatMode = 'ground', enemies = []) {
+  const initialTokens = {};
+  const enemyIdSet = new Set((enemies || []).map((e) => e.id));
+
+  // Determine starting positions for players (left side) and enemies (right side)
+  let pIdx = 0;
+  let eIdx = 0;
+  (turnOrder || []).forEach((id) => {
+    if (!enemyIdSet.has(id)) {
+      initialTokens[id] = { x: 4, y: Math.min(30, 6 + pIdx * 3) };
+      pIdx++;
+    }
+  });
+
+  (enemies || []).forEach((e) => {
+    initialTokens[e.id] = { x: 27, y: Math.min(30, 6 + eIdx * 3) };
+    eIdx++;
+  });
+
   const payload = {
     turnOrder,
     currentTurn: 0,
+    round: 1,
     combatActive: true,
     combatMode,
     enemies,
     combatState: {
-      tokens: {}, // e.g. { "charId": { x: 5, y: 5 }, "en_1": { x: 10, y: 10 } }
-      targets: {}, // e.g. { "charId": "en_1" }
+      tokens: initialTokens,
+      targets: {},
+      playerStatuses: {},
+      playerEffects: {},
     },
     initiativeRequested: false,
     updatedAt: serverTimestamp(),
@@ -392,6 +413,20 @@ export async function setCombatTurnOrder(campaignId, turnOrder, combatMode = 'gr
   }
 
   return payload;
+}
+
+export async function advanceCombatTurn(campaignId, nextTurnIndex, nextRound) {
+  if (!campaignId || !db) return;
+  try {
+    const campaignRef = doc(db, 'campaigns', campaignId);
+    await updateDoc(campaignRef, {
+      currentTurn: nextTurnIndex,
+      round: nextRound,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.error('Failed to advance turn:', err);
+  }
 }
 
 export async function updateTokenPosition(campaignId, tokenId, x, y) {
@@ -447,22 +482,73 @@ export async function updateCombatantStats(campaignId, combatantId, isEnemy, sta
         });
       }
     } else {
+      const updates = { updatedAt: serverTimestamp() };
       if (stats.effect !== undefined) {
-        await updateDoc(campaignRef, {
-          [`combatState.playerEffects.${combatantId}`]: stats.effect || null,
+        updates[`combatState.playerEffects.${combatantId}`] = stats.effect || null;
+      }
+      if (stats.status !== undefined) {
+        updates[`combatState.playerStatuses.${combatantId}`] = stats.status || null;
+      }
+      await updateDoc(campaignRef, updates);
+
+      if (stats.hp !== undefined) {
+        const playerRef = doc(db, 'players', combatantId);
+        await updateDoc(playerRef, {
+          hp: stats.hp,
+          ...(stats.status !== undefined ? { status: stats.status } : {}),
+          ...(stats.effect !== undefined ? { effect: stats.effect } : {}),
           updatedAt: serverTimestamp(),
         });
-      }
-      if (stats.hp !== undefined) {
-         const playerRef = doc(db, 'players', combatantId);
-         await updateDoc(playerRef, {
-           hp: stats.hp,
-           updatedAt: serverTimestamp()
-         });
       }
     }
   } catch (err) {
     console.error('Failed to update combatant stats:', err);
+  }
+}
+
+export async function addCombatantToCombat(campaignId, newCombatant) {
+  if (!campaignId || !db) return;
+  const campaignRef = doc(db, 'campaigns', campaignId);
+  try {
+    const snap = await getDoc(campaignRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const enemies = data.enemies || [];
+    const turnOrder = data.turnOrder || [];
+    const tokens = data.combatState?.tokens || {};
+
+    const enemyId = newCombatant.id || `en_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const formattedEnemy = {
+      id: enemyId,
+      name: newCombatant.name || 'Hostile NPC',
+      displayName: newCombatant.name || 'Hostile NPC',
+      hp: Number(newCombatant.hp) || 30,
+      maxHp: Number(newCombatant.maxHp) || Number(newCombatant.hp) || 30,
+      dexMod: Number(newCombatant.dexMod) || 0,
+      initiative: Number(newCombatant.initiative) || 10,
+      status: 'Normal',
+      effect: 'None',
+      isEnemy: true,
+    };
+
+    const nextY = Math.min(30, 6 + enemies.length * 3);
+    const updatedTokens = {
+      ...tokens,
+      [enemyId]: { x: 27, y: nextY },
+    };
+
+    const updatedEnemies = [...enemies, formattedEnemy];
+    const updatedTurnOrder = [...turnOrder, enemyId];
+
+    await updateDoc(campaignRef, {
+      enemies: updatedEnemies,
+      turnOrder: updatedTurnOrder,
+      'combatState.tokens': updatedTokens,
+      updatedAt: serverTimestamp(),
+    });
+    return formattedEnemy;
+  } catch (err) {
+    console.error('Failed to add combatant:', err);
   }
 }
 
