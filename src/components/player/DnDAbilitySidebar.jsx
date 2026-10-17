@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
+import RollContextMenu from '../shared/RollContextMenu';
 
 const ABILITIES = [
   { key: 'strength', label: 'STR', name: 'Strength' },
@@ -32,21 +33,23 @@ const SKILLS = [
 ];
 
 export default function DnDAbilitySidebar({ character }) {
+  const [contextMenu, setContextMenu] = useState(null);
+
   const stats = character.stats || {};
   const profBonus = character.proficiencyBonus || Math.floor(((character.level || 1) - 1) / 4) + 2;
 
   const getMod = (val) => Math.floor(((val ?? 10) - 10) / 2);
 
-  const handleStatRoll = (name, mod) => {
-    triggerInteractiveRoll('1d20', mod, `${name} Check`);
+  const handleStatRoll = (name, mod, rollMode = 'normal') => {
+    triggerInteractiveRoll('1d20', mod, `${name} Check`, rollMode);
   };
 
-  const handleSaveRoll = (name, mod) => {
-    triggerInteractiveRoll('1d20', mod, `${name} Saving Throw`);
+  const handleSaveRoll = (name, mod, rollMode = 'normal') => {
+    triggerInteractiveRoll('1d20', mod, `${name} Saving Throw`, rollMode);
   };
 
-  const handleSkillRoll = (skillName, mod) => {
-    triggerInteractiveRoll('1d20', mod, `${skillName} Check`);
+  const handleSkillRoll = (skillName, mod, rollMode = 'normal') => {
+    triggerInteractiveRoll('1d20', mod, `${skillName} Check`, rollMode);
   };
 
   return (
@@ -61,9 +64,21 @@ export default function DnDAbilitySidebar({ character }) {
           return (
             <div
               key={key}
-              onClick={() => handleStatRoll(name, mod)}
+              onClick={() => handleStatRoll(name, mod, 'normal')}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu({
+                  isOpen: true,
+                  position: { x: e.clientX, y: e.clientY },
+                  type: 'd20',
+                  title: `${name} Check`,
+                  diceNotation: '1d20',
+                  bonus: mod,
+                  onSelect: (mode) => handleStatRoll(name, mod, mode),
+                });
+              }}
               className="glass-panel p-2.5 flex items-center justify-between border-white/10 hover:border-neon-cyan/50 hover:bg-neon-cyan/5 transition-all cursor-pointer group"
-              title={`Click to roll ${name} check`}
+              title={`Left-click: Roll ${name} · Right-click: Advantage / Disadvantage`}
             >
               <div>
                 <span className="font-display font-bold text-gray-400 group-hover:text-neon-cyan text-[11px] block">
@@ -94,8 +109,21 @@ export default function DnDAbilitySidebar({ character }) {
             return (
               <div
                 key={key}
-                onClick={() => handleSaveRoll(name, saveMod)}
+                onClick={() => handleSaveRoll(name, saveMod, 'normal')}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setContextMenu({
+                    isOpen: true,
+                    position: { x: e.clientX, y: e.clientY },
+                    type: 'd20',
+                    title: `${name} Save`,
+                    diceNotation: '1d20',
+                    bonus: saveMod,
+                    onSelect: (mode) => handleSaveRoll(name, saveMod, mode),
+                  });
+                }}
                 className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white/5 cursor-pointer text-[11px]"
+                title={`Left-click: Roll ${name} Save · Right-click: Advantage / Disadvantage`}
               >
                 <div className="flex items-center gap-1.5">
                   <span
@@ -136,8 +164,21 @@ export default function DnDAbilitySidebar({ character }) {
             return (
               <div
                 key={name}
-                onClick={() => handleSkillRoll(name, skillMod)}
+                onClick={() => handleSkillRoll(name, skillMod, 'normal')}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setContextMenu({
+                    isOpen: true,
+                    position: { x: e.clientX, y: e.clientY },
+                    type: 'd20',
+                    title: `${name} Check`,
+                    diceNotation: '1d20',
+                    bonus: skillMod,
+                    onSelect: (mode) => handleSkillRoll(name, skillMod, mode),
+                  });
+                }}
                 className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white/5 cursor-pointer text-[11px] group"
+                title={`Left-click: Roll ${name} · Right-click: Advantage / Disadvantage`}
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <span
@@ -166,6 +207,20 @@ export default function DnDAbilitySidebar({ character }) {
           })}
         </div>
       </div>
+
+      {/* Right-Click Roll Context Menu (Advantage / Disadvantage) */}
+      {contextMenu && (
+        <RollContextMenu
+          isOpen={contextMenu.isOpen}
+          position={contextMenu.position}
+          type={contextMenu.type}
+          title={contextMenu.title}
+          diceNotation={contextMenu.diceNotation}
+          bonus={contextMenu.bonus}
+          onSelect={contextMenu.onSelect}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

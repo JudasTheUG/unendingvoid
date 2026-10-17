@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import VitalBar from '../shared/VitalBar';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
+import RollContextMenu from '../shared/RollContextMenu';
 
 export default function DnDCharacterHeader({
   character,
@@ -10,6 +11,7 @@ export default function DnDCharacterHeader({
 }) {
   const [healAmount, setHealAmount] = useState('');
   const [damageAmount, setDamageAmount] = useState('');
+  const [contextMenu, setContextMenu] = useState(null);
 
   const stats = character.stats || {};
   const dexMod = Math.floor(((stats.dexterity || 10) - 10) / 2);
@@ -53,8 +55,8 @@ export default function DnDCharacterHeader({
     setHealAmount('');
   };
 
-  const handleRollInitiative = () => {
-    triggerInteractiveRoll('1d20', dexMod, `Initiative (${character.displayName || 'Operative'})`);
+  const handleRollInitiative = (rollMode = 'normal') => {
+    triggerInteractiveRoll('1d20', dexMod, `Initiative (${character.displayName || 'Operative'})`, rollMode);
   };
 
   return (
@@ -96,9 +98,21 @@ export default function DnDCharacterHeader({
           </div>
 
           <button
-            onClick={handleRollInitiative}
+            onClick={() => handleRollInitiative('normal')}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setContextMenu({
+                isOpen: true,
+                position: { x: e.clientX, y: e.clientY },
+                type: 'd20',
+                title: 'Initiative Check',
+                diceNotation: '1d20',
+                bonus: dexMod,
+                onSelect: (mode) => handleRollInitiative(mode),
+              });
+            }}
             className="glass-panel px-3 py-1.5 border-neon-cyan/40 hover:border-neon-cyan min-w-[70px] hover:bg-neon-cyan/10 transition-all cursor-pointer group"
-            title="Click to roll initiative"
+            title="Left-click: Roll initiative · Right-click: Advantage / Disadvantage"
           >
             <span className="text-[9px] uppercase text-gray-400 group-hover:text-neon-cyan block">Initiative</span>
             <span className="text-sm font-bold text-neon-green">
@@ -181,6 +195,20 @@ export default function DnDCharacterHeader({
           </div>
         </div>
       </div>
+
+      {/* Right-Click Roll Context Menu for Initiative */}
+      {contextMenu && (
+        <RollContextMenu
+          isOpen={contextMenu.isOpen}
+          position={contextMenu.position}
+          type={contextMenu.type}
+          title={contextMenu.title}
+          diceNotation={contextMenu.diceNotation}
+          bonus={contextMenu.bonus}
+          onSelect={contextMenu.onSelect}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

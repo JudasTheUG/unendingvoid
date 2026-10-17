@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
+import RollContextMenu from '../shared/RollContextMenu';
 
 const DEFAULT_ATTACKS = [
   {
@@ -40,6 +41,7 @@ const DEFAULT_ATTACKS = [
 export default function DnDActionsTab({ character, onAddAttack }) {
   const [attacks, setAttacks] = useState(character.attacks?.length ? character.attacks : DEFAULT_ATTACKS);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
 
   // New attack form
   const [atkName, setAtkName] = useState('');
@@ -54,23 +56,24 @@ export default function DnDActionsTab({ character, onAddAttack }) {
 
   const getStatMod = (statKey) => Math.floor(((stats[statKey] ?? 10) - 10) / 2);
 
-  const handleAttackToHit = (atk) => {
+  const handleAttackToHit = (atk, rollMode = 'normal') => {
     const statMod = getStatMod(atk.stat || 'dexterity');
     const toHitBonus = statMod + profBonus + (atk.bonus || 0);
 
-    // Roll d20 with exact to-hit formula
-    triggerInteractiveRoll('1d20', toHitBonus, `Attack Hit Check: ${atk.name}`);
+    // Roll d20 with exact to-hit formula and rollMode (Normal, Advantage, Disadvantage)
+    triggerInteractiveRoll('1d20', toHitBonus, `Attack Hit Check: ${atk.name}`, rollMode);
   };
 
-  const handleDamageRoll = (atk) => {
+  const handleDamageRoll = (atk, rollMode = 'normal') => {
     const statMod = getStatMod(atk.stat || 'dexterity');
     const totalDmgBonus = statMod + (atk.bonus || 0);
 
-    // Roll damage using weapon's exact die (e.g. 1d8, 2d6, 1d12)
+    // Roll damage using weapon's exact die (e.g. 1d8, 2d6, 1d12) and rollMode (Normal, Critical)
     triggerInteractiveRoll(
       atk.damageDice || '1d8',
       totalDmgBonus,
-      `Damage Roll: ${atk.name} (${atk.damageType || 'Piercing'})`
+      `Damage Roll: ${atk.name} (${atk.damageType || 'Piercing'})`,
+      rollMode
     );
   };
 
@@ -153,9 +156,21 @@ export default function DnDActionsTab({ character, onAddAttack }) {
                     {/* Clickable TO HIT Button (Sword/D20 Icon) */}
                     <td className="py-2.5 px-2 text-center">
                       <button
-                        onClick={() => handleAttackToHit(atk)}
+                        onClick={() => handleAttackToHit(atk, 'normal')}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setContextMenu({
+                            isOpen: true,
+                            position: { x: e.clientX, y: e.clientY },
+                            type: 'd20',
+                            title: `${atk.name} Attack`,
+                            diceNotation: '1d20',
+                            bonus: toHit,
+                            onSelect: (mode) => handleAttackToHit(atk, mode),
+                          });
+                        }}
                         className="px-3 py-1.5 rounded-lg bg-neon-cyan/15 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 font-black text-sm tracking-wider transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)] hover:scale-105 active:scale-95 inline-flex items-center gap-1.5"
-                        title="Click to roll attack check (d20)"
+                        title="Left-click: Normal attack · Right-click: Advantage / Disadvantage"
                       >
                         <span>⚔️</span>
                         <span>{toHitStr}</span>
@@ -165,9 +180,21 @@ export default function DnDActionsTab({ character, onAddAttack }) {
                     {/* Clickable DAMAGE Button (Dice Icon with Weapon's Exact Die) */}
                     <td className="py-2.5 px-2 text-center">
                       <button
-                        onClick={() => handleDamageRoll(atk)}
+                        onClick={() => handleDamageRoll(atk, 'normal')}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setContextMenu({
+                            isOpen: true,
+                            position: { x: e.clientX, y: e.clientY },
+                            type: 'damage',
+                            title: `${atk.name} Damage`,
+                            diceNotation: atk.damageDice || '1d8',
+                            bonus: dmgBonus,
+                            onSelect: (mode) => handleDamageRoll(atk, mode),
+                          });
+                        }}
                         className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 font-bold text-xs tracking-wider transition-all shadow-[0_0_10px_rgba(245,158,11,0.2)] hover:scale-105 active:scale-95 inline-flex items-center gap-1.5"
-                        title={`Click to roll damage (${atk.damageDice})`}
+                        title={`Left-click: Normal damage (${atk.damageDice}) · Right-click: Critical Hit`}
                       >
                         <span>🎲</span>
                         <span>
@@ -344,6 +371,20 @@ export default function DnDActionsTab({ character, onAddAttack }) {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Right-Click Roll Context Menu (Advantage/Disadvantage/Critical) */}
+      {contextMenu && (
+        <RollContextMenu
+          isOpen={contextMenu.isOpen}
+          position={contextMenu.position}
+          type={contextMenu.type}
+          title={contextMenu.title}
+          diceNotation={contextMenu.diceNotation}
+          bonus={contextMenu.bonus}
+          onSelect={contextMenu.onSelect}
+          onClose={() => setContextMenu(null)}
+        />
       )}
     </div>
   );
