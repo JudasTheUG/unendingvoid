@@ -167,5 +167,21 @@ export const updatePlayerAvatar = (userId, avatarUrl) => {
   });
 };
 
+export const updatePlayerRestUsage = (userId, restUsage) => {
+  try {
+    const raw = localStorage.getItem(`unendingvoid_player_${userId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.restUsage = restUsage;
+      localStorage.setItem(`unendingvoid_player_${userId}`, JSON.stringify(parsed));
+    }
+  } catch (_) {}
+
+  return updateDoc(doc(db, 'players', userId), {
+    restUsage,
+    updatedAt: serverTimestamp(),
+  });
+};
+
 
 

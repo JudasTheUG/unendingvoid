@@ -6,13 +6,15 @@ import RollContextMenu from '../shared/RollContextMenu';
 import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
 import { processProfileImage } from '../../lib/imageUtils';
 import { updatePlayerAvatar } from '../../lib/playerActions';
-import { formatGameDateTime, DEFAULT_IN_GAME_TIME } from '../../lib/calendarUtils';
+import { formatGameDateTime, DEFAULT_IN_GAME_TIME, calculateDailyRestStatus } from '../../lib/calendarUtils';
 
 export default function DnDCharacterHeader({
   character,
   traits = [],
   items = [],
   inGameTime,
+  shortRestsLeft,
+  longRestsLeft,
   onShortRest,
   onLongRest,
   onUpdateHp,
@@ -25,6 +27,14 @@ export default function DnDCharacterHeader({
   const [contextMenu, setContextMenu] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [avatarOverride, setAvatarOverride] = useState(null);
+
+  const effectiveShortRestsLeft = shortRestsLeft !== undefined
+    ? shortRestsLeft
+    : calculateDailyRestStatus(character?.restUsage, inGameTime).shortRestsLeft;
+
+  const effectiveLongRestsLeft = longRestsLeft !== undefined
+    ? longRestsLeft
+    : calculateDailyRestStatus(character?.restUsage, inGameTime).longRestsLeft;
 
   const avatarImage = avatarOverride || character.avatarUrl || character.imageUrl || character.photoURL;
 
@@ -119,11 +129,19 @@ export default function DnDCharacterHeader({
   };
 
   const handleShortRestClick = () => {
+    if (effectiveShortRestsLeft <= 0) {
+      alert(t('rest.dailyShortLimit', 'Daily short rest limit reached (2/2 used for this in-game day).'));
+      return;
+    }
     if (onShortRest) onShortRest();
     flashSaved();
   };
 
   const handleLongRestClick = () => {
+    if (effectiveLongRestsLeft <= 0) {
+      alert(t('rest.dailyLongLimit', 'Daily long rest limit reached (1/1 used for this in-game day).'));
+      return;
+    }
     if (onLongRest) onLongRest();
     flashSaved();
   };
@@ -370,17 +388,47 @@ export default function DnDCharacterHeader({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
+                  disabled={effectiveShortRestsLeft <= 0}
                   onClick={handleShortRestClick}
-                  className="py-1 px-2.5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-600/60 font-bold text-[10px] uppercase tracking-wider transition-all"
+                  title={
+                    effectiveShortRestsLeft <= 0
+                      ? t('rest.dailyShortLimit', 'Daily short rest limit reached (2/2 used for this in-game day).')
+                      : `${t('vitals.shortRest', 'Short Rest')} (${effectiveShortRestsLeft}/2)`
+                  }
+                  className={`py-1 px-2 rounded font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1
+                    ${
+                      effectiveShortRestsLeft <= 0
+                        ? 'bg-slate-800/40 text-slate-500 border border-slate-800 cursor-not-allowed opacity-60'
+                        : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-600/60 shadow-[0_0_10px_rgba(100,116,139,0.2)]'
+                    }`}
                 >
-                  ☕ {t('vitals.shortRest', 'Short Rest')}
+                  <span>☕</span>
+                  <span>{t('vitals.shortRest', 'Short Rest')}</span>
+                  <span className={effectiveShortRestsLeft <= 0 ? 'text-slate-500' : 'text-neon-cyan'}>
+                    {` (${effectiveShortRestsLeft}/2)`}
+                  </span>
                 </button>
                 <button
                   type="button"
+                  disabled={effectiveLongRestsLeft <= 0}
                   onClick={handleLongRestClick}
-                  className="py-1 px-2.5 rounded bg-indigo-950/60 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/50 font-bold text-[10px] uppercase tracking-wider transition-all shadow-[0_0_10px_rgba(99,102,241,0.2)]"
+                  title={
+                    effectiveLongRestsLeft <= 0
+                      ? t('rest.dailyLongLimit', 'Daily long rest limit reached (1/1 used for this in-game day).')
+                      : `${t('vitals.longRest', 'Long Rest')} (${effectiveLongRestsLeft}/1)`
+                  }
+                  className={`py-1 px-2 rounded font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1
+                    ${
+                      effectiveLongRestsLeft <= 0
+                        ? 'bg-indigo-950/30 text-indigo-400/40 border border-indigo-950 cursor-not-allowed opacity-60'
+                        : 'bg-indigo-950/60 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
+                    }`}
                 >
-                  🏥 {t('vitals.longRest', 'Long Rest')}
+                  <span>🏥</span>
+                  <span>{t('vitals.longRest', 'Long Rest')}</span>
+                  <span className={effectiveLongRestsLeft <= 0 ? 'text-indigo-400/40' : 'text-amber-400 font-black'}>
+                    {` (${effectiveLongRestsLeft}/1)`}
+                  </span>
                 </button>
               </div>
             </div>

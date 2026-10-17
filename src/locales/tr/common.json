@@ -633,6 +633,9 @@
     "deny": "Reddet",
     "approvedNotice": "DM {{type}} Molayı onayladı! Zaman ilerledi ve operatifler dinlendi.",
     "deniedNotice": "DM mola talebini reddetti.",
-    "hoursInfo": "Kısa Mola: 2 Saat · Uzun Mola: 8 Saat"
+    "hoursInfo": "Kısa Mola: 2 Saat (Günde maks. 2) · Uzun Mola: 8 Saat (Günde maks. 1)",
+    "dailyShortLimit": "Günlük kısa mola sınırına ulaşıldı (Bu oyun günü için 2/2 kullanıldı).",
+    "dailyLongLimit": "Günlük uzun mola sınırına ulaşıldı (Bu oyun günü için 1/1 kullanıldı).",
+    "dailyRestAllowance": "Günlük Hak: Oyun günü başına 2 Kısa Mola · 1 Uzun Mola"
   }
 }

@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import i18n from '../../lib/i18n';
 import RestRequestModal from '../player/RestRequestModal';
 import DMRestRequestBanner from '../dm/DMRestRequestBanner';
+import DnDCharacterHeader from '../player/DnDCharacterHeader';
 import {
   requestPartyRest,
   votePartyRest,
@@ -364,6 +365,105 @@ describe('Squad Rest Requisition & DM Authorization System', () => {
       expect(screen.getByText(/Kurze Rast erlauben\?/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Erlauben/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Ablehnen/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('DnDCharacterHeader - Daily Rest Allowance (2 Short / 1 Long)', () => {
+    const mockCharacter = {
+      id: 'char_test',
+      displayName: 'Captain Rex',
+      level: 3,
+      hp: 30,
+      maxHp: 30,
+      shields: 15,
+      maxShields: 15,
+      stats: { constitution: 14 },
+    };
+
+    it('renders initial allowance (2/2) short rests and (1/1) long rest', () => {
+      render(
+        <DnDCharacterHeader
+          character={mockCharacter}
+          inGameTime="2381-05-18T08:00:00"
+          shortRestsLeft={2}
+          longRestsLeft={1}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /Short Rest.*2\/2/i })).toBeEnabled();
+      expect(screen.getByRole('button', { name: /Long Rest.*1\/1/i })).toBeEnabled();
+    });
+
+    it('disables short rest button and displays (0/2) when short rest limit reached', () => {
+      const handleShortRest = vi.fn();
+      render(
+        <DnDCharacterHeader
+          character={mockCharacter}
+          inGameTime="2381-05-18T14:00:00"
+          shortRestsLeft={0}
+          longRestsLeft={1}
+          onShortRest={handleShortRest}
+        />
+      );
+
+      const shortRestBtn = screen.getByRole('button', { name: /Short Rest.*0\/2/i });
+      expect(shortRestBtn).toBeDisabled();
+
+      // Clicking disabled button should not trigger callback
+      shortRestBtn.click();
+      expect(handleShortRest).not.toHaveBeenCalled();
+    });
+
+    it('disables long rest button and displays (0/1) when long rest limit reached', () => {
+      const handleLongRest = vi.fn();
+      render(
+        <DnDCharacterHeader
+          character={mockCharacter}
+          inGameTime="2381-05-18T18:00:00"
+          shortRestsLeft={1}
+          longRestsLeft={0}
+          onLongRest={handleLongRest}
+        />
+      );
+
+      const longRestBtn = screen.getByRole('button', { name: /Long Rest.*0\/1/i });
+      expect(longRestBtn).toBeDisabled();
+
+      longRestBtn.click();
+      expect(handleLongRest).not.toHaveBeenCalled();
+    });
+
+    it('automatically re-enables allowance when in-game date moves to the next day', () => {
+      const charWithUsedRests = {
+        ...mockCharacter,
+        restUsage: {
+          date: '2381-05-18',
+          shortRestsUsed: 2,
+          longRestsUsed: 1,
+        },
+      };
+
+      // Day 1: Rests exhausted
+      const { rerender } = render(
+        <DnDCharacterHeader
+          character={charWithUsedRests}
+          inGameTime="2381-05-18T22:00:00"
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /Short Rest.*0\/2/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Long Rest.*0\/1/i })).toBeDisabled();
+
+      // Day 2 (current date > previous date): Automatically resets!
+      rerender(
+        <DnDCharacterHeader
+          character={charWithUsedRests}
+          inGameTime="2381-05-19T06:00:00"
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /Short Rest.*2\/2/i })).toBeEnabled();
+      expect(screen.getByRole('button', { name: /Long Rest.*1\/1/i })).toBeEnabled();
     });
   });
 });

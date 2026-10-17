@@ -23,9 +23,9 @@ import CommsAndRollsFlow from '../components/shared/CommsAndRollsFlow';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import RestRequestModal from '../components/player/RestRequestModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
-import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer, updatePlayerAvatar } from '../lib/playerActions';
+import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer, updatePlayerAvatar, updatePlayerRestUsage } from '../lib/playerActions';
 import { advanceCampaignTime, requestPartyRest } from '../lib/campaignActions';
-import { DEFAULT_IN_GAME_TIME } from '../lib/calendarUtils';
+import { DEFAULT_IN_GAME_TIME, calculateDailyRestStatus, getGameDateString } from '../lib/calendarUtils';
 import { logout } from '../lib/authService';
 
 export default function PlayerSheet() {
@@ -83,6 +83,7 @@ export default function PlayerSheet() {
     setLocalCredits(null);
     setLocalInventory(null);
     setLocalAvatar(null);
+    setLocalRestUsage(null);
   }, [targetId]);
 
   // Track whether combat is active in the campaign
@@ -130,6 +131,41 @@ export default function PlayerSheet() {
     } catch (_) {}
     return null;
   });
+
+  // Operative Daily Rest Allowance (2 Short Rests / 1 Long Rest per in-game day)
+  const operativeId = effectivePlayer?.id || effectivePlayer?.uid || targetId;
+  const [localRestUsage, setLocalRestUsage] = useState(() => {
+    if (typeof localStorage === 'undefined' || !operativeId) return null;
+    try {
+      const raw = localStorage.getItem(`unendingvoid:rest_usage:${operativeId}`);
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return null;
+  });
+
+  const dailyRestStatus = calculateDailyRestStatus(
+    localRestUsage || effectivePlayer?.restUsage,
+    campaignTime
+  );
+
+  React.useEffect(() => {
+    if (!operativeId) return;
+    const currentDay = getGameDateString(campaignTime);
+    const recordedDay = dailyRestStatus.date;
+    if (currentDay > recordedDay) {
+      const resetUsage = {
+        date: currentDay,
+        shortRestsUsed: 0,
+        longRestsUsed: 0,
+      };
+      setLocalRestUsage(resetUsage);
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(resetUsage));
+        } catch (_) {}
+      }
+    }
+  }, [campaignTime, dailyRestStatus.date, operativeId]);
 
   React.useEffect(() => {
     if (!effectivePlayer?.campaignId || !db) return;
@@ -203,6 +239,23 @@ export default function PlayerSheet() {
         setCampaignRestRequest(detail.restRequest || null);
         if (detail.approved) {
           const restType = detail.restRequest?.type || 'short';
+          const newTime = detail.inGameTime || campaignTime;
+          const currentDay = getGameDateString(newTime);
+          const baseStatus = calculateDailyRestStatus(dailyRestStatus, newTime);
+
+          const updatedUsage = {
+            date: currentDay,
+            shortRestsUsed: restType === 'short' ? Math.min(2, baseStatus.shortRestsUsed + 1) : baseStatus.shortRestsUsed,
+            longRestsUsed: restType === 'long' ? Math.min(1, baseStatus.longRestsUsed + 1) : baseStatus.longRestsUsed,
+          };
+          setLocalRestUsage(updatedUsage);
+          if (operativeId) {
+            try {
+              localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(updatedUsage));
+              updatePlayerRestUsage(operativeId, updatedUsage).catch(() => {});
+            } catch (_) {}
+          }
+
           if (restType === 'long') {
             handleUpdateHp(effectivePlayer.maxHp || 100, effectivePlayer.maxShields || 50);
           } else {
@@ -396,6 +449,11 @@ export default function PlayerSheet() {
   };
 
   const handleShortRest = async () => {
+    if (dailyRestStatus.shortRestsLeft <= 0) {
+      alert(t('rest.dailyShortLimit', 'Daily short rest limit reached (2/2 used for this in-game day).'));
+      return;
+    }
+
     if (effectivePlayer?.campaignId) {
       try {
         const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'short');
@@ -413,16 +471,36 @@ export default function PlayerSheet() {
     const newShields = Math.min(effectivePlayer.maxShields || 50, (effectivePlayer.shields || 0) + 5);
 
     await handleUpdateHp(newHp, newShields);
+    let updatedTime = campaignTime;
     try {
-      const updatedTime = await advanceCampaignTime(null, 2, campaignTime);
+      updatedTime = await advanceCampaignTime(null, 2, campaignTime);
       setCampaignTimeState(updatedTime);
     } catch (err) {
       console.warn('Failed to advance rest time:', err);
     }
+
+    const nextUsage = {
+      date: getGameDateString(updatedTime || campaignTime),
+      shortRestsUsed: Math.min(2, dailyRestStatus.shortRestsUsed + 1),
+      longRestsUsed: dailyRestStatus.longRestsUsed,
+    };
+    setLocalRestUsage(nextUsage);
+    if (operativeId) {
+      try {
+        localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(nextUsage));
+        updatePlayerRestUsage(operativeId, nextUsage).catch(() => {});
+      } catch (_) {}
+    }
+
     alert(`${t('calendar.shortRestNotice', 'Short Rest Complete (+2 hours elapsed)')}\n${t('vitals.recovered', 'Recovered')} ${healRoll} HP & 5 Shields.`);
   };
 
   const handleLongRest = async () => {
+    if (dailyRestStatus.longRestsLeft <= 0) {
+      alert(t('rest.dailyLongLimit', 'Daily long rest limit reached (1/1 used for this in-game day).'));
+      return;
+    }
+
     if (effectivePlayer?.campaignId) {
       try {
         const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'long');
@@ -435,12 +513,27 @@ export default function PlayerSheet() {
 
     // Solo / offline fallback
     await handleUpdateHp(effectivePlayer.maxHp || 100, effectivePlayer.maxShields || 50);
+    let updatedTime = campaignTime;
     try {
-      const updatedTime = await advanceCampaignTime(null, 8, campaignTime);
+      updatedTime = await advanceCampaignTime(null, 8, campaignTime);
       setCampaignTimeState(updatedTime);
     } catch (err) {
       console.warn('Failed to advance rest time:', err);
     }
+
+    const nextUsage = {
+      date: getGameDateString(updatedTime || campaignTime),
+      shortRestsUsed: dailyRestStatus.shortRestsUsed,
+      longRestsUsed: Math.min(1, dailyRestStatus.longRestsUsed + 1),
+    };
+    setLocalRestUsage(nextUsage);
+    if (operativeId) {
+      try {
+        localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(nextUsage));
+        updatePlayerRestUsage(operativeId, nextUsage).catch(() => {});
+      } catch (_) {}
+    }
+
     alert(t('calendar.longRestNotice', 'Long Rest Complete (+8 hours elapsed)'));
   };
 
@@ -596,6 +689,8 @@ export default function PlayerSheet() {
             traits={allTraits}
             items={allItems}
             inGameTime={campaignTime}
+            shortRestsLeft={dailyRestStatus.shortRestsLeft}
+            longRestsLeft={dailyRestStatus.longRestsLeft}
             onShortRest={handleShortRest}
             onLongRest={handleLongRest}
             onUpdateHp={handleUpdateHp}

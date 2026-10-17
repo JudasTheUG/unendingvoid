@@ -11,7 +11,16 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { DEFAULT_IN_GAME_TIME, advanceGameTime, parseGameTime, serializeGameTime } from './calendarUtils';
+import {
+  DEFAULT_IN_GAME_TIME,
+  advanceGameTime,
+  parseGameTime,
+  serializeGameTime,
+  calculateDailyRestStatus,
+  getGameDateString,
+  MAX_SHORT_RESTS_PER_DAY,
+  MAX_LONG_RESTS_PER_DAY,
+} from './calendarUtils';
 
 /**
  * Creates a new campaign where the creator is automatically the DM.
@@ -953,10 +962,19 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
             const pRef = doc(db, 'players', pId);
             const maxHp = p.maxHp || 100;
             const maxShields = p.maxShields || 50;
+            const targetDay = getGameDateString(updatedGameTime || fallbackTime);
+            const baseStatus = calculateDailyRestStatus(p.restUsage, updatedGameTime || fallbackTime);
+            const newRestUsage = {
+              date: targetDay,
+              shortRestsUsed: restType === 'short' ? Math.min(MAX_SHORT_RESTS_PER_DAY, baseStatus.shortRestsUsed + 1) : baseStatus.shortRestsUsed,
+              longRestsUsed: restType === 'long' ? Math.min(MAX_LONG_RESTS_PER_DAY, baseStatus.longRestsUsed + 1) : baseStatus.longRestsUsed,
+            };
+
             if (restType === 'long') {
               await updateDoc(pRef, {
                 hp: maxHp,
                 shields: maxShields,
+                restUsage: newRestUsage,
                 updatedAt: serverTimestamp(),
               });
             } else {
@@ -968,6 +986,7 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
               await updateDoc(pRef, {
                 hp: newHp,
                 shields: newShields,
+                restUsage: newRestUsage,
                 updatedAt: serverTimestamp(),
               });
             }

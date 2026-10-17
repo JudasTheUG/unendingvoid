@@ -71,4 +71,68 @@ describe('calendarUtils - Galactic Chronometer Engine', () => {
     expect(formatGameDateTime(custom, 'en')).toBe('25 December 2382 14:45');
     expect(formatGameDateTime(custom, 'tr')).toBe('25 Aralık 2382 14:45');
   });
+
+  describe('Daily Rest Allowance & Day Change Reset Engine', () => {
+    it('correctly extracts YYYY-MM-DD date string ignoring time', () => {
+      const { getGameDateString } = require('../calendarUtils');
+      expect(getGameDateString('2381-05-18T08:00:00')).toBe('2381-05-18');
+      expect(getGameDateString('2381-05-19T23:59:59')).toBe('2381-05-19');
+    });
+
+    it('identifies next game day by strictly comparing dates without comparing hours', () => {
+      const { isNextGameDay } = require('../calendarUtils');
+      // Later hours on the same date: NOT next day
+      expect(isNextGameDay('2381-05-18T23:00:00', '2381-05-18T08:00:00')).toBe(false);
+
+      // Earlier hour on subsequent date: IS next day (date > previous date)
+      expect(isNextGameDay('2381-05-19T02:00:00', '2381-05-18T22:00:00')).toBe(true);
+
+      // Earlier date: NOT next day
+      expect(isNextGameDay('2381-05-17T08:00:00', '2381-05-18T08:00:00')).toBe(false);
+    });
+
+    it('enforces 2 short rests and 1 long rest per in-game day and resets on day change', () => {
+      const { calculateDailyRestStatus } = require('../calendarUtils');
+
+      // Day 1 initial status
+      const day1Start = calculateDailyRestStatus({}, '2381-05-18T08:00:00');
+      expect(day1Start.shortRestsLeft).toBe(2);
+      expect(day1Start.longRestsLeft).toBe(1);
+
+      // After 1 short rest on Day 1
+      const afterShort1 = calculateDailyRestStatus(
+        { date: '2381-05-18', shortRestsUsed: 1, longRestsUsed: 0 },
+        '2381-05-18T10:00:00'
+      );
+      expect(afterShort1.shortRestsLeft).toBe(1);
+      expect(afterShort1.longRestsLeft).toBe(1);
+
+      // After 2 short rests on Day 1
+      const afterShort2 = calculateDailyRestStatus(
+        { date: '2381-05-18', shortRestsUsed: 2, longRestsUsed: 0 },
+        '2381-05-18T12:00:00'
+      );
+      expect(afterShort2.shortRestsLeft).toBe(0);
+      expect(afterShort2.longRestsLeft).toBe(1);
+
+      // Hours advancing to evening on same date: limits remain exhausted
+      const day1Evening = calculateDailyRestStatus(
+        { date: '2381-05-18', shortRestsUsed: 2, longRestsUsed: 1 },
+        '2381-05-18T22:00:00'
+      );
+      expect(day1Evening.shortRestsLeft).toBe(0);
+      expect(day1Evening.longRestsLeft).toBe(0);
+
+      // Day advances to next date (current date > previous date): resets to 2 short & 1 long rest!
+      const day2Morning = calculateDailyRestStatus(
+        { date: '2381-05-18', shortRestsUsed: 2, longRestsUsed: 1 },
+        '2381-05-19T06:00:00'
+      );
+      expect(day2Morning.date).toBe('2381-05-19');
+      expect(day2Morning.shortRestsLeft).toBe(2);
+      expect(day2Morning.shortRestsUsed).toBe(0);
+      expect(day2Morning.longRestsLeft).toBe(1);
+      expect(day2Morning.longRestsUsed).toBe(0);
+    });
+  });
 });

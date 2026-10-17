@@ -92,3 +92,60 @@ export function setGameTimeFromInputs(year, month, day, hour, minute) {
   const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), 0);
   return serializeGameTime(d);
 }
+
+export const MAX_SHORT_RESTS_PER_DAY = 2;
+export const MAX_LONG_RESTS_PER_DAY = 1;
+
+/**
+ * Extracts the YYYY-MM-DD date string (ignoring hours/minutes/seconds)
+ */
+export function getGameDateString(timeStr) {
+  if (!timeStr) return '2381-05-18';
+  if (typeof timeStr === 'string' && timeStr.includes('T')) {
+    return timeStr.split('T')[0];
+  }
+  const d = parseGameTime(timeStr);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${String(d.getFullYear()).padStart(4, '0')}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Returns true if currentDate is strictly greater than previousDate (ignoring hours)
+ */
+export function isNextGameDay(currentDateStr, previousDateStr) {
+  if (!currentDateStr || !previousDateStr) return false;
+  const curr = getGameDateString(currentDateStr);
+  const prev = getGameDateString(previousDateStr);
+  return curr > prev;
+}
+
+/**
+ * Calculates operative daily rest allowance based on in-game day progression.
+ * Automatically resets allowance (2 short rests, 1 long rest) whenever current date > recorded date.
+ */
+export function calculateDailyRestStatus(restUsage = {}, currentGameTime = DEFAULT_IN_GAME_TIME) {
+  const currentDay = getGameDateString(currentGameTime);
+  const recordedDay = restUsage?.date ? getGameDateString(restUsage.date) : currentDay;
+
+  // Strict check: current date > previous date (ignoring hours)
+  if (currentDay > recordedDay) {
+    return {
+      date: currentDay,
+      shortRestsUsed: 0,
+      longRestsUsed: 0,
+      shortRestsLeft: MAX_SHORT_RESTS_PER_DAY,
+      longRestsLeft: MAX_LONG_RESTS_PER_DAY,
+    };
+  }
+
+  const shortUsed = Math.min(MAX_SHORT_RESTS_PER_DAY, Math.max(0, Number(restUsage?.shortRestsUsed || 0)));
+  const longUsed = Math.min(MAX_LONG_RESTS_PER_DAY, Math.max(0, Number(restUsage?.longRestsUsed || 0)));
+
+  return {
+    date: currentDay,
+    shortRestsUsed: shortUsed,
+    longRestsUsed: longUsed,
+    shortRestsLeft: Math.max(0, MAX_SHORT_RESTS_PER_DAY - shortUsed),
+    longRestsLeft: Math.max(0, MAX_LONG_RESTS_PER_DAY - longUsed),
+  };
+}

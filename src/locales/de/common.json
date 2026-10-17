@@ -633,6 +633,9 @@
     "deny": "Ablehnen",
     "approvedNotice": "Der DM hat die {{type}} Rast genehmigt! Zeit ist vergangen und Lebenspunkte wurden wiederhergestellt.",
     "deniedNotice": "Der DM hat die Rastanfrage abgelehnt.",
-    "hoursInfo": "Kurze Rast: 2 Stunden · Lange Rast: 8 Stunden"
+    "hoursInfo": "Kurze Rast: 2 Stunden (Max. 2/Tag) · Lange Rast: 8 Stunden (Max. 1/Tag)",
+    "dailyShortLimit": "Tägliches Kurze-Rast-Limit erreicht (2/2 für diesen Spieltag verwendet).",
+    "dailyLongLimit": "Tägliches Lange-Rast-Limit erreicht (1/1 für diesen Spieltag verwendet).",
+    "dailyRestAllowance": "Tägliches Kontingent: 2 Kurze Rasten · 1 Lange Rast pro Spieltag"
   }
 }

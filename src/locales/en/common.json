@@ -633,6 +633,9 @@
     "deny": "Deny",
     "approvedNotice": "DM authorized the {{type}} Rest! Time advanced and vitals restored.",
     "deniedNotice": "DM denied the rest request.",
-    "hoursInfo": "Short Rest: 2 Hours · Long Rest: 8 Hours"
+    "hoursInfo": "Short Rest: 2 Hours (Max 2/Day) · Long Rest: 8 Hours (Max 1/Day)",
+    "dailyShortLimit": "Daily short rest limit reached (2/2 used for this in-game day).",
+    "dailyLongLimit": "Daily long rest limit reached (1/1 used for this in-game day).",
+    "dailyRestAllowance": "Daily Allowance: 2 Short Rests · 1 Long Rest per in-game day"
   }
 }
