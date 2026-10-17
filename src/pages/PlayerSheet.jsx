@@ -15,8 +15,10 @@ import SpaceshipCard from '../components/player/SpaceshipCard';
 import SpaceshipSheet from '../components/player/SpaceshipSheet';
 import EESysMarketplace, { EE_CATALOG_ITEMS } from '../components/market/EESysMarketplace';
 import TraitsList from '../components/player/TraitsList';
+import PlayerNotesTab from '../components/player/PlayerNotesTab';
+import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
 import DiceOverlay from '../components/dice/DiceOverlay';
-import { updatePlayerHP, updatePlayerShields } from '../lib/playerActions';
+import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote } from '../lib/playerActions';
 import { logout } from '../lib/authService';
 
 export default function PlayerSheet() {
@@ -76,6 +78,29 @@ export default function PlayerSheet() {
   const shipDisplayName = customShipName || initialShipName;
 
   const currentCredits = localCredits !== null ? localCredits : (effectivePlayer.credits || 0);
+
+  const [localNotes, setLocalNotes] = useState(null);
+  const activeNotes = localNotes !== null ? localNotes : (effectivePlayer.notes || []);
+
+  const handleAddNote = async (newNote) => {
+    const updated = [newNote, ...activeNotes.filter((n) => n.id !== newNote.id)];
+    setLocalNotes(updated);
+    try {
+      await addPlayerNote(effectivePlayer.id || effectivePlayer.uid, newNote);
+    } catch (err) {
+      console.warn('[PlayerSheet] Note saved to local state:', err.message);
+    }
+  };
+
+  const handleDeleteNote = async (noteToDelete) => {
+    const updated = activeNotes.filter((n) => n.id !== noteToDelete.id);
+    setLocalNotes(updated);
+    try {
+      await removePlayerNote(effectivePlayer.id || effectivePlayer.uid, noteToDelete);
+    } catch (err) {
+      console.warn('[PlayerSheet] Note removed from local state:', err.message);
+    }
+  };
 
   // Resolve inventory items
   const rawInventory = localInventory !== null ? localInventory : (effectivePlayer.inventory || []);
@@ -223,7 +248,8 @@ export default function PlayerSheet() {
                   { id: 'actions', label: '⚔️ Actions & Attacks' },
                   { id: 'inventory', label: '🎒 Equipment & Cargo' },
                   { id: 'features', label: '🧬 Features & Traits' },
-                  { id: 'bio', label: '📜 Notes & Vessel' },
+                  { id: 'notes', label: '📝 Field Notes & Intel' },
+                  { id: 'bio', label: '📜 Operative Dossier' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -270,7 +296,16 @@ export default function PlayerSheet() {
                 </div>
               )}
 
-              {/* SUB-TAB 4: BIO & SHIP SUMMARY */}
+              {/* SUB-TAB 4: FIELD NOTES & INTEL ARCHIVE */}
+              {activeTab === 'notes' && (
+                <PlayerNotesTab
+                  notes={activeNotes}
+                  onAddNote={handleAddNote}
+                  onDeleteNote={handleDeleteNote}
+                />
+              )}
+
+              {/* SUB-TAB 5: BIO & SHIP SUMMARY */}
               {activeTab === 'bio' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="glass-panel p-5 space-y-3 font-mono text-xs">
@@ -327,6 +362,12 @@ export default function PlayerSheet() {
           onUpdateInventory={(updatedInv) => setLocalInventory(updatedInv)}
         />
       )}
+
+      {/* Floating Tactical Comms & DM Intel Feed (Read-Only for Player) */}
+      <DMIntelBroadcast
+        activePlayer={effectivePlayer}
+        onSaveToNotes={handleAddNote}
+      />
     </div>
   );
 }

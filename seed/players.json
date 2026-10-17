@@ -22,7 +22,29 @@
     "inventory": ["item_plasma_rifle", "item_nanite_stim", "item_combat_suit"],
     "equippedWeapon": "item_plasma_rifle",
     "equippedArmor": "item_combat_suit",
-    "spaceship": "item_corvette_voidrunner"
+    "spaceship": "item_corvette_voidrunner",
+    "notes": [
+      {
+        "id": "note_seed_01",
+        "type": "custom",
+        "title": "Ceres Orbital Fuel Syndicate",
+        "category": "outlaw",
+        "content": "Informant confirmed Helium-3 distribution on Ceres is controlled by the Golden Fang syndicate. Watch for unmarked heavy haulers docked in Sector 7.",
+        "imageUrl": null,
+        "source": "Operative Field Log",
+        "createdAt": "2026-10-15T12:00:00Z"
+      },
+      {
+        "id": "note_seed_02",
+        "type": "saved_intel",
+        "title": "Epstein Drive Plume Detected // Sector 4",
+        "category": "military",
+        "content": "Long-range thermal sensors have identified an unregistered stealth frigate burn trajectory 40,000 km off Ceres orbital grid. All operatives report to combat readiness Alpha.",
+        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=400&q=80",
+        "source": "MCRN NAVAL COMMAND",
+        "createdAt": "2026-10-16T08:30:00Z"
+      }
+    ]
   },
   {
     "id": "player_lyra",

@@ -1,26 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --color-void-bg: #0a0e17;
-  --color-void-surface: #111827;
-  --color-void-panel: #1a1f2e;
-  --color-void-border: rgba(255, 255, 255, 0.1);
+  --color-void-bg: #05080e;
+  --color-void-surface: #0a0f1b;
+  --color-void-panel: #0e1526;
+  --color-void-border: rgba(71, 85, 105, 0.35);
 
   --color-neon-cyan: #00f0ff;
-  --color-neon-magenta: #ff00aa;
-  --color-neon-green: #00ff88;
-  --color-neon-red: #ff3344;
-  --color-neon-purple: #aa44ff;
-  --color-neon-amber: #ffaa00;
+  --color-neon-magenta: #e11d48;
+  --color-neon-green: #10b981;
+  --color-neon-red: #ef4444;
+  --color-neon-purple: #8b5cf6;
+  --color-neon-amber: #f59e0b;
+  --color-mcrn-orange: #ea580c;
 
-  --color-rarity-common: #9ca3af;
-  --color-rarity-uncommon: #22c55e;
-  --color-rarity-rare: #3b82f6;
-  --color-rarity-legendary: #a855f7;
+  --color-rarity-common: #94a3b8;
+  --color-rarity-uncommon: #10b981;
+  --color-rarity-rare: #0284c7;
+  --color-rarity-legendary: #d97706;
   --color-rarity-alien: #00f0ff;
 
-  --font-family-display: 'Orbitron', sans-serif;
-  --font-family-body: 'Inter', sans-serif;
+  --font-family-display: 'Orbitron', 'Rajdhani', monospace, sans-serif;
+  --font-family-body: 'Inter', system-ui, sans-serif;
 }
 
 /* Global resets */
@@ -34,6 +35,12 @@ body {
   margin: 0;
   font-family: var(--font-family-body);
   background-color: var(--color-void-bg);
+  background-image: 
+    radial-gradient(ellipse at 50% 0%, rgba(14, 21, 38, 0.7) 0%, transparent 75%),
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  background-position: 0 0, -1px -1px, -1px -1px;
   color: #e2e8f0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -45,57 +52,64 @@ body {
   flex-direction: column;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - Tactical Military Track */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-void-bg);
+  background: #060911;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  background: #1e293b;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: #334155;
 }
 
-/* Utility: glassmorphism panel */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+/* Tactical Industrial Panel (The Expanse / Cyberpunk 2077 HUD) */
+.glass-panel,
+.tactical-panel {
+  background: linear-gradient(180deg, rgba(14, 21, 38, 0.96) 0%, rgba(10, 15, 27, 0.98) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(71, 85, 105, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
 }
 
-/* Utility: neon glow */
+/* Chamfered Tactical Corner Cut */
+.cyber-cut {
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+.tactical-border-amber {
+  border-left: 3px solid #f59e0b;
+}
+
+.tactical-border-cyan {
+  border-left: 3px solid #00f0ff;
+}
+
+.tactical-border-crimson {
+  border-left: 3px solid #ef4444;
+}
+
+/* Utility: Tactical Glow (Restrained & High-Precision) */
 .neon-glow-cyan {
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3), 0 0 30px rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25), 0 0 20px rgba(0, 240, 255, 0.08);
 }
-.neon-glow-magenta {
-  box-shadow: 0 0 15px rgba(255, 0, 170, 0.3), 0 0 30px rgba(255, 0, 170, 0.1);
-}
-.neon-glow-green {
-  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3), 0 0 30px rgba(0, 255, 136, 0.1);
-}
-
-/* Utility: scan-line animation */
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+.neon-glow-amber {
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25), 0 0 20px rgba(245, 158, 11, 0.08);
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.4s ease-out forwards;
+  animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

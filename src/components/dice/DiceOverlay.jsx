@@ -1249,14 +1249,14 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2">
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className="p-2.5 rounded-xl glass-panel text-gray-300 hover:text-neon-cyan border-white/10 hover:border-neon-cyan transition-all text-xs font-mono shadow-lg"
-          title="Roll Ledger"
+          className={`p-2.5 rounded-xl bg-[#070b14] text-gray-300 hover:text-neon-cyan border-2 border-slate-700 hover:border-neon-cyan transition-all text-xs font-mono shadow-xl ${showHistory ? 'border-neon-cyan text-neon-cyan' : ''}`}
+          title="Toggle Quantum Roll Ledger"
         >
           📜
         </button>
 
         {/* Die Selector Buttons + Lucifer's Silver Coin */}
-        <div className="glass-panel px-3 py-1.5 flex items-center gap-1.5 border-white/10">
+        <div className="bg-[#070b14] px-3 py-1.5 flex items-center gap-1.5 border-2 border-slate-700 rounded-xl shadow-xl">
           {['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'].map((d) => (
             <button
               key={d}
@@ -1276,7 +1276,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                          ${d === 'd20'
                            ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 shadow-[0_0_8px_rgba(0,240,255,0.3)]'
                            : d === 'd100'
-                             ? 'bg-pink-500/20 text-pink-400 border border-pink-500/50 shadow-[0_0_8px_rgba(236,72,153,0.3)]'
+                             ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
                              : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
             >
               {d}
@@ -1355,14 +1355,14 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
               ))}
             </div>
 
-            <div className="pt-2 border-t border-white/10 flex items-center gap-1.5">
+            <div className="pt-2 border-t border-slate-700/80 flex items-center gap-1.5">
               <input
                 type="number"
                 min="1"
                 max="10"
                 value={customQuantity}
                 onChange={(e) => setCustomQuantity(e.target.value)}
-                className="w-16 bg-black/50 border border-white/20 rounded px-2 py-1 text-white text-center font-bold text-xs focus:border-neon-cyan focus:outline-none"
+                className="w-16 bg-[#090e1a] border border-slate-600 rounded px-2 py-1 text-white text-center font-bold text-xs focus:border-neon-cyan focus:outline-none"
               />
               <button
                 onClick={() => {
@@ -1376,7 +1376,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                   }
                   setQuantityPopover(null);
                 }}
-                className="flex-1 py-1 px-2 rounded bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 font-bold uppercase text-[11px] transition-all"
+                className="flex-1 py-1 px-2 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/60 font-bold uppercase text-[11px] transition-all"
               >
                 Roll {customQuantity || 1}×
               </button>
@@ -1385,38 +1385,61 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
         </div>
       )}
 
-      {/* Roll History Drawer */}
+      {/* Roll History Drawer - 100% Opaque Military Telemetry Ledger */}
       {showHistory && (
-        <div className="fixed bottom-20 right-5 w-80 max-h-96 glass-panel p-4 z-50 shadow-2xl border-white/20 animate-fade-in flex flex-col">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2">
-            <span className="font-display text-xs text-gray-300 uppercase tracking-widest">
-              📜 Quantum Roll Ledger
-            </span>
-            <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-white text-xs">
-              ✕
-            </button>
+        <div className="fixed bottom-20 right-5 w-84 max-h-[26rem] bg-[#070b14] p-4 z-50 shadow-[0_0_35px_rgba(0,0,0,0.95)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col">
+          <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span>
+              <span className="font-display text-xs text-white uppercase tracking-widest font-black">
+                📜 Quantum Roll Ledger
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-black/60 text-amber-400 border border-amber-500/40">
+                Opaque // Telemetry
+              </span>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="text-gray-400 hover:text-white hover:bg-white/10 px-1.5 py-0.5 rounded text-xs transition-colors"
+                title="Close Ledger"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           <div className="overflow-y-auto space-y-2 pr-1 text-xs font-mono">
             {recentRolls.length === 0 ? (
-              <p className="text-gray-500 italic py-4 text-center">No rolls logged yet.</p>
+              <div className="py-8 text-center text-gray-500 italic space-y-1">
+                <span className="text-xl block opacity-40">📊</span>
+                <p>No rolls logged in current session.</p>
+              </div>
             ) : (
               recentRolls.map((r, i) => (
-                <div key={i} className="bg-white/5 p-2 rounded border border-white/5 flex items-center justify-between">
-                  <div>
-                    <span className="text-neon-cyan font-bold block">{r.playerName}</span>
-                    <span className="text-[10px] text-gray-400">
+                <div
+                  key={i}
+                  className="bg-[#0e1628] hover:bg-[#141f36] p-2.5 rounded-lg border border-slate-700/70 flex items-center justify-between transition-colors shadow-sm"
+                >
+                  <div className="space-y-0.5">
+                    <span className="text-neon-cyan font-bold block text-[13px]">{r.playerName}</span>
+                    <span className="text-[10px] text-gray-300 block">
                       {r.purpose || r.notation}{' '}
-                      {r.isCoin
-                        ? `[${r.results?.join(',')}]`
-                        : r.tensResult !== undefined
-                          ? `[${r.tensResult}, ${r.onesResult}]`
-                          : `[${r.results?.join(',')}]`}
+                      <span className="text-amber-400 font-bold">
+                        {r.isCoin
+                          ? `[${r.results?.join(',')}]`
+                          : r.tensResult !== undefined
+                            ? `[${r.tensResult}, ${r.onesResult}]`
+                            : `[${r.results?.join(',')}]`}
+                      </span>
                     </span>
                   </div>
-                  <span className="font-display font-black text-sm text-white">
-                    {r.total}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-display font-black text-base text-white block">
+                      {r.total}
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400">Total</span>
+                  </div>
                 </div>
               ))
             )}

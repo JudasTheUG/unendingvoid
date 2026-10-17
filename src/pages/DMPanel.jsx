@@ -9,6 +9,8 @@ import CombatTracker from '../components/dm/CombatTracker';
 import StatOverrideForm from '../components/dm/StatOverrideForm';
 import ItemSpawner from '../components/dm/ItemSpawner';
 import TraitAssigner from '../components/dm/TraitAssigner';
+import IntelBroadcaster from '../components/dm/IntelBroadcaster';
+import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -259,6 +261,9 @@ export default function DMPanel() {
         />
       )}
 
+      {/* DM Tactical Comms & Intel Broadcaster */}
+      <IntelBroadcaster />
+
       {/* Lower Dual Controls: Item Spawner & Trait Assigner */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ItemSpawner
@@ -271,6 +276,9 @@ export default function DMPanel() {
           traits={traits}
         />
       </div>
+
+      {/* Floating Tactical Comms Monitor */}
+      <DMIntelBroadcast isDM={true} />
 
       {/* ──────────────── MODAL: DM LEVEL UP OPERATIVE ──────────────── */}
       {levelUpModalPlayer && (

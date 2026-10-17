@@ -13,6 +13,8 @@ import {
   equipWeapon,
   equipArmor,
   setSpaceship,
+  addPlayerNote,
+  removePlayerNote,
 } from '../playerActions';
 
 // Mock Firebase functions
@@ -164,6 +166,28 @@ describe('playerActions', () => {
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       spaceship: itemId,
+      updatedAt: 'serverTimestampMock',
+    });
+  });
+
+  it('addPlayerNote calls updateDoc with arrayUnion', async () => {
+    const note = { id: 'note_1', title: 'Belter Contact', content: 'Met informal contact at Tycho Station' };
+    await addPlayerNote(mockUserId, note);
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      notes: 'arrayUnion([object Object])',
+      updatedAt: 'serverTimestampMock',
+    });
+  });
+
+  it('removePlayerNote calls updateDoc with arrayRemove', async () => {
+    const note = { id: 'note_1' };
+    await removePlayerNote(mockUserId, note);
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      notes: 'arrayRemove([object Object])',
       updatedAt: 'serverTimestampMock',
     });
   });

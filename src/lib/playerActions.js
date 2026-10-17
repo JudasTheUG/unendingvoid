@@ -48,3 +48,15 @@ export const equipArmor = (userId, itemId) =>
 
 export const setSpaceship = (userId, itemId) =>
   updateDoc(doc(db, 'players', userId), { spaceship: itemId, updatedAt: serverTimestamp() });
+
+export const addPlayerNote = (userId, note) =>
+  updateDoc(doc(db, 'players', userId), {
+    notes: arrayUnion(note),
+    updatedAt: serverTimestamp(),
+  });
+
+export const removePlayerNote = (userId, note) =>
+  updateDoc(doc(db, 'players', userId), {
+    notes: arrayRemove(note),
+    updatedAt: serverTimestamp(),
+  });
