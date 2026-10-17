@@ -6,6 +6,8 @@ import { usePlayerData } from '../hooks/usePlayerData';
 import { useCollection } from '../hooks/useCollection';
 import { addCharacterToCampaign, deleteCampaign, removeCharacterFromCampaign } from '../lib/campaignActions';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
+import InitiativeRollModal from '../components/player/InitiativeRollModal';
+import DiceOverlay from '../components/dice/DiceOverlay';
 
 export default function CampaignPage() {
   const { t } = useTranslation();
@@ -51,6 +53,9 @@ export default function CampaignPage() {
   // Characters assigned to this campaign
   const assignedCharIds = (campaign.activeCharacters || []).map((ac) => ac.characterId || ac.uid);
   const partyCharacters = characters.filter((c) => assignedCharIds.includes(c.id || c.uid));
+  const myCampaignCharacters = partyCharacters.filter(
+    (c) => c.ownerId === user?.uid || c.uid === user?.uid
+  );
 
   // Available characters to add
   const unassignedMyChars = myCharacters.filter((c) => !assignedCharIds.includes(c.id || c.uid));
@@ -109,6 +114,18 @@ export default function CampaignPage() {
 
   return (
     <div className="min-h-dvh bg-void-bg text-white p-4 md:p-8 pb-44 md:pb-52 space-y-6">
+      {/* 3D Dice Layer */}
+      <DiceOverlay user={user} isDM={isDM} />
+
+      {/* Real-time Tactical Initiative Roll Modals */}
+      {myCampaignCharacters.map((char) => (
+        <InitiativeRollModal
+          key={char.id || char.uid}
+          character={char}
+          campaignId={campaignId}
+        />
+      ))}
+
       {/* Campaign Header */}
       <div className="glass-panel p-6 border-l-4 border-l-neon-magenta flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>

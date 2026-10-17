@@ -80,7 +80,14 @@
     "startCombat": "Start Combat",
     "endCombat": "End Combat",
     "rolling": "ROLLING...",
-    "allPlayersReady": "All Players Ready"
+    "allPlayersReady": "All Players Ready",
+    "autoRollAllOperatives": "Auto-Roll Pending Operatives",
+    "autoRollHostiles": "Auto-Roll Hostile Initiatives",
+    "rollForPlayer": "Roll for Player",
+    "operativeInitiativeStatus": "Operative Initiative Status",
+    "hostileCombatants": "Hostile Combatants",
+    "hostileAutoRollHint": "Auto-roll or manual initiative",
+    "finalizeTurnOrder": "Finalize Turn Order & Engage Combat"
   },
   "dice": {
     "roll": "Roll",

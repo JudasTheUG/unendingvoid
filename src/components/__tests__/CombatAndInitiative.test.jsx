@@ -153,15 +153,40 @@ describe('CombatTracker DM Initiative Flow', () => {
     expect(askButton).toBeInTheDocument();
 
     fireEvent.click(askButton);
-    expect(requestInitiative).toHaveBeenCalledWith('camp_1');
+    expect(requestInitiative).toHaveBeenCalledWith('camp_1', mockPlayers);
 
     // Auto-roll enemies
-    const autoRollBtn = screen.getByText('Auto-Roll Hostile Initiatives');
+    const autoRollBtn = screen.getByText('combat.autoRollHostiles');
     fireEvent.click(autoRollBtn);
 
     // Finalize Turn Order button
-    const finalizeBtn = screen.getByText('Finalize Turn Order & Engage Combat');
+    const finalizeBtn = screen.getByText('combat.finalizeTurnOrder');
     expect(finalizeBtn).toBeInTheDocument();
+  });
+
+  it('renders "Auto-Roll Pending Operatives" button and rolls for all unsubmitted players', async () => {
+    const { submitInitiativeRoll } = await import('../../lib/campaignActions');
+
+    render(
+      <CombatTracker
+        campaignId="camp_1"
+        players={mockPlayers}
+        turnOrder={['p1', 'p2']}
+        currentTurn={0}
+        combatActive={false}
+      />
+    );
+
+    const autoRollPendingBtn = screen.getByText('combat.autoRollAllOperatives');
+    expect(autoRollPendingBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(autoRollPendingBtn);
+    });
+
+    // Both p1 and p2 should have rolls submitted
+    expect(submitInitiativeRoll).toHaveBeenCalledWith('camp_1', expect.objectContaining({ playerId: 'p1' }));
+    expect(submitInitiativeRoll).toHaveBeenCalledWith('camp_1', expect.objectContaining({ playerId: 'p2' }));
   });
 
   it('switches from "Awaiting operative rolls" to "All Players Ready" when all players submit rolls', () => {

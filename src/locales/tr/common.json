@@ -80,7 +80,14 @@
     "startCombat": "Savaşı Başlat",
     "endCombat": "Savaşı Bitir",
     "rolling": "ATILIYOR...",
-    "allPlayersReady": "Tüm Oyuncular Hazır"
+    "allPlayersReady": "Tüm Oyuncular Hazır",
+    "autoRollAllOperatives": "Bekleyen Ajanlara Otomatik Zar At",
+    "autoRollHostiles": "Düşman İnisiyatiflerini Otomatik At",
+    "rollForPlayer": "Oyuncu İçin Zar At",
+    "operativeInitiativeStatus": "Ajan İnisiyatif Durumu",
+    "hostileCombatants": "Düşman Savaşçılar",
+    "hostileAutoRollHint": "Otomatik at veya elle inisiyatif gir",
+    "finalizeTurnOrder": "Sırayı Tamamla ve Savaşa Gir"
   },
   "dice": {
     "roll": "At",

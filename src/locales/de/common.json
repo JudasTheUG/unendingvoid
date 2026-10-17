@@ -80,7 +80,14 @@
     "startCombat": "Kampf beginnen",
     "endCombat": "Kampf beenden",
     "rolling": "WIRD GEWÜRFELT...",
-    "allPlayersReady": "Alle Spieler bereit"
+    "allPlayersReady": "Alle Spieler bereit",
+    "autoRollAllOperatives": "Ausstehende Agenten automatisch würfeln",
+    "autoRollHostiles": "Feindliche Initiativen automatisch würfeln",
+    "rollForPlayer": "Für Spieler würfeln",
+    "operativeInitiativeStatus": "Initiativestatus der Einsatzkräfte",
+    "hostileCombatants": "Feindliche Kämpfer",
+    "hostileAutoRollHint": "Automatisch oder manuell würfeln",
+    "finalizeTurnOrder": "Reihenfolge festlegen & Kampf beginnen"
   },
   "dice": {
     "roll": "Würfeln",
