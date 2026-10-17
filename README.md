@@ -5,7 +5,7 @@
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.x-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%7C%20Auth%20%7C%20Hosting-FFA611?style=for-the-badge&logo=firebase)](https://firebase.google.com)
-[![Vitest](https://img.shields.io/badge/Tests-98%20Passed-10B981?style=for-the-badge&logo=vitest)](https://vitest.dev)
+[![Vitest](https://img.shields.io/badge/Tests-113%20Passed-10B981?style=for-the-badge&logo=vitest)](https://vitest.dev)
 [![Localization](https://img.shields.io/badge/Locales-EN%20%7C%20TR%20%7C%20DE-A855F7?style=for-the-badge)](src/locales)
 
 > **Unending Void** is a high-octane, cyberpunk/hard-sci-fi Virtual Tabletop (VTT) built for gritty space opera tabletop roleplaying games (*The Expanse* meets *Cyberpunk 2020 / RED* with customized D&D 5e mechanics). Designed with high-contrast cybernetic HUD aesthetics, real-time multiplayer Firestore sync, canvas physics 3D dice, a modular starship refit yard, corporate naval shipyards, a 3-tier synthesis marketplace, and full tri-lingual localization (`en`, `tr`, `de`).
@@ -97,6 +97,12 @@ Whether tracking bounties through corporate space stations, commanding combat fr
   - 🇩🇪 **German (`de`)**
 - **Instant Hot-Switching**: Switch languages anytime using the floating language toggle without page reloads.
 
+### 8. Local & Cloud Username/Password Authentication
+- **Clean Username Login**: Operatives can log in with a simple handle (e.g. `commander`, `judas`, `void_pilot`) without requiring an external email address.
+- **Resilient Offline / Local Storage Accounts**: Accounts registered locally are automatically saved to `localStorage`, allowing full gameplay and session recovery even when completely offline or running local emulators.
+- **Quick Local Guest Access**: Instant one-click guest authentication that bypasses forms and immediately launches into the tactical dashboard.
+- **Hybrid Cloud Synchronization**: Seamless background normalization to Firebase Auth ensures Firestore security rules (`request.auth != null`) remain satisfied.
+
 ---
 
 ## 🛠️ Tech Stack & Architecture
@@ -106,11 +112,11 @@ Whether tracking bounties through corporate space stations, commanding combat fr
 | **Frontend Framework** | **React 19** + **Vite 6** (ES Modules, HMR, Fast Refresh) |
 | **Styling & Aesthetics** | **Tailwind CSS v4** (Modern `@theme` variables, cyberpunk color palette) |
 | **Backend & Real-Time Sync**| **Google Cloud Firestore** (Real-time snapshots, offline persistence) |
-| **User Authentication** | **Firebase Auth** (Anonymous guest accounts + Email/Password authentication) |
+| **User Authentication** | **Local Storage Engine + Firebase Auth** (Username/Password, Anonymous Guests, Google OAuth) |
 | **Hosting & CDN** | **Firebase Hosting** (HTTP/2 edge distribution, SPA URL rewrite rules) |
 | **Localization (i18n)** | **i18next** + **react-i18next** + **i18next-browser-languagedetector** |
 | **Icons & Effects** | **Lucide React** (HUD icons), **Canvas Confetti** (Critical roll celebrations) |
-| **Testing Suite** | **Vitest 5** + **@testing-library/react** + **jest-dom** (98 unit tests) |
+| **Testing Suite** | **Vitest 5** + **@testing-library/react** + **jest-dom** (113 unit tests) |
 
 ---
 

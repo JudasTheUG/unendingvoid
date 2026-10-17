@@ -504,12 +504,17 @@ service cloud.firestore {
 
 ---
 
-### Phase 10: Routing, Shell, Navigation & Authentication
+### Phase 10: Routing, Shell, Navigation & Local Username/Password Authentication
 
-> **Goal**: Responsive application shell with authenticated and guest routing.
+> **Goal**: Responsive application shell with local/cloud username and password authentication, guest routing, and protected paths.
 
+- **Username & Password Authentication Engine** (`src/lib/authService.js`):
+  - Normalizes clean handles (e.g. `commander`, `judas`) to internal email addresses for Firebase Auth.
+  - Implements browser `localStorage` account caching (`unendingvoid_local_accounts`) and active session persistence.
+  - Fully supports offline and emulator development with fallback local accounts when cloud connectivity is unavailable.
+  - One-click Quick Local Guest login (`loginLocalGuest()`) for instantaneous test access.
 - `src/router.jsx`: React Router v7 routes:
-  - `/login`: `LoginPage.jsx` (Email/password and anonymous guest sign-in).
+  - `/login`: `LoginPage.jsx` (Username or email & password sign-in, account creation, and quick local guest access).
   - `/dashboard`: `DashboardPage.jsx` (Character selection, active campaign status, quick actions).
   - `/sheet/:characterId`: `PlayerSheet.jsx` (Operative Dossier).
   - `/dm/:campaignId`: `DMPanel.jsx` (DM Tactical Command Deck).
@@ -523,25 +528,30 @@ service cloud.firestore {
 
 > **Goal**: Run automated test suites to ensure 100% pass rate before deployment.
 
-#### 11.1 Test Suite Manifest (Must all pass)
-1. `src/lib/__tests__/playerActions.test.js`: Rest, damage, and character deletion tests.
-2. `src/lib/__tests__/campaignActions.test.js`: Campaign deletion and roster actions.
-3. `src/lib/__tests__/diceModifiers.test.js`: Trait modifiers and bonus rolls.
-4. `src/lib/__tests__/initiativeCalculator.test.js`: Initiative sorting and tie-breakers.
-5. `src/lib/__tests__/shipValidation.test.js`: Grid balance and thrust calculations.
-6. `src/lib/__tests__/i18n.test.js`: Tri-lingual completeness across EN, TR, DE.
-7. `src/components/__tests__/CombatAndInitiative.test.jsx`: Combat tracker state transitions.
-8. `src/components/__tests__/DMRollPrivacy.test.jsx`: Secret DM roll masking.
-9. `src/components/__tests__/ShipAssignmentAndShipyard.test.jsx`: Ship purchasing & assignment.
-10. `src/components/__tests__/ShipBuilderAndDrydock.test.jsx`: Modular refit bay.
-11. `src/components/__tests__/RollContextMenuAndEESys.test.jsx`: 3-tier synthesis validation.
-12. `src/components/__tests__/accessibility.test.jsx`: Screen-reader & contrast accessibility.
+#### 11.1 Test Suite Manifest (Must all pass - 17 suites, 113+ tests)
+1. `src/lib/__tests__/authService.test.js`: Username normalization, local account storage, password validation, guest login.
+2. `src/lib/__tests__/playerActions.test.js`: Rest, damage, and character deletion tests.
+3. `src/lib/__tests__/campaignActions.test.js`: Campaign deletion and roster actions.
+4. `src/lib/__tests__/diceModifiers.test.js`: Trait modifiers and bonus rolls.
+5. `src/lib/__tests__/initiativeCalculator.test.js`: Initiative sorting and tie-breakers.
+6. `src/lib/__tests__/shipValidation.test.js`: Grid balance and thrust calculations.
+7. `src/lib/__tests__/i18n.test.js`: Tri-lingual completeness across EN, TR, DE.
+8. `src/components/__tests__/LoginPage.test.jsx`: Username & password form submission and guest login.
+9. `src/components/__tests__/CombatAndInitiative.test.jsx`: Combat tracker state transitions.
+10. `src/components/__tests__/DMRollPrivacy.test.jsx`: Secret DM roll masking.
+11. `src/components/__tests__/ShipAssignmentAndShipyard.test.jsx`: Ship purchasing & assignment.
+12. `src/components/__tests__/ShipBuilderAndDrydock.test.jsx`: Modular refit bay.
+13. `src/components/__tests__/RollContextMenuAndEESys.test.jsx`: 3-tier synthesis validation.
+14. `src/components/__tests__/accessibility.test.jsx`: Screen-reader & contrast accessibility.
+15. `src/components/__tests__/StatBlock.test.jsx`: Monospace HUD stat rendering.
+16. `src/components/__tests__/VitalBar.test.jsx`: Dynamic vital meter percentages.
+17. `src/components/__tests__/NotesAndIntel.test.jsx`: Mission notes and tactical broadcasts.
 
 #### 11.2 Execute Tests
 ```powershell
 npm test -- --run
 ```
-Expected output: **All test files passed, 0 failures**.
+Expected output: **All 17 test files passed, 113+ tests, 0 failures**.
 
 ---
 
