@@ -588,5 +588,28 @@
     "combatEndedTitle": "COMBAT HAS ENDED",
     "combatEndedPrompt": "The Dungeon Master has ended the combat encounter. Tactical battle telemetry has been cleared.",
     "closeBoard": "Close Combat Board"
+  },
+  "calendar": {
+    "stardate": "Galactic Standard Time",
+    "skipDay": "Skip Day",
+    "skipDayHint": "Advance calendar by 24 hours (+1 Day)",
+    "setDateTime": "Set Date & Time",
+    "clickToEdit": "Click to set date and time manually",
+    "manualTimeTitle": "Galactic Calendar Chronometer",
+    "manualTimeSubtitle": "Adjust the campaign stardate and planetary clock",
+    "year": "Year",
+    "month": "Month",
+    "day": "Day",
+    "hour": "Hour",
+    "minute": "Minute",
+    "apply": "Save Stardate",
+    "cancel": "Cancel",
+    "plus1Hour": "+1 Hour",
+    "plus2Hours": "+2 Hours (Short Rest)",
+    "plus8Hours": "+8 Hours (Long Rest)",
+    "plus1Day": "+1 Day",
+    "plus7Days": "+7 Days",
+    "shortRestNotice": "Short Rest Complete (+2 hours elapsed)",
+    "longRestNotice": "Long Rest Complete (+8 hours elapsed)"
   }
 }

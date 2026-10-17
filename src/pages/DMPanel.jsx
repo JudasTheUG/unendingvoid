@@ -16,13 +16,15 @@ import DiceOverlay from '../components/dice/DiceOverlay';
 import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { deleteCampaign, removeCharacterFromCampaign, cancelInitiative, endCombatSession } from '../lib/campaignActions';
+import { deleteCampaign, removeCharacterFromCampaign, cancelInitiative, endCombatSession, advanceCampaignTime, setCampaignTime } from '../lib/campaignActions';
 import ShipAssignmentModal from '../components/dm/ShipAssignmentModal';
+import DMCalendarModal from '../components/dm/DMCalendarModal';
+import { formatGameDateTime, DEFAULT_IN_GAME_TIME } from '../lib/calendarUtils';
 
 export default function DMPanel() {
   const { campaignId } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, profile } = useAuth();
 
   const { docs: campaigns = [] } = useCollection('campaigns');
@@ -46,6 +48,61 @@ export default function DMPanel() {
 
   // Active campaign
   const campaign = campaigns.find((c) => c.id === campaignId) || campaigns.find((c) => c.dmId === user?.uid);
+
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [campaignTime, setCampaignTimeState] = useState(
+    campaign?.inGameTime || DEFAULT_IN_GAME_TIME
+  );
+
+  useEffect(() => {
+    if (campaign?.inGameTime) {
+      setCampaignTimeState(campaign.inGameTime);
+    }
+  }, [campaign?.inGameTime]);
+
+  useEffect(() => {
+    const handleTimeUpdated = (e) => {
+      const campId = campaign?.id || campaignId;
+      if (e.detail?.inGameTime && (!campId || e.detail.campaignId === campId)) {
+        setCampaignTimeState(e.detail.inGameTime);
+      }
+    };
+    const handleStorage = (e) => {
+      const campId = campaign?.id || campaignId;
+      if (
+        (campId && e.key === `unendingvoid:campaign_time_${campId}`) ||
+        e.key === 'unendingvoid:ingame_time'
+      ) {
+        if (e.newValue) setCampaignTimeState(e.newValue);
+      }
+    };
+    window.addEventListener('unendingvoid:time_updated', handleTimeUpdated);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('unendingvoid:time_updated', handleTimeUpdated);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [campaign?.id, campaignId]);
+
+  const handleSkipDay = async () => {
+    const campId = campaign?.id || campaignId;
+    try {
+      const updated = await advanceCampaignTime(campId, 24, campaignTime);
+      setCampaignTimeState(updated);
+    } catch (err) {
+      console.warn('Failed to skip day:', err);
+    }
+  };
+
+  const handleSaveCustomTime = async (newTimeStr) => {
+    const campId = campaign?.id || campaignId;
+    try {
+      const updated = await setCampaignTime(campId, newTimeStr);
+      setCampaignTimeState(updated);
+    } catch (err) {
+      console.warn('Failed to save stardate:', err);
+    }
+  };
 
   useEffect(() => {
     if (campaign?.combatActive !== undefined) {
@@ -239,8 +296,8 @@ export default function DMPanel() {
         </div>
       </header>
 
-      {/* TOP-LEVEL TABS: Command Console on left, Live Flow on far right side */}
-      <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 overflow-x-auto">
+      {/* TOP-LEVEL TABS: Command Console on left, Live Flow on far right side, Calendar in the middle */}
+      <div className="flex items-center justify-between gap-4 border-b-2 border-white/10 pb-2 flex-wrap">
         <button
           onClick={() => setMainTab('console')}
           className={`px-5 py-2.5 rounded-xl font-display font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap
@@ -251,6 +308,32 @@ export default function DMPanel() {
           <span>👑</span>
           <span>{t('dm.commandConsole', 'Master Command Console')}</span>
         </button>
+
+        {/* MIDDLE: DM Calendar Controller (Date/Time, Skip Day, Manual Set) */}
+        <div className="flex items-center gap-2.5 font-mono">
+          <button
+            type="button"
+            onClick={() => setShowCalendarModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#080d1a] border border-amber-500/50 hover:border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all cursor-pointer group"
+            title={t('calendar.clickToEdit', 'Click to set date and time manually')}
+          >
+            <span className="text-sm">📅</span>
+            <span className="text-xs md:text-sm font-bold text-white group-hover:text-amber-300 tracking-wide">
+              {formatGameDateTime(campaignTime, i18n.language)}
+            </span>
+            <span className="text-[10px] text-amber-400/80 group-hover:text-amber-300">✏️</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSkipDay}
+            className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 hover:border-amber-400 text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            title={t('calendar.skipDayHint', 'Advance calendar by 24 hours (+1 Day)')}
+          >
+            <span>⏩</span>
+            <span>{t('calendar.skipDay', 'Skip Day')}</span>
+          </button>
+        </div>
 
         {/* Far Right Side: Live Comms & Quantum Rolls Flow */}
         <div className="ml-auto flex items-center pl-2">
@@ -564,6 +647,14 @@ export default function DMPanel() {
           </div>
         </div>
       )}
+
+      {/* DM Manual Date & Time Modal */}
+      <DMCalendarModal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        currentGameTime={campaignTime}
+        onSave={handleSaveCustomTime}
+      />
     </div>
   );
 }

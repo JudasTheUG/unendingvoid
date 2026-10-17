@@ -588,5 +588,28 @@
     "combatEndedTitle": "SAVAŞ SONA ERDİ",
     "combatEndedPrompt": "Oyun Yöneticisi çatışmayı sonlandırdı. Taktiksel savaş telemetrisi sıfırlandı.",
     "closeBoard": "Savaş Haritasını Kapat"
+  },
+  "calendar": {
+    "stardate": "Galaktik Standart Zaman",
+    "skipDay": "Günü Atla",
+    "skipDayHint": "Takvimi 24 saat ileri al (+1 Gün)",
+    "setDateTime": "Tarih ve Saati Ayarla",
+    "clickToEdit": "Tarih ve saati manuel ayarlamak için tıklayın",
+    "manualTimeTitle": "Galaktik Takvim Kronometresi",
+    "manualTimeSubtitle": "Sefer yıldız tarihini ve gezegen saatini ayarlayın",
+    "year": "Yıl",
+    "month": "Ay",
+    "day": "Gün",
+    "hour": "Saat",
+    "minute": "Dakika",
+    "apply": "Yıldız Tarihini Kaydet",
+    "cancel": "İptal",
+    "plus1Hour": "+1 Saat",
+    "plus2Hours": "+2 Saat (Kısa Mola)",
+    "plus8Hours": "+8 Saat (Uzun Mola)",
+    "plus1Day": "+1 Gün",
+    "plus7Days": "+7 Gün",
+    "shortRestNotice": "Kısa Mola Tamamlandı (+2 saat geçti)",
+    "longRestNotice": "Uzun Mola Tamamlandı (+8 saat geçti)"
   }
 }

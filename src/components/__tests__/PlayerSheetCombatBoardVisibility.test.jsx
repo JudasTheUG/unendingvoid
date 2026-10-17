@@ -74,6 +74,7 @@ vi.mock('firebase/firestore', async (importOriginal) => {
 describe('PlayerSheet - Combat Board Button Inactive Visibility Engine', () => {
   beforeEach(() => {
     localStorage.clear();
+    window.alert = vi.fn();
     mockCampaignData = {
       combatActive: false,
       combatEnded: true,
@@ -126,5 +127,45 @@ describe('PlayerSheet - Combat Board Button Inactive Visibility Engine', () => {
     });
 
     expect(screen.queryByText(/Enter Tactical Combat Board/i)).not.toBeInTheDocument();
+  });
+
+  it('renders initial campaign calendar date and advances time by 2 hours on short rest', async () => {
+    mockCampaignData = {
+      combatActive: false,
+      combatEnded: true,
+      inGameTime: '2381-05-18T08:00:00',
+      turnOrder: [],
+    };
+
+    render(<PlayerSheet />);
+
+    expect(screen.getByText(/18 May 2381 08:00/i)).toBeInTheDocument();
+
+    const shortRestBtn = screen.getByRole('button', { name: /Short Rest/i });
+    await act(async () => {
+      shortRestBtn.click();
+    });
+
+    expect(screen.getByText(/18 May 2381 10:00/i)).toBeInTheDocument();
+  });
+
+  it('advances calendar date by 8 hours on long rest', async () => {
+    mockCampaignData = {
+      combatActive: false,
+      combatEnded: true,
+      inGameTime: '2381-05-18T08:00:00',
+      turnOrder: [],
+    };
+
+    render(<PlayerSheet />);
+
+    expect(screen.getByText(/18 May 2381 08:00/i)).toBeInTheDocument();
+
+    const longRestBtn = screen.getByRole('button', { name: /Long Rest/i });
+    await act(async () => {
+      longRestBtn.click();
+    });
+
+    expect(screen.getByText(/18 May 2381 16:00/i)).toBeInTheDocument();
   });
 });

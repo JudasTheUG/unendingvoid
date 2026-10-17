@@ -588,5 +588,28 @@
     "combatEndedTitle": "KAMPF WURDE BEENDET",
     "combatEndedPrompt": "Der Spielleiter hat das Gefecht beendet. Die taktische Gefechtstelemetrie wurde zurückgesetzt.",
     "closeBoard": "Kampfbrett schließen"
+  },
+  "calendar": {
+    "stardate": "Galaktische Standardzeit",
+    "skipDay": "Tag überspringen",
+    "skipDayHint": "Kalender um 24 Stunden vorrücken (+1 Tag)",
+    "setDateTime": "Datum & Uhrzeit einstellen",
+    "clickToEdit": "Klicken, um Datum und Uhrzeit manuell einzustellen",
+    "manualTimeTitle": "Galaktisches Kalender-Chronometer",
+    "manualTimeSubtitle": "Passen Sie die Kampagnen-Sternzeit und Planetenuhr an",
+    "year": "Jahr",
+    "month": "Monat",
+    "day": "Tag",
+    "hour": "Stunde",
+    "minute": "Minute",
+    "apply": "Sternzeit speichern",
+    "cancel": "Abbrechen",
+    "plus1Hour": "+1 Stunde",
+    "plus2Hours": "+2 Stunden (Kurze Rast)",
+    "plus8Hours": "+8 Stunden (Lange Rast)",
+    "plus1Day": "+1 Tag",
+    "plus7Days": "+7 Tage",
+    "shortRestNotice": "Kurze Rast abgeschlossen (+2 Stunden vergangen)",
+    "longRestNotice": "Lange Rast abgeschlossen (+8 Stunden vergangen)"
   }
 }

@@ -202,4 +202,34 @@ describe('Player Sheet Multi-Language Localization Engine', () => {
     expect(screen.getByText(/Kybernetik & Genetische Merkmale/i)).toBeInTheDocument();
     expect(screen.getByText(/Keine genetischen Augmentierungen/i)).toBeInTheDocument();
   });
+
+  it('renders in-game calendar stardate chronometer in the middle of DnDCharacterHeader', async () => {
+    await i18n.changeLanguage('en');
+    const { rerender } = render(
+      <DnDCharacterHeader
+        character={mockCharacter}
+        inGameTime="2381-05-18T08:00:00"
+        onShortRest={vi.fn()}
+        onLongRest={vi.fn()}
+        onUpdateHp={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/18 May 2381 08:00/i)).toBeInTheDocument();
+    expect(screen.getByText(/Galactic Standard Time/i)).toBeInTheDocument();
+
+    // In Turkish
+    await i18n.changeLanguage('tr');
+    rerender(
+      <DnDCharacterHeader
+        character={mockCharacter}
+        inGameTime="2381-05-18T08:00:00"
+        onShortRest={vi.fn()}
+        onLongRest={vi.fn()}
+        onUpdateHp={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/18 Mayıs 2381 08:00/i)).toBeInTheDocument();
+    expect(screen.getByText(/Galaktik Standart Zaman/i)).toBeInTheDocument();
+  });
 });

@@ -6,17 +6,19 @@ import RollContextMenu from '../shared/RollContextMenu';
 import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
 import { processProfileImage } from '../../lib/imageUtils';
 import { updatePlayerAvatar } from '../../lib/playerActions';
+import { formatGameDateTime, DEFAULT_IN_GAME_TIME } from '../../lib/calendarUtils';
 
 export default function DnDCharacterHeader({
   character,
   traits = [],
   items = [],
+  inGameTime,
   onShortRest,
   onLongRest,
   onUpdateHp,
   onUpdateAvatar,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const fileInputRef = useRef(null);
   const [customAmount, setCustomAmount] = useState('10');
   const [justSaved, setJustSaved] = useState(false);
@@ -215,6 +217,19 @@ export default function DnDCharacterHeader({
               {t('characterStats.background', 'Background')}: {t(`backgrounds.${(character.background || 'mercenary').toLowerCase().replace(/[\s-]+/g, '_')}`, character.background || 'Mercenary')}
             </p>
           </div>
+        </div>
+
+        {/* Middle: In-Game Calendar & Chronometer */}
+        <div className="flex flex-col items-center justify-center px-4 py-2 rounded-xl bg-[#080d1a]/85 border border-neon-cyan/40 shadow-[0_0_15px_rgba(0,240,255,0.18)] text-center font-mono my-2 md:my-0 shrink-0">
+          <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-white tracking-wide">
+            <span className="text-neon-cyan text-sm">📅</span>
+            <span className="text-neon-cyan drop-shadow-[0_0_8px_rgba(0,240,255,0.4)]">
+              {formatGameDateTime(inGameTime || character.inGameTime || DEFAULT_IN_GAME_TIME, i18n.language)}
+            </span>
+          </div>
+          <span className="text-[9px] uppercase tracking-widest text-cyan-400/70 font-semibold mt-0.5">
+            {t('calendar.stardate', 'Galactic Standard Time')}
+          </span>
         </div>
 
         {/* Core Tactical Stat Badges (D&D Beyond Style) */}

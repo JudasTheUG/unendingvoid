@@ -11,6 +11,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { DEFAULT_IN_GAME_TIME, advanceGameTime, parseGameTime, serializeGameTime } from './calendarUtils';
 
 /**
  * Creates a new campaign where the creator is automatically the DM.
@@ -27,6 +28,7 @@ export async function createCampaign({ name, description = '', dmId, dmName }) {
     combatActive: false,
     turnOrder: [],
     currentTurn: 0,
+    inGameTime: DEFAULT_IN_GAME_TIME,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -701,4 +703,86 @@ export async function removeCharacterFromCampaign(campaignId, characterId) {
     throw err;
   }
 }
+
+/**
+ * Advances the in-game calendar time for a campaign by a specified number of hours.
+ * Synchronizes across Firestore, localStorage, and window broadcast.
+ */
+export async function advanceCampaignTime(campaignId, hoursToAdd = 0, currentFallbackTime = null) {
+  let currentTime = currentFallbackTime || DEFAULT_IN_GAME_TIME;
+
+  if (campaignId && db) {
+    try {
+      const snap = await getDoc(doc(db, 'campaigns', campaignId));
+      if (snap.exists() && snap.data()?.inGameTime) {
+        currentTime = snap.data().inGameTime;
+      }
+    } catch (err) {
+      console.warn('[campaignActions] Firestore notice reading campaign time:', err.message);
+    }
+  } else if (typeof localStorage !== 'undefined') {
+    const local = localStorage.getItem(`unendingvoid:campaign_time_${campaignId}`) || localStorage.getItem('unendingvoid:ingame_time');
+    if (local) currentTime = local;
+  }
+
+  const updatedTime = advanceGameTime(currentTime, hoursToAdd);
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (campaignId) localStorage.setItem(`unendingvoid:campaign_time_${campaignId}`, updatedTime);
+      localStorage.setItem('unendingvoid:ingame_time', updatedTime);
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:time_updated', {
+          detail: { campaignId, inGameTime: updatedTime, hoursAdded: hoursToAdd, timestamp: Date.now() },
+        })
+      );
+    }
+  } catch (_) {}
+
+  if (campaignId && db) {
+    try {
+      await updateDoc(doc(db, 'campaigns', campaignId), {
+        inGameTime: updatedTime,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore update notice for inGameTime:', err.message);
+    }
+  }
+
+  return updatedTime;
+}
+
+/**
+ * Sets the in-game calendar time for a campaign directly to a target date string.
+ */
+export async function setCampaignTime(campaignId, newGameTimeStr) {
+  const serialized = serializeGameTime(parseGameTime(newGameTimeStr));
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (campaignId) localStorage.setItem(`unendingvoid:campaign_time_${campaignId}`, serialized);
+      localStorage.setItem('unendingvoid:ingame_time', serialized);
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:time_updated', {
+          detail: { campaignId, inGameTime: serialized, timestamp: Date.now() },
+        })
+      );
+    }
+  } catch (_) {}
+
+  if (campaignId && db) {
+    try {
+      await updateDoc(doc(db, 'campaigns', campaignId), {
+        inGameTime: serialized,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore setCampaignTime notice:', err.message);
+    }
+  }
+
+  return serialized;
+}
+
 

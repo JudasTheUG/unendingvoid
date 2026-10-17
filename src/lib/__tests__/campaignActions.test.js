@@ -10,6 +10,8 @@ import {
   deleteCampaign,
   deleteCharacter,
   removeCharacterFromCampaign,
+  advanceCampaignTime,
+  setCampaignTime,
 } from '../campaignActions';
 import { addDoc, setDoc, updateDoc, deleteDoc, getDoc, doc, collection } from 'firebase/firestore';
 
@@ -200,6 +202,36 @@ describe('campaignActions', () => {
     expect(res).toBe(true);
     expect(getDoc).toHaveBeenCalledWith({ id: 'mock-doc-ref' });
     expect(updateDoc).toHaveBeenCalledTimes(2);
+  });
+
+  it('advanceCampaignTime advances inGameTime by specified hours and writes to Firestore', async () => {
+    getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ inGameTime: '2381-05-18T08:00:00' }),
+    });
+    updateDoc.mockResolvedValue();
+
+    // Short Rest (+2h)
+    const shortRestTime = await advanceCampaignTime('camp-123', 2);
+    expect(shortRestTime).toBe('2381-05-18T10:00:00');
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({ inGameTime: '2381-05-18T10:00:00' })
+    );
+
+    // Long Rest (+8h from 08:00)
+    const longRestTime = await advanceCampaignTime('camp-123', 8);
+    expect(longRestTime).toBe('2381-05-18T16:00:00');
+  });
+
+  it('setCampaignTime sets custom inGameTime string and persists to Firestore', async () => {
+    updateDoc.mockResolvedValue();
+    const updated = await setCampaignTime('camp-123', '2382-01-01T12:00:00');
+    expect(updated).toBe('2382-01-01T12:00:00');
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({ inGameTime: '2382-01-01T12:00:00' })
+    );
   });
 });
 

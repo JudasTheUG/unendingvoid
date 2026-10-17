@@ -23,6 +23,8 @@ import CommsAndRollsFlow from '../components/shared/CommsAndRollsFlow';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer, updatePlayerAvatar } from '../lib/playerActions';
+import { advanceCampaignTime } from '../lib/campaignActions';
+import { DEFAULT_IN_GAME_TIME } from '../lib/calendarUtils';
 import { logout } from '../lib/authService';
 
 export default function PlayerSheet() {
@@ -103,6 +105,16 @@ export default function PlayerSheet() {
     }
   });
 
+  // Campaign In-Game Calendar & Chronometer state
+  const [campaignTime, setCampaignTimeState] = useState(() => {
+    if (typeof localStorage === 'undefined') return DEFAULT_IN_GAME_TIME;
+    return (
+      (effectivePlayer?.campaignId && localStorage.getItem(`unendingvoid:campaign_time_${effectivePlayer.campaignId}`)) ||
+      localStorage.getItem('unendingvoid:ingame_time') ||
+      DEFAULT_IN_GAME_TIME
+    );
+  });
+
   React.useEffect(() => {
     if (!effectivePlayer?.campaignId || !db) return;
     const unsub = onSnapshot(
@@ -117,6 +129,9 @@ export default function PlayerSheet() {
             camp.turnOrder.length > 0
           );
           setIsCombatActive(active);
+          if (camp?.inGameTime) {
+            setCampaignTimeState(camp.inGameTime);
+          }
         } else {
           setIsCombatActive(false);
         }
@@ -146,6 +161,14 @@ export default function PlayerSheet() {
       setIsCombatActive(false);
     };
 
+    const handleTimeUpdated = (e) => {
+      const data = e.detail;
+      const campId = effectivePlayer?.campaignId;
+      if (data && (!campId || data.campaignId === campId) && data.inGameTime) {
+        setCampaignTimeState(data.inGameTime);
+      }
+    };
+
     const handleStorageChange = (e) => {
       if (e.key === 'unendingvoid:combat_ended') {
         setIsCombatActive(false);
@@ -163,16 +186,23 @@ export default function PlayerSheet() {
         } catch (_) {
           setIsCombatActive(false);
         }
+      } else if (
+        e.key === `unendingvoid:campaign_time_${effectivePlayer?.campaignId}` ||
+        e.key === 'unendingvoid:ingame_time'
+      ) {
+        if (e.newValue) setCampaignTimeState(e.newValue);
       }
     };
 
     window.addEventListener('unendingvoid:combat_order_set', handleCombatStart);
     window.addEventListener('unendingvoid:combat_ended', handleCombatEnd);
+    window.addEventListener('unendingvoid:time_updated', handleTimeUpdated);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('unendingvoid:combat_order_set', handleCombatStart);
       window.removeEventListener('unendingvoid:combat_ended', handleCombatEnd);
+      window.removeEventListener('unendingvoid:time_updated', handleTimeUpdated);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [effectivePlayer?.campaignId]);
@@ -306,12 +336,24 @@ export default function PlayerSheet() {
     const newShields = Math.min(effectivePlayer.maxShields || 50, (effectivePlayer.shields || 0) + 5);
 
     await handleUpdateHp(newHp, newShields);
-    alert(`Short Rest Complete! Recovered ${healRoll} HP and 5 Shields.`);
+    try {
+      const updatedTime = await advanceCampaignTime(effectivePlayer?.campaignId, 2, campaignTime);
+      setCampaignTimeState(updatedTime);
+    } catch (err) {
+      console.warn('Failed to advance rest time:', err);
+    }
+    alert(`${t('calendar.shortRestNotice', 'Short Rest Complete (+2 hours elapsed)')}\n${t('vitals.recovered', 'Recovered')} ${healRoll} HP & 5 Shields.`);
   };
 
   const handleLongRest = async () => {
     await handleUpdateHp(effectivePlayer.maxHp || 100, effectivePlayer.maxShields || 50);
-    alert('Long Rest Complete! HP and Energy Shields fully restored to maximum.');
+    try {
+      const updatedTime = await advanceCampaignTime(effectivePlayer?.campaignId, 8, campaignTime);
+      setCampaignTimeState(updatedTime);
+    } catch (err) {
+      console.warn('Failed to advance rest time:', err);
+    }
+    alert(t('calendar.longRestNotice', 'Long Rest Complete (+8 hours elapsed)'));
   };
 
   const handleEquip = (itemId) => {
@@ -456,6 +498,7 @@ export default function PlayerSheet() {
             character={{ ...effectivePlayer, credits: currentCredits }}
             traits={allTraits}
             items={allItems}
+            inGameTime={campaignTime}
             onShortRest={handleShortRest}
             onLongRest={handleLongRest}
             onUpdateHp={handleUpdateHp}
