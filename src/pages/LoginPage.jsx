@@ -65,7 +65,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in">
         {/* Language selector */}
         <div className="flex justify-center gap-2 mb-6">
-          {['en', 'tr', 'nl'].map((lng) => (
+          {['en', 'tr', 'de'].map((lng) => (
             <button
               key={lng}
               id={`lang-${lng}`}

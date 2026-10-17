@@ -14,7 +14,7 @@ describe('i18n integration', () => {
     expect(i18n.hasResourceBundle('en', 'translation')).toBe(true);
     expect(i18n.hasResourceBundle('tr', 'translation')).toBe(true);
     expect(i18n.hasResourceBundle('de', 'translation')).toBe(true);
-    expect(i18n.hasResourceBundle('nl', 'translation')).toBe(true);
+    expect(i18n.hasResourceBundle('nl', 'translation')).toBe(false);
   });
 
   it('should translate keys correctly in English', async () => {
@@ -33,12 +33,6 @@ describe('i18n integration', () => {
     await i18n.changeLanguage('de');
     expect(i18n.t('app.title')).toBe('Unendliche Leere');
     expect(i18n.t('auth.login')).toBe('Anmelden');
-  });
-
-  it('should translate keys correctly in Dutch', async () => {
-    await i18n.changeLanguage('nl');
-    expect(i18n.t('app.title')).toBe('Eindeloze Leegte');
-    expect(i18n.t('auth.login')).toBe('Inloggen');
   });
 
   it('should fallback to English when a language is not found', async () => {

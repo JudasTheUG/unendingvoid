@@ -5,12 +5,12 @@
     "name": {
       "en": "Hyperion Plasma Rifle",
       "tr": "Hyperion Plazma Tüfeği",
-      "nl": "Hyperion Plasmageweer"
+      "de": "Hyperion-Plasmagewehr"
     },
     "description": {
       "en": "High-yield thermal burst rifle capable of ionizing atmospheric gases.",
       "tr": "Atmosferik gazları iyonlaştırabilen yüksek verimli termal patlama tüfeği.",
-      "nl": "Krachtig thermisch barstgeweer dat atmosferische gassen kan ioniseren."
+      "de": "Leistungsstarkes thermisches Impulsgewehr, das atmosphärische Gase ionisieren kann."
     },
     "damage": 18,
     "rarity": "rare",
@@ -22,12 +22,12 @@
     "name": {
       "en": "Tesla Arc Stunner",
       "tr": "Tesla Ark Tabancası",
-      "nl": "Tesla Boogpistool"
+      "de": "Tesla-Bogenpistole"
     },
     "description": {
       "en": "Discharges concentrated electromagnetic arcs to incapacitate synthetic and biological foes.",
       "tr": "Sentetik ve biyolojik hedefleri etkisiz hale getiren elektromanyetik ark deşarjı.",
-      "nl": "Vuurt geconcentreerde elektromagnetische bogen af om vijanden uit te schakelen."
+      "de": "Entlädt konzentrierte elektromagnetische Lichtbögen, um synthetische und biologische Gegner außer Gefecht zu setzen."
     },
     "damage": 12,
     "rarity": "uncommon",
@@ -39,12 +39,12 @@
     "name": {
       "en": "Singularity Edge",
       "tr": "Tekillik Kılıcı",
-      "nl": "Singulariteitszwaard"
+      "de": "Singularitätsklinge"
     },
     "description": {
       "en": "An alien monomolecular blade encased in a micro-gravitational field.",
       "tr": "Mikro-yerçekimi alanı içine hapsedilmiş uzaylı tek moleküllü kılıç.",
-      "nl": "Een buitenaards monomoleculair zwaard gevangen in een micro-zwaartekrachtveld."
+      "de": "Eine außerirdische monomolekulare Klinge, gefangen in einem Mikrogravitationsfeld."
     },
     "damage": 28,
     "rarity": "alien",
@@ -56,12 +56,12 @@
     "name": {
       "en": "Apex Composite Exo-Suit",
       "tr": "Apex Kompozit Dış İskelet",
-      "nl": "Apex Composiet Exo-Pak"
+      "de": "Apex-Verbund-Exoanzug"
     },
     "description": {
       "en": "Reinforced titanium weave with kinetic dispersion dampeners.",
       "tr": "Kinetik dağıtıcı sönümleyicilere sahip güçlendirilmiş titanyum dokuma.",
-      "nl": "Versterkt titaniumweefsel met kinetische dispersiedempers."
+      "de": "Verstärktes Titangewebe mit kinetischen Dispersionsdämpfern."
     },
     "defense": 25,
     "rarity": "rare",
@@ -73,12 +73,12 @@
     "name": {
       "en": "Aegis Phase Deflector",
       "tr": "Aegis Faz Saptırıcı",
-      "nl": "Aegis Fase Deflector"
+      "de": "Aegis-Phasendeflektor"
     },
     "description": {
       "en": "Generates an oscillating energy barrier that absorbs high-frequency beam impacts.",
       "tr": "Yüksek frekanslı ışın darbelerini emen salınımlı bir enerji bariyeri üretir.",
-      "nl": "Genereert een oscillerende energiebarrière die hoogfrequente straling absorbeert."
+      "de": "Erzeugt eine oszillierende Energiebarriere, die hochfrequente Strahlentreffer absorbiert."
     },
     "defense": 35,
     "rarity": "legendary",
@@ -90,12 +90,12 @@
     "name": {
       "en": "Nanite Repair Syringe",
       "tr": "Nanit Onarım Şırıngası",
-      "nl": "Nanite Reparatiespuit"
+      "de": "Naniten-Reparaturspritze"
     },
     "description": {
       "en": "Injects microscopic repair units that rapidly knit flesh and cauterize wounds.",
       "tr": "Doku tamir eden ve yaraları anında dağlayan mikroskobik tamir birimleri enjekte eder.",
-      "nl": "Injecteert microscopische reparatie-eenheden die weefsel snel herstellen."
+      "de": "Injiziert mikroskopische Reparatureinheiten, die Gewebe rasch heilen und Wunden kauterisieren."
     },
     "effect": "heal:35",
     "rarity": "common",
@@ -107,12 +107,12 @@
     "name": {
       "en": "Omni-Spectrum Bio-Scanner",
       "tr": "Çok Spektrumlu Biyo-Tarayıcı",
-      "nl": "Omni-Spectrum Bioscanner"
+      "de": "Omni-Spektrum-Bioscanner"
     },
     "description": {
       "en": "Scans biosignatures, structural weaknesses, and localized atmospheric hazards up to 500 meters.",
       "tr": "500 metreye kadar biyo-imzaları, yapısal zayıflıkları ve atmosferik tehlikeleri tarar.",
-      "nl": "Scant biokenmerken, structurele zwaktes en gevaren tot 500 meter ver."
+      "de": "Scannt Biosignaturen, strukturelle Schwachstellen und atmosphärische Gefahren bis zu 500 Meter weit."
     },
     "rarity": "uncommon",
     "value": 500
@@ -123,12 +123,12 @@
     "name": {
       "en": "Viper-Class Light Interceptor",
       "tr": "Engerek Sınıfı Hafif Önleme Gemisi",
-      "nl": "Viper-Klasse Lichte Onderschepper"
+      "de": "Viper-Klasse Leichter Abfangjäger"
     },
     "description": {
       "en": "Sub-warp high mobility scout craft equipped with dual twin-linked laser cannons.",
       "tr": "Çift bağlantılı lazer toplarıyla donatılmış alt-büküm yüksek hareket kabiliyetli keşif aracı.",
-      "nl": "Hoge mobiliteit sub-warp verkenningsschip met dubbele laserkanonnen."
+      "de": "Hochmobiler Unterlicht-Aufklärer mit Zwillingslasern."
     },
     "speed": 850,
     "hullPoints": 200,

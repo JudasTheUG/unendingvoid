@@ -5,12 +5,12 @@
     "name": {
       "en": "Cybernetic Myomer Arm",
       "tr": "Sibernetik Miyomer Kol",
-      "nl": "Cybernetische Myomeer Arm"
+      "de": "Kybernetischer Myomer-Arm"
     },
     "description": {
       "en": "Hydraulically augmented limb capable of crushing reinforced bulkheads.",
       "tr": "Güçlendirilmiş bölmeleri ezebilen hidrolik takviyeli uzuv.",
-      "nl": "Hydraulisch versterkte arm die stalen schotten kan verpletteren."
+      "de": "Hydraulisch verstärkter Arm, der verstärkte Schotten zerschmettern kann."
     },
     "statModifiers": {
       "strength": 2
@@ -23,12 +23,12 @@
     "name": {
       "en": "Void Veteran",
       "tr": "Boşluk Gazisi",
-      "nl": "Leegte Veteraan"
+      "de": "Leere-Veteran"
     },
     "description": {
       "en": "Decades of zero-G combat have sharpened tactical instincts under cosmic pressure.",
       "tr": "Sıfır yerçekimi çatışmalarıyla kozmik baskı altında bilenmiş taktiksel refleksler.",
-      "nl": "Decennia van nul-G gevechten hebben tactische reflexen aangescherpt."
+      "de": "Jahrzehnte des Null-G-Kampfes haben die taktischen Reflexe unter kosmischem Druck geschärft."
     },
     "statModifiers": {
       "constitution": 1,
@@ -42,12 +42,12 @@
     "name": {
       "en": "Quantum Intuition",
       "tr": "Kuantum Sezgisi",
-      "nl": "Kwantum Intuïtie"
+      "de": "Quanten-Intuition"
     },
     "description": {
       "en": "Subconscious awareness of localized probabilistic fluctuations.",
       "tr": "Yerel olasılık dalgalanmalarının bilinçaltı düzeyinde sezilmesi.",
-      "nl": "Onbewust bewustzijn van probabilistische fluctuaties."
+      "de": "Unterbewusstes Bewusstsein für lokale Wahrscheinlichkeitsfluktuationen."
     },
     "statModifiers": {
       "intelligence": 3
@@ -60,12 +60,12 @@
     "name": {
       "en": "Cynical Isolationist",
       "tr": "Kuşkucu İzolasyonist",
-      "nl": "Cynische Isolationist"
+      "de": "Zynischer Isolationist"
     },
     "description": {
       "en": "Deep-seated distrust of synthetic life and planetary authorities hinders diplomacy.",
       "tr": "Sentetik yaşama ve otoritelere duyulan derin güvensizlik diplomasiyi zorlaştırır.",
-      "nl": "Diepgeworteld wantrouwen belemmert diplomatische interactie."
+      "de": "Tief sitzendes Misstrauen behindert diplomatische Interaktionen."
     },
     "statModifiers": {
       "charisma": -2
@@ -78,12 +78,12 @@
     "name": {
       "en": "Atmospheric Vertigo",
       "tr": "Atmosferik Baş Dönmesi",
-      "nl": "Atmosferische Draaierigheid"
+      "de": "Atmosphärische Schwindelanfälle"
     },
     "description": {
       "en": "Inner ear disorientation caused by sudden planetary gravitational transitions.",
       "tr": "Gezegen yerçekimine ani geçişin iç kulakta yarattığı yön kaybı.",
-      "nl": "Binnenoordisoriëntatie door planetaire zwaartekrachtovergangen."
+      "de": "Innenohr-Desorientierung durch Übergänge der planetaren Schwerkraft."
     },
     "statModifiers": {
       "dexterity": -2
@@ -96,12 +96,12 @@
     "name": {
       "en": "Entangled Fate (Lucky)",
       "tr": "Dolanık Kader (Şanslı)",
-      "nl": "Verstrengeld Noodlot (Geluk)"
+      "de": "Verschränktes Schicksal (Glück)"
     },
     "description": {
       "en": "Probability mysteriously collapses in your favor during life-or-death decisions.",
       "tr": "Ölüm kalım anlarında olasılıklar gizemli şekilde lehinize sonuçlanır.",
-      "nl": "Waarschijnlijkheid stort mysterieus in uw voordeel in bij hachelijke situaties."
+      "de": "Die Wahrscheinlichkeit bricht in lebensbedrohlichen Situationen mysteriös zu Ihren Gunsten ein."
     },
     "statModifiers": {},
     "rollModifier": 3

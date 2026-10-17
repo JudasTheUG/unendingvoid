@@ -17,11 +17,11 @@ export default function ItemSpawner({ players = [], onSpawnComplete }) {
   // Multilingual states
   const [nameEn, setNameEn] = useState('');
   const [nameTr, setNameTr] = useState('');
-  const [nameNl, setNameNl] = useState('');
+  const [nameDe, setNameDe] = useState('');
 
   const [descEn, setDescEn] = useState('');
   const [descTr, setDescTr] = useState('');
-  const [descNlN, setDescNl] = useState('');
+  const [descDe, setDescDe] = useState('');
 
   const [loading, setLoading] = useState(false);
 
@@ -38,12 +38,12 @@ export default function ItemSpawner({ players = [], onSpawnComplete }) {
         name: {
           en: nameEn,
           tr: nameTr || nameEn,
-          nl: descNlN || nameEn,
+          de: nameDe || nameEn,
         },
         description: {
           en: descEn,
           tr: descTr || descEn,
-          nl: descNlN || descEn,
+          de: descDe || descEn,
         },
         createdAt: serverTimestamp(),
       };
@@ -66,10 +66,10 @@ export default function ItemSpawner({ players = [], onSpawnComplete }) {
       // Reset form
       setNameEn('');
       setNameTr('');
-      setNameNl('');
+      setNameDe('');
       setDescEn('');
       setDescTr('');
-      setDescNl('');
+      setDescDe('');
 
       if (onSpawnComplete) onSpawnComplete(docRef.id);
     } catch (err) {
@@ -175,7 +175,7 @@ export default function ItemSpawner({ players = [], onSpawnComplete }) {
             {[
               { code: 'en', label: 'English 🇬🇧' },
               { code: 'tr', label: 'Türkçe 🇹🇷' },
-              { code: 'nl', label: 'Nederlands 🇳🇱' },
+              { code: 'de', label: 'Deutsch 🇩🇪' },
             ].map((tab) => (
               <button
                 key={tab.code}
@@ -230,19 +230,19 @@ export default function ItemSpawner({ players = [], onSpawnComplete }) {
             </div>
           )}
 
-          {activeTab === 'nl' && (
+          {activeTab === 'de' && (
             <div className="space-y-2">
               <input
                 type="text"
-                placeholder="Item naam (NL)..."
-                value={nameNl}
-                onChange={(e) => setNameNl(e.target.value)}
+                placeholder="Gegenstandsbezeichnung (DE)..."
+                value={nameDe}
+                onChange={(e) => setNameDe(e.target.value)}
                 className="w-full bg-void-bg border border-white/10 rounded px-2.5 py-1 text-xs text-white focus:border-neon-cyan focus:outline-none"
               />
               <textarea
-                placeholder="Tactische omschrijving (NL)..."
-                value={descNlN}
-                onChange={(e) => setDescNl(e.target.value)}
+                placeholder="Taktische Beschreibung (DE)..."
+                value={descDe}
+                onChange={(e) => setDescDe(e.target.value)}
                 rows={2}
                 className="w-full bg-void-bg border border-white/10 rounded px-2.5 py-1 text-xs text-gray-300 focus:border-neon-cyan focus:outline-none"
               />
