@@ -48,41 +48,54 @@ const DIE_THEMES = {
   coin: { border: '#cbd5e1', glow: 'rgba(203, 213, 225, 0.85)', baseColor: 0x1e242b, label: 'LUCIFER COIN' },
 };
 
-// Central Bounded Rolling Field (5x5 to 6x6 square field in the middle of a 12x8 viewport)
+// Tactical Dice Rolling Field (calibrated to the wide tactical console area: ~77% width x 67% height)
 export const ARENA_CONFIG = {
-  halfWidth: 3.6,    // X bounds: [-3.6, +3.6] (width: 7.2 units)
-  halfHeight: 3.2,   // Y bounds: [-3.2, +3.2] (height: 6.4 units)
-  halfDepth: 1.8,    // Z bounds: [-1.8, +1.8] (depth: 3.6 units)
+  minX: -9.8,
+  maxX: 9.8,
+  minY: -5.5,
+  maxY: 4.4,
+  minZ: -2.4,
+  maxZ: 2.4,
+  halfWidth: 9.8,    // Horizontal half-span (total width: 19.6 units)
+  halfHeight: 4.95,  // Vertical half-span (total height: 9.9 units)
+  halfDepth: 2.4,    // Depth half-span (total depth: 4.8 units)
+  centerY: -0.55,    // Center Y offset
   restitution: 0.62, // Wall collision restitution (bounciness)
-  gravity: -14.0,    // Gravitational acceleration towards lower field
-  damping: 0.65,     // Velocity damping
+  gravity: -16.0,    // Gravitational acceleration towards lower field
+  damping: 0.60,     // Velocity damping
 };
 
 function setupDiePhysicsInArena(dieMesh, targetPos, seed = 0, index = 0, totalCount = 1) {
   dieMesh.userData.targetPosition = targetPos.clone();
 
-  // Starting spawn within the upper-middle region of the central arena
+  // Starting spawn within the upper region of the expanded tactical arena
   const spawnAngle = (index * (Math.PI * 2 / Math.max(1, totalCount))) + ((seed % 100) / 20);
-  const startX = Math.max(-ARENA_CONFIG.halfWidth + 0.7, Math.min(ARENA_CONFIG.halfWidth - 0.7, targetPos.x + Math.cos(spawnAngle) * 1.4));
-  const startY = Math.max(-ARENA_CONFIG.halfHeight + 0.7, Math.min(ARENA_CONFIG.halfHeight - 0.7, targetPos.y + 0.6 + Math.abs(Math.sin(spawnAngle)) * 1.1));
-  const startZ = ((Math.sin(seed * 3 + index) * 0.8));
+  const startX = Math.max(
+    ARENA_CONFIG.minX + 1.2,
+    Math.min(ARENA_CONFIG.maxX - 1.2, targetPos.x + Math.cos(spawnAngle) * 3.2)
+  );
+  const startY = Math.max(
+    ARENA_CONFIG.minY + 1.2,
+    Math.min(ARENA_CONFIG.maxY - 0.8, targetPos.y + 1.6 + Math.abs(Math.sin(spawnAngle)) * 1.8)
+  );
+  const startZ = (Math.sin(seed * 3 + index) * 1.2);
 
   dieMesh.position.set(startX, startY, startZ);
 
-  // Energetic 3D throw velocity inside the arena
+  // Energetic 3D throw velocity inside the expanded arena
   const throwAngle = spawnAngle + Math.PI * 0.75;
-  const throwSpeed = 9.0 + ((seed * 11 + index * 13) % 4.5);
+  const throwSpeed = 12.0 + ((seed * 11 + index * 13) % 6.0);
 
   dieMesh.userData.linVel = new THREE.Vector3(
     Math.cos(throwAngle) * throwSpeed,
-    Math.sin(throwAngle) * throwSpeed * 0.65 + 2.0,
-    (Math.cos(seed * 5 + index) * 3.5)
+    Math.sin(throwAngle) * throwSpeed * 0.65 + 3.2,
+    (Math.cos(seed * 5 + index) * 4.2)
   );
 
   dieMesh.userData.rotVel = new THREE.Vector3(
-    (18 + ((seed * 7 + index * 5) % 18)) * (Math.sin(seed + index) > 0 ? 1 : -1),
-    (20 + ((seed * 9 + index * 7) % 18)) * (Math.cos(seed + index) > 0 ? 1 : -1),
-    (16 + ((seed * 11 + index * 9) % 18)) * (Math.sin(seed * 2 + index) > 0 ? 1 : -1)
+    (20 + ((seed * 7 + index * 5) % 20)) * (Math.sin(seed + index) > 0 ? 1 : -1),
+    (22 + ((seed * 9 + index * 7) % 20)) * (Math.cos(seed + index) > 0 ? 1 : -1),
+    (18 + ((seed * 11 + index * 9) % 20)) * (Math.sin(seed * 2 + index) > 0 ? 1 : -1)
   );
 
   dieMesh.userData.animating = true;
@@ -534,32 +547,32 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
             die.userData.linVel.y += ARENA_CONFIG.gravity * dt;
             die.userData.linVel.multiplyScalar(Math.max(0, 1 - ARENA_CONFIG.damping * dt));
 
-            // Bouncing against Central Arena boundaries (X, Y, Z walls of the 5x5 / 6x6 arena)
-            if (die.position.x < -ARENA_CONFIG.halfWidth) {
-              die.position.x = -ARENA_CONFIG.halfWidth;
+            // Bouncing against Expanded Arena boundaries (matching user's designated field)
+            if (die.position.x < ARENA_CONFIG.minX) {
+              die.position.x = ARENA_CONFIG.minX;
               die.userData.linVel.x = Math.abs(die.userData.linVel.x) * ARENA_CONFIG.restitution;
               die.userData.rotVel.y += (Math.random() - 0.5) * 8;
-            } else if (die.position.x > ARENA_CONFIG.halfWidth) {
-              die.position.x = ARENA_CONFIG.halfWidth;
+            } else if (die.position.x > ARENA_CONFIG.maxX) {
+              die.position.x = ARENA_CONFIG.maxX;
               die.userData.linVel.x = -Math.abs(die.userData.linVel.x) * ARENA_CONFIG.restitution;
               die.userData.rotVel.y += (Math.random() - 0.5) * 8;
             }
 
-            if (die.position.y < -ARENA_CONFIG.halfHeight) {
-              die.position.y = -ARENA_CONFIG.halfHeight;
+            if (die.position.y < ARENA_CONFIG.minY) {
+              die.position.y = ARENA_CONFIG.minY;
               die.userData.linVel.y = Math.abs(die.userData.linVel.y) * ARENA_CONFIG.restitution;
               die.userData.linVel.x *= 0.88;
               die.userData.rotVel.multiplyScalar(0.9);
-            } else if (die.position.y > ARENA_CONFIG.halfHeight) {
-              die.position.y = ARENA_CONFIG.halfHeight;
+            } else if (die.position.y > ARENA_CONFIG.maxY) {
+              die.position.y = ARENA_CONFIG.maxY;
               die.userData.linVel.y = -Math.abs(die.userData.linVel.y) * ARENA_CONFIG.restitution;
             }
 
-            if (die.position.z < -ARENA_CONFIG.halfDepth) {
-              die.position.z = -ARENA_CONFIG.halfDepth;
+            if (die.position.z < ARENA_CONFIG.minZ) {
+              die.position.z = ARENA_CONFIG.minZ;
               die.userData.linVel.z = Math.abs(die.userData.linVel.z) * ARENA_CONFIG.restitution;
-            } else if (die.position.z > ARENA_CONFIG.halfDepth) {
-              die.position.z = ARENA_CONFIG.halfDepth;
+            } else if (die.position.z > ARENA_CONFIG.maxZ) {
+              die.position.z = ARENA_CONFIG.maxZ;
               die.userData.linVel.z = -Math.abs(die.userData.linVel.z) * ARENA_CONFIG.restitution;
             }
 
@@ -1012,27 +1025,28 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     const seed = rollData.physics?.seed || Math.random() * 1000;
     const rollMode = rollData.rollMode || 'normal';
 
-    // Helper to calculate target settlement position inside the middle 5x5 / 6x6 arena
+    // Helper to calculate target settlement position inside the expanded tactical arena
     const getTargetPosition = (index, totalCount) => {
+      const centerY = ARENA_CONFIG.centerY || -0.55;
       if (totalCount === 1) {
-        return new THREE.Vector3(0, -0.3, 0);
+        return new THREE.Vector3(0, centerY, 0);
       }
       if (totalCount === 2) {
-        return new THREE.Vector3(index === 0 ? -1.6 : 1.6, -0.3, 0);
+        return new THREE.Vector3(index === 0 ? -2.2 : 2.2, centerY, 0);
       }
       if (totalCount === 3) {
-        return new THREE.Vector3((index - 1) * 2.3, -0.3, 0);
+        return new THREE.Vector3((index - 1) * 3.0, centerY, 0);
       }
       if (totalCount === 4) {
         const col = index % 2;
         const row = Math.floor(index / 2);
-        return new THREE.Vector3(col === 0 ? -1.3 : 1.3, row === 0 ? 0.9 : -1.3, 0);
+        return new THREE.Vector3(col === 0 ? -2.0 : 2.0, row === 0 ? centerY + 1.5 : centerY - 1.5, 0);
       }
       const cols = Math.ceil(totalCount / 2);
       const row = Math.floor(index / cols);
       const col = index % cols;
-      const x = (col - (cols - 1) / 2) * (cols > 4 ? 1.8 : 2.2);
-      const y = row === 0 ? 0.9 : -1.3;
+      const x = (col - (cols - 1) / 2) * (cols > 4 ? 2.4 : 3.0);
+      const y = row === 0 ? centerY + 1.5 : centerY - 1.5;
       return new THREE.Vector3(x, y, 0);
     };
 
@@ -1052,25 +1066,27 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       // ──────────────── D100 PERCENTILE (Tens + Units) ────────────────
       const tensVal = rollData.tensResult || '00';
       const onesVal = rollData.onesResult !== undefined ? String(rollData.onesResult) : '0';
+      const centerY = ARENA_CONFIG.centerY || -0.55;
 
       const dieTens = createDieMesh('d10percentile', seed, tensVal, true);
-      setupDiePhysicsInArena(dieTens, new THREE.Vector3(-1.6, -0.3, 0), seed, 0, 2);
+      setupDiePhysicsInArena(dieTens, new THREE.Vector3(-2.2, centerY, 0), seed, 0, 2);
       diceGroup.add(dieTens);
 
       const dieOnes = createDieMesh('d10', seed + 47, onesVal, true);
-      setupDiePhysicsInArena(dieOnes, new THREE.Vector3(1.6, -0.3, 0), seed + 47, 1, 2);
+      setupDiePhysicsInArena(dieOnes, new THREE.Vector3(2.2, centerY, 0), seed + 47, 1, 2);
       diceGroup.add(dieOnes);
     } else if (rollMode === 'advantage' || rollMode === 'disadvantage') {
       // ──────────────── ADVANTAGE / DISADVANTAGE ────────────────
       const results = rollData.results || [10, 10];
       const winIdx = rollData.winningIndex !== undefined ? rollData.winningIndex : 0;
+      const centerY = ARENA_CONFIG.centerY || -0.55;
 
       const die1 = createDieMesh('d20', seed, results[0], winIdx === 0);
-      setupDiePhysicsInArena(die1, new THREE.Vector3(-1.6, -0.3, 0), seed, 0, 2);
+      setupDiePhysicsInArena(die1, new THREE.Vector3(-2.2, centerY, 0), seed, 0, 2);
       diceGroup.add(die1);
 
       const die2 = createDieMesh('d20', seed + 73, results[1], winIdx === 1);
-      setupDiePhysicsInArena(die2, new THREE.Vector3(1.6, -0.3, 0), seed + 73, 1, 2);
+      setupDiePhysicsInArena(die2, new THREE.Vector3(2.2, centerY, 0), seed + 73, 1, 2);
       diceGroup.add(die2);
     } else {
       // ──────────────── MULTIPLE STANDARD DICE ────────────────
@@ -1414,19 +1430,19 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       {/* 3D WebGL Canvas Layer */}
       <div ref={mountRef} className="fixed inset-0 pointer-events-none z-40 overflow-hidden" />
 
-      {/* Central Holographic Tactical Rolling Arena (5x5 / 6x6 Field in the Middle of Screen) */}
+      {/* Expanded Holographic Tactical Rolling Arena (matching user's designated playfield) */}
       {(isArenaActive || activeRollBanner || isRolling) && (
         <div
           data-testid="holographic-dice-arena"
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] md:w-[480px] md:h-[480px] pointer-events-none z-30 transition-all duration-500 animate-fade-in"
+          className="fixed left-[13vw] right-[10vw] top-[20vh] bottom-[13vh] pointer-events-none z-30 transition-all duration-500 animate-fade-in"
         >
           {/* Subtle sci-fi corner brackets */}
-          <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-neon-cyan/40 rounded-tl shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
-          <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-neon-cyan/40 rounded-tr shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
-          <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-neon-cyan/40 rounded-bl shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
-          <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-neon-cyan/40 rounded-br shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
+          <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-neon-cyan/45 rounded-tl shadow-[0_0_10px_rgba(0,240,255,0.45)]" />
+          <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-neon-cyan/45 rounded-tr shadow-[0_0_10px_rgba(0,240,255,0.45)]" />
+          <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-neon-cyan/45 rounded-bl shadow-[0_0_10px_rgba(0,240,255,0.45)]" />
+          <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-neon-cyan/45 rounded-br shadow-[0_0_10px_rgba(0,240,255,0.45)]" />
           {/* Faint holographic boundary aura */}
-          <div className="absolute inset-0 rounded-2xl border border-neon-cyan/15 bg-cyan-950/[0.03] shadow-[0_0_30px_rgba(0,240,255,0.05)]" />
+          <div className="absolute inset-0 rounded-2xl border border-neon-cyan/15 bg-cyan-950/[0.02] shadow-[0_0_35px_rgba(0,240,255,0.05)]" />
         </div>
       )}
 

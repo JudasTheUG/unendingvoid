@@ -195,11 +195,14 @@ describe('DM Roll Privacy vs Player Roll Visibility', () => {
     expect(screen.getByText(/DM Secret/i)).toBeInTheDocument();
   });
 
-  it('exports ARENA_CONFIG constraining rolls to central 5x5 / 6x6 arena field', () => {
+  it('exports ARENA_CONFIG constraining rolls to expanded tactical arena field', () => {
     expect(ARENA_CONFIG).toBeDefined();
-    expect(ARENA_CONFIG.halfWidth).toBe(3.6); // 7.2 total width
-    expect(ARENA_CONFIG.halfHeight).toBe(3.2); // 6.4 total height
-    expect(ARENA_CONFIG.halfDepth).toBe(1.8);
+    expect(ARENA_CONFIG.halfWidth).toBe(9.8);
+    expect(ARENA_CONFIG.halfHeight).toBe(4.95);
+    expect(ARENA_CONFIG.minX).toBe(-9.8);
+    expect(ARENA_CONFIG.maxX).toBe(9.8);
+    expect(ARENA_CONFIG.minY).toBe(-5.5);
+    expect(ARENA_CONFIG.maxY).toBe(4.4);
     expect(ARENA_CONFIG.restitution).toBeGreaterThan(0.5);
   });
 
