@@ -72,3 +72,19 @@ export const setPlayerEEMembership = (userId, hasEEMembership = true) =>
     updatedAt: serverTimestamp(),
   });
 
+export const assignShipToPlayer = (userId, shipData) =>
+  updateDoc(doc(db, 'players', userId), {
+    ship: shipData,
+    spaceship: shipData?.id || null,
+    spaceshipName: shipData ? (typeof shipData.name === 'object' ? shipData.name.en : shipData.name) : null,
+    updatedAt: serverTimestamp(),
+  });
+
+export const removeShipFromPlayer = (userId) =>
+  updateDoc(doc(db, 'players', userId), {
+    ship: null,
+    spaceship: null,
+    spaceshipName: null,
+    updatedAt: serverTimestamp(),
+  });
+

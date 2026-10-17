@@ -16,6 +16,7 @@ import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { deleteCampaign, removeCharacterFromCampaign } from '../lib/campaignActions';
+import ShipAssignmentModal from '../components/dm/ShipAssignmentModal';
 
 export default function DMPanel() {
   const { campaignId } = useParams();
@@ -30,6 +31,7 @@ export default function DMPanel() {
 
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [levelUpModalPlayer, setLevelUpModalPlayer] = useState(null);
+  const [shipModalPlayer, setShipModalPlayer] = useState(null);
   const [combatActive, setCombatActive] = useState(false);
   const [currentTurn, setCurrentTurn] = useState(0);
   const [customTurnOrder, setCustomTurnOrder] = useState(null);
@@ -282,10 +284,30 @@ export default function DMPanel() {
                           {player.shields || 0}/{player.maxShields || 50}
                         </span>
                       </div>
+                      <div className="bg-white/5 p-2 rounded col-span-2 flex items-center justify-between text-xs">
+                        <span className="text-[9px] text-gray-400 uppercase block">
+                          {t('spaceship.currentShip', 'Current Ship')}
+                        </span>
+                        {player.ship || player.spaceship ? (
+                          <span className="text-neon-cyan font-bold truncate max-w-[170px] flex items-center gap-1">
+                            <span>🚀</span>
+                            <span>
+                              {player.ship
+                                ? (typeof player.ship.name === 'object' ? player.ship.name.en : player.ship.name)
+                                : (player.spaceshipName || t('spaceship.title', 'Starship'))}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 italic text-[11px] flex items-center gap-1">
+                            <span>🛸</span>
+                            <span>{t('spaceship.unassigned', 'No Ship Assigned')}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* DM Action Buttons: Level Up + Edit + Remove */}
+                  {/* DM Action Buttons: Level Up + Edit + Starship + Remove */}
                   <div className="space-y-2 pt-2 border-t border-white/10">
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -303,6 +325,20 @@ export default function DMPanel() {
                         {isSelected ? 'Close Edit' : '🛠️ Edit Stats'}
                       </button>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShipModalPlayer(player)}
+                      className="w-full py-1.5 rounded bg-neon-cyan/15 hover:bg-neon-cyan/25 text-neon-cyan border border-neon-cyan/40 text-[11px] font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span>🚀</span>
+                      <span>
+                        {player.ship || player.spaceship
+                          ? t('spaceship.manageShip', 'Manage Starship')
+                          : t('spaceship.assignShip', 'Assign Starship')}
+                      </span>
+                    </button>
+
                     {campaign && (
                       <button
                         onClick={() => handleRemoveCharacter(player)}
@@ -320,6 +356,15 @@ export default function DMPanel() {
           </div>
         )}
       </div>
+
+      {/* DM Starship Assignment Modal */}
+      {shipModalPlayer && (
+        <ShipAssignmentModal
+          player={shipModalPlayer}
+          onClose={() => setShipModalPlayer(null)}
+          onAssigned={() => setShipModalPlayer(null)}
+        />
+      )}
 
       {/* Selected Player Stat Override Drawer/Modal */}
       {selectedPlayer && (

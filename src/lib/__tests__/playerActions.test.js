@@ -16,6 +16,8 @@ import {
   addPlayerNote,
   removePlayerNote,
   setPlayerEEMembership,
+  assignShipToPlayer,
+  removeShipFromPlayer,
 } from '../playerActions';
 
 // Mock Firebase functions
@@ -204,4 +206,30 @@ describe('playerActions', () => {
       updatedAt: 'serverTimestampMock',
     });
   });
+
+  it('assignShipToPlayer calls updateDoc with ship, spaceship and spaceshipName', async () => {
+    const mockShip = { id: 'ship_kusaragi_corvette', name: 'Kusaragi' };
+    await assignShipToPlayer(mockUserId, mockShip);
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      ship: mockShip,
+      spaceship: 'ship_kusaragi_corvette',
+      spaceshipName: 'Kusaragi',
+      updatedAt: 'serverTimestampMock',
+    });
+  });
+
+  it('removeShipFromPlayer calls updateDoc with null ship values', async () => {
+    await removeShipFromPlayer(mockUserId);
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      ship: null,
+      spaceship: null,
+      spaceshipName: null,
+      updatedAt: 'serverTimestampMock',
+    });
+  });
 });
+

@@ -4,6 +4,7 @@ import VitalBar from '../shared/VitalBar';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
 import RollContextMenu from '../shared/RollContextMenu';
 import ShipBuilder from './ShipBuilder';
+import NavalShipyard from './NavalShipyard';
 import { shipModulesCatalog } from '../../lib/shipModulesCatalog';
 
 export const DEFAULT_SHIP = {
@@ -62,7 +63,7 @@ export const DEFAULT_SHIP = {
 };
 
 export default function SpaceshipSheet({
-  ship = null,
+  ship = undefined,
   inventoryItems = [],
   player = null,
   onUpdateCredits,
@@ -73,12 +74,19 @@ export default function SpaceshipSheet({
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
 
-  const [activeShip, setActiveShip] = useState(ship || DEFAULT_SHIP);
-  const [viewMode, setViewMode] = useState('flightDeck'); // 'flightDeck' | 'drydock'
+  const hasOwnedShip = ship === undefined ? true : Boolean(ship && ship.name && ship.id !== 'none');
+  const [activeShip, setActiveShip] = useState(() => {
+    if (ship === undefined) return DEFAULT_SHIP;
+    return ship || null;
+  });
+  const [viewMode, setViewMode] = useState(hasOwnedShip ? 'flightDeck' : 'shipyard');
 
-  const [hull, setHull] = useState(activeShip.hull || 180);
-  const [shields, setShields] = useState(activeShip.shields || 120);
-  const [shipName, setShipName] = useState(activeShip.name || 'Kusaragi');
+  const [hull, setHull] = useState(activeShip?.hull || 180);
+  const [shields, setShields] = useState(activeShip?.shields || 120);
+  const [shipName, setShipName] = useState(() => {
+    if (!activeShip) return '';
+    return typeof activeShip.name === 'object' ? activeShip.name.en : (activeShip.name || 'Kusaragi');
+  });
   const [isEditingName, setIsEditingName] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
 
@@ -87,9 +95,13 @@ export default function SpaceshipSheet({
       setActiveShip(ship);
       setHull(ship.hull ?? 180);
       setShields(ship.shields ?? 120);
-      setShipName(ship.name || 'Kusaragi');
+      const name = typeof ship.name === 'object' ? (ship.name[currentLang] || ship.name.en) : (ship.name || 'Kusaragi');
+      setShipName(name);
+    } else if (ship === null) {
+      setActiveShip(null);
+      setShipName('');
     }
-  }, [ship]);
+  }, [ship, currentLang]);
 
   const handleWeaponToHit = (wpn, rollMode = 'normal') => {
     const wpnName = typeof wpn.name === 'object' ? wpn.name[currentLang] || wpn.name.en : wpn.name;
@@ -107,10 +119,12 @@ export default function SpaceshipSheet({
   };
 
   const handleRepairHull = () => {
+    if (!activeShip) return;
     setHull((prev) => Math.min(activeShip.maxHull || 180, prev + 25));
   };
 
   const handleRechargeShields = () => {
+    if (!activeShip) return;
     setShields(activeShip.maxShields || 120);
   };
 
@@ -119,7 +133,31 @@ export default function SpaceshipSheet({
     if (onUpdateShipName) onUpdateShipName(shipName);
   };
 
+  const handleCommissionShip = (newShip) => {
+    const cost = newShip.price;
+    const currentCredits = player?.credits ?? 0;
+    const remainingCredits = Math.max(0, currentCredits - cost);
+
+    if (onUpdateCredits) onUpdateCredits(remainingCredits);
+
+    const shipState = {
+      ...newShip,
+      name: typeof newShip.name === 'object' ? (newShip.name[currentLang] || newShip.name.en) : newShip.name,
+    };
+
+    setActiveShip(shipState);
+    setHull(newShip.hull);
+    setShields(newShip.shields);
+    setShipName(shipState.name);
+
+    if (onUpdateShip) onUpdateShip(shipState);
+    if (onUpdateShipName) onUpdateShipName(shipState.name);
+
+    setViewMode('flightDeck');
+  };
+
   const handleAssembleShip = (newModules, newStats) => {
+    if (!activeShip) return;
     const newShipState = {
       ...activeShip,
       modules: newModules,
@@ -142,12 +180,12 @@ export default function SpaceshipSheet({
 
   return (
     <div className="space-y-6 animate-fade-in font-mono text-slate-200">
-      {/* Expanse/Cyberpunk Tactical Mode Tabs */}
-      <div className="flex border-b border-slate-700/80 gap-2">
+      {/* Expanse/Cyberpunk Tactical Mode Tabs: Flight Deck | Drydock Modifier | Naval Shipyard */}
+      <div className="flex border-b border-slate-700/80 gap-2 overflow-x-auto pb-1">
         <button
           type="button"
           onClick={() => setViewMode('flightDeck')}
-          className={`px-5 py-3 rounded-t-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l border-r ${
+          className={`px-5 py-3 rounded-t-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l border-r whitespace-nowrap ${
             viewMode === 'flightDeck'
               ? 'bg-[#0e1628] text-neon-cyan border-t-neon-cyan border-l-slate-700 border-r-slate-700 shadow-[0_0_15px_rgba(0,240,255,0.15)]'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border-transparent'
@@ -160,27 +198,81 @@ export default function SpaceshipSheet({
         <button
           type="button"
           onClick={() => setViewMode('drydock')}
-          className={`px-5 py-3 rounded-t-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l border-r ${
+          className={`px-5 py-3 rounded-t-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l border-r whitespace-nowrap ${
             viewMode === 'drydock'
               ? 'bg-[#0e1628] text-[#ea580c] border-t-[#ea580c] border-l-slate-700 border-r-slate-700 shadow-[0_0_15px_rgba(234,88,12,0.15)]'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border-transparent'
           }`}
         >
           <span>🛠️</span>
-          <span>{t('spaceship.drydockTab', 'Drydock Ship Builder')}</span>
+          <span>{t('spaceship.drydockTab', 'Drydock Ship Modifier')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewMode('shipyard')}
+          className={`px-5 py-3 rounded-t-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l border-r whitespace-nowrap ${
+            viewMode === 'shipyard'
+              ? 'bg-[#0e1628] text-amber-400 border-t-amber-400 border-l-slate-700 border-r-slate-700 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border-transparent'
+          }`}
+        >
+          <span>⚓</span>
+          <span>{t('spaceship.shipyardTab', 'Naval Shipyard')}</span>
         </button>
       </div>
 
+      {/* VIEW 2: DRYDOCK SHIP MODIFIER */}
       {viewMode === 'drydock' && (
         <ShipBuilder
           player={player}
           activeShip={activeShip}
           inventoryItems={inventoryItems}
           onAssemble={handleAssembleShip}
+          hasOwnedShip={Boolean(activeShip)}
+          onNavigateShipyard={() => setViewMode('shipyard')}
         />
       )}
 
-      {viewMode === 'flightDeck' && (
+      {/* VIEW 3: NAVAL SHIPYARD */}
+      {viewMode === 'shipyard' && (
+        <NavalShipyard
+          player={player}
+          activeShip={activeShip}
+          onCommissionShip={handleCommissionShip}
+        />
+      )}
+
+      {/* VIEW 1: TACTICAL FLIGHT DECK (When No Ship Owned) */}
+      {viewMode === 'flightDeck' && !activeShip && (
+        <div className="tactical-panel p-8 text-center border-dashed border-slate-700/80 space-y-4 max-w-2xl mx-auto my-12 animate-fade-in">
+          <div className="w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-500/50 flex items-center justify-center text-3xl mx-auto shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+            🛸
+          </div>
+          <h3 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-wide">
+            {t('spaceship.unassignedNotice', 'No Starship Assigned')}
+          </h3>
+          <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-mono">
+            {t(
+              'spaceship.unassignedFlightDeckDesc',
+              'Flight deck offline. You do not currently command a starship. A vessel can be commissioned at the Naval Shipyard or assigned by your Campaign Flight Director (DM).'
+            )}
+          </p>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setViewMode('shipyard')}
+              className="py-3 px-6 rounded font-bold text-xs uppercase tracking-wider bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan shadow-[0_0_20px_rgba(0,240,255,0.25)] transition-all inline-flex items-center gap-2 active:scale-95"
+            >
+              <span>⚓</span>
+              <span>{t('spaceship.visitShipyard', 'Visit Naval Shipyard')}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 1: TACTICAL FLIGHT DECK (Active Ship Owned) */}
+      {viewMode === 'flightDeck' && activeShip && (
         <>
           {/* Ship Bridge Header Console */}
           <div className="tactical-panel p-6 border-l-4 border-l-[#00f0ff] shadow-[0_0_30px_rgba(0,240,255,0.12)]">
@@ -231,7 +323,9 @@ export default function SpaceshipSheet({
                     </span>
                   </p>
                   <p className="text-[11px] text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                    {activeShip.description}
+                    {typeof activeShip.description === 'object'
+                      ? activeShip.description[currentLang] || activeShip.description.en
+                      : activeShip.description}
                   </p>
                 </div>
               </div>

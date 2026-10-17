@@ -1,11 +1,14 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function SpaceshipCard({ ship, locale = 'en' }) {
+  const { t } = useTranslation();
+
   if (!ship) {
     return (
       <div className="glass-panel p-5 border-dashed border-white/10 text-center text-gray-500 text-xs">
         <span className="text-xl block mb-1">🚀</span>
-        No active vessel docked. Travel via planetary transport.
+        {t('spaceship.noVesselDocked', 'No active vessel docked. Travel via planetary transport.')}
       </div>
     );
   }
@@ -22,7 +25,7 @@ export default function SpaceshipCard({ ship, locale = 'en' }) {
         <div className="flex items-center gap-2">
           <span className="text-neon-purple text-base">🚀</span>
           <h2 className="font-display text-xs text-gray-300 uppercase tracking-widest">
-            Docked Vessel
+            {t('spaceship.dockedVessel', 'Docked Vessel')}
           </h2>
         </div>
         <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-neon-purple/20 text-purple-300 border border-neon-purple/40">
@@ -35,12 +38,16 @@ export default function SpaceshipCard({ ship, locale = 'en' }) {
 
       <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5 font-mono text-xs">
         <div className="bg-white/5 p-2 rounded border border-white/5">
-          <span className="text-[10px] text-gray-400 block uppercase">Sub-Warp Speed</span>
-          <span className="text-amber-400 font-bold text-sm">⚡ {ship.speed || 0} km/s</span>
+          <span className="text-[10px] text-gray-400 block uppercase">
+            {t('spaceship.subWarpSpeed', 'Sub-Warp Speed')}
+          </span>
+          <span className="text-amber-400 font-bold text-sm">⚡ {ship.subWarpSpeed || ship.speed || 0} km/s</span>
         </div>
         <div className="bg-white/5 p-2 rounded border border-white/5">
-          <span className="text-[10px] text-gray-400 block uppercase">Hull Integrity</span>
-          <span className="text-neon-green font-bold text-sm">🛡️ {ship.hullPoints || 100} HP</span>
+          <span className="text-[10px] text-gray-400 block uppercase">
+            {t('spaceship.hullIntegrity', 'Hull Integrity')}
+          </span>
+          <span className="text-neon-green font-bold text-sm">🛡️ {ship.maxHull || ship.hull || ship.hullPoints || 100} HP</span>
         </div>
       </div>
     </div>

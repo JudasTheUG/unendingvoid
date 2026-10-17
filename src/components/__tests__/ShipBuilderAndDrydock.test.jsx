@@ -114,23 +114,75 @@ describe('ShipBuilder Component (Cyberpunk x The Expanse Drydock UI)', () => {
   });
 });
 
-describe('SpaceshipSheet Mode Switching', () => {
-  it('switches between Tactical Flight Deck and Drydock views', () => {
+describe('SpaceshipSheet Mode Switching & Naval Shipyard', () => {
+  it('switches between Tactical Flight Deck, Drydock Modifier, and Naval Shipyard views', () => {
     render(<SpaceshipSheet />);
 
     // Initially in Flight Deck view
     expect(screen.getByText(/Vessel Weapon Batteries & Ordnance/i)).toBeInTheDocument();
 
-    // Switch to Drydock
-    const drydockTab = screen.getByText(/Drydock Ship Builder/i);
+    // Switch to Drydock Modifier
+    const drydockTab = screen.getByRole('button', { name: /Drydock Ship Modifier/i });
     fireEvent.click(drydockTab);
 
     expect(screen.getByText(/TYCHO NAVAL SHIPYARD \/\/ BAY 04/i)).toBeInTheDocument();
 
+    // Switch to Naval Shipyard
+    const shipyardTab = screen.getByRole('button', { name: /Naval Shipyard/i });
+    fireEvent.click(shipyardTab);
+
+    expect(screen.getByText(/Commissioning Berth/i)).toBeInTheDocument();
+    expect(screen.getByText(/Vanguard Recon Skiff/i)).toBeInTheDocument();
+
     // Switch back to Flight Deck
-    const flightDeckTab = screen.getByText(/Tactical Flight Deck/i);
+    const flightDeckTab = screen.getByRole('button', { name: /Tactical Flight Deck/i });
     fireEvent.click(flightDeckTab);
 
     expect(screen.getByText(/Vessel Weapon Batteries & Ordnance/i)).toBeInTheDocument();
   });
+
+  it('renders Naval Shipyard when player owns no ship (ship=null) and allows commissioning', () => {
+    const handleUpdateShip = vi.fn();
+    const handleUpdateCredits = vi.fn();
+
+    render(
+      <SpaceshipSheet
+        ship={null}
+        player={{ credits: 1000 }}
+        onUpdateShip={handleUpdateShip}
+        onUpdateCredits={handleUpdateCredits}
+      />
+    );
+
+    // Should default to Naval Shipyard view when unowned
+    expect(screen.getByText(/Commissioning Berth/i)).toBeInTheDocument();
+    expect(screen.getByText(/Available Balance/i)).toBeInTheDocument();
+
+    // Commission button for Vanguard Recon Skiff (costs ₡350, player has ₡1000)
+    const commissionButtons = screen.getAllByRole('button', { name: /Commission Ship/i });
+    expect(commissionButtons.length).toBeGreaterThan(0);
+
+    fireEvent.click(commissionButtons[0]);
+
+    // Should call callbacks and switch to flight deck
+    expect(handleUpdateCredits).toHaveBeenCalledWith(650);
+    expect(handleUpdateShip).toHaveBeenCalled();
+  });
+
+  it('shows unassigned notices on Flight Deck and Drydock when player owns no ship', () => {
+    render(<SpaceshipSheet ship={null} player={{ credits: 100 }} />);
+
+    // Go to Flight Deck
+    const flightDeckTab = screen.getByText(/Tactical Flight Deck/i);
+    fireEvent.click(flightDeckTab);
+    expect(screen.getByText(/No Starship Assigned/i)).toBeInTheDocument();
+    expect(screen.getByText(/Flight deck offline/i)).toBeInTheDocument();
+
+    // Go to Drydock Modifier
+    const drydockTab = screen.getByText(/Drydock Ship Modifier/i);
+    fireEvent.click(drydockTab);
+    expect(screen.getByText(/Drydock berth empty/i)).toBeInTheDocument();
+    expect(screen.getByText(/You cannot fabricate a starship from scratch/i)).toBeInTheDocument();
+  });
 });
+

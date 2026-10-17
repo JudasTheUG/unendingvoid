@@ -49,7 +49,14 @@ const isEmptyModule = (modId) => {
   return !modId || modId === 'wpn_none' || modId === 'shield_none' || modId === 'cargo_none' || modId === 'warp_none' || modId === 'scan_none';
 };
 
-export default function ShipBuilder({ player = null, activeShip, inventoryItems = [], onAssemble }) {
+export default function ShipBuilder({
+  player = null,
+  activeShip,
+  inventoryItems = [],
+  onAssemble,
+  hasOwnedShip = true,
+  onNavigateShipyard,
+}) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
 
@@ -126,6 +133,64 @@ export default function ShipBuilder({ player = null, activeShip, inventoryItems 
   const powerRatio = stats.reactorOutput > 0 ? Math.round((stats.totalPowerDraw / stats.reactorOutput) * 100) : 100;
   const isPowerOverloaded = stats.totalPowerDraw > stats.reactorOutput;
 
+  if (!hasOwnedShip) {
+    return (
+      <div className="space-y-6 font-mono text-slate-200 animate-fade-in">
+        <div className="tactical-panel p-5 border-l-4 border-l-[#ea580c] shadow-[0_0_25px_rgba(234,88,12,0.15)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded bg-[#ea580c]/20 text-[#ea580c] border border-[#ea580c]/40 text-[10px] font-bold tracking-wider uppercase">
+                TYCHO NAVAL SHIPYARD // BAY 04
+              </span>
+              <span className="text-[10px] text-slate-400 uppercase tracking-widest">
+                DRYDOCK REFIT BERTH
+              </span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-display font-black text-white uppercase tracking-wider mt-1 flex items-center gap-2.5">
+              <span>🛠️</span>
+              {t('spaceship.drydockModifierTitle', 'MCRN Tycho Drydock // Modular Ship Modifier')}
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {t(
+                'spaceship.drydockModifierSubtitle',
+                'Hardpoint Refit & Modular Subsystem Configuration Terminal'
+              )}
+            </p>
+          </div>
+          <div className="px-4 py-2 bg-slate-900/90 text-amber-400 border border-amber-500/50 rounded flex items-center gap-2 text-xs font-bold uppercase">
+            <span>🔒</span>
+            <span>{t('spaceship.unassigned', 'No Ship Assigned')}</span>
+          </div>
+        </div>
+
+        <div className="tactical-panel p-8 text-center border-dashed border-slate-700/80 space-y-4 max-w-2xl mx-auto my-8">
+          <div className="w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-500/50 flex items-center justify-center text-3xl mx-auto shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+            🚫
+          </div>
+          <h3 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-wide">
+            {t('spaceship.unassignedNotice', 'No Starship Assigned')} // {t('spaceship.emptyBay', 'Empty Bay')}
+          </h3>
+          <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-mono">
+            {t(
+              'spaceship.unassignedDrydockDesc',
+              'Drydock berth empty. Refit requires an owned vessel. You cannot fabricate a starship from scratch (0). Visit the Naval Shipyard to commission a vessel.'
+            )}
+          </p>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={onNavigateShipyard}
+              className="py-3 px-6 rounded font-bold text-xs uppercase tracking-wider bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan shadow-[0_0_20px_rgba(0,240,255,0.25)] transition-all inline-flex items-center gap-2 active:scale-95"
+            >
+              <span>⚓</span>
+              <span>{t('spaceship.visitShipyard', 'Visit Naval Shipyard')}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 font-mono text-slate-200">
       {/* MCRN Tycho Drydock Header */}
@@ -139,10 +204,13 @@ export default function ShipBuilder({ player = null, activeShip, inventoryItems 
           </div>
           <h2 className="text-xl md:text-2xl font-display font-black text-white uppercase tracking-wider mt-1 flex items-center gap-2.5">
             <span>🛠️</span>
-            {t('spaceship.drydockTitle', 'MCRN Tycho Drydock // Modular Assembly Bay')}
+            {t('spaceship.drydockModifierTitle', 'MCRN Tycho Drydock // Modular Ship Modifier')}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            {t('spaceship.drydockSubtitle', 'Modular Vessel Fabrication & Certification Terminal')}
+            {t(
+              'spaceship.drydockModifierSubtitle',
+              'Hardpoint Refit & Modular Subsystem Configuration Terminal'
+            )}
           </p>
         </div>
 

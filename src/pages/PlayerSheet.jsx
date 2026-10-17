@@ -19,13 +19,13 @@ import PlayerNotesTab from '../components/player/PlayerNotesTab';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
-import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter } from '../lib/playerActions';
+import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer } from '../lib/playerActions';
 import { logout } from '../lib/authService';
 
 export default function PlayerSheet() {
   const { characterId } = useParams();
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, profile } = useAuth();
 
   const targetId = characterId || user?.uid;
@@ -70,13 +70,32 @@ export default function PlayerSheet() {
     (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
   );
 
-  // Dynamic Tab Names (Never say "Player" or "Ship")
+  const [localShip, setLocalShip] = useState(null);
+
+  const activeShipData = localShip !== null ? localShip : (effectivePlayer.ship || (equippedShip ? {
+    id: equippedShip.id,
+    name: typeof equippedShip.name === 'object' ? equippedShip.name.en : equippedShip.name,
+    hull: equippedShip.hullPoints || 180,
+    maxHull: equippedShip.hullPoints || 180,
+    shields: 120,
+    maxShields: 120,
+    subWarpSpeed: equippedShip.speed || 42,
+    modules: equippedShip.modules,
+    cargoCapacity: equippedShip.cargoCapacity,
+    weapons: equippedShip.weapons,
+  } : null));
+
+  const hasOwnedShip = Boolean(activeShipData && (activeShipData.name || activeShipData.hull));
+
+  // Dynamic Tab Names (Never say "Player", and show "Your Ship" if unowned)
   const playerName = effectivePlayer.displayName || effectivePlayer.name || 'Anthony';
-  const initialShipName = equippedShip
-    ? (typeof equippedShip.name === 'object' ? equippedShip.name.en : equippedShip.name)
-    : (effectivePlayer.spaceshipName || effectivePlayer.ship?.name || 'Kusaragi');
-  const [customShipName, setCustomShipName] = useState(initialShipName);
-  const shipDisplayName = customShipName || initialShipName;
+  const initialShipName = activeShipData
+    ? (typeof activeShipData.name === 'object' ? activeShipData.name[activeLocale] || activeShipData.name.en : activeShipData.name)
+    : (effectivePlayer.spaceshipName || null);
+  const [customShipName, setCustomShipName] = useState(initialShipName || '');
+  const shipDisplayName = hasOwnedShip
+    ? (customShipName || initialShipName || 'Kusaragi')
+    : t('spaceship.yourShip', 'Your Ship');
 
   const currentCredits = localCredits !== null ? localCredits : (effectivePlayer.credits || 0);
 
@@ -389,7 +408,7 @@ export default function PlayerSheet() {
                     </div>
                   </div>
 
-                  <SpaceshipCard ship={equippedShip} locale={activeLocale} />
+                  <SpaceshipCard ship={activeShipData || equippedShip} locale={activeLocale} />
                 </div>
               )}
             </div>
@@ -398,33 +417,31 @@ export default function PlayerSheet() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 2: SPACESHIP CONSOLE (Named with ship's name, e.g. Kusaragi)   */}
+      {/* TAB 2: SPACESHIP CONSOLE (Active Ship or Naval Shipyard)            */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {mainTab === 'ship' && (
         <SpaceshipSheet
           player={{ ...effectivePlayer, credits: currentCredits, hasEEMembership: hasEELicense }}
-          ship={{
-            name: shipDisplayName,
-            hull: equippedShip?.hullPoints || 180,
-            maxHull: equippedShip?.hullPoints || 180,
-            shields: 120,
-            maxShields: 120,
-            subWarpSpeed: equippedShip?.speed || 42,
-            modules: equippedShip?.modules,
-            cargoCapacity: equippedShip?.cargoCapacity,
-            weapons: equippedShip?.weapons,
-          }}
+          ship={activeShipData}
           inventoryItems={inventoryItems}
           onUpdateCredits={(credits) => setLocalCredits(credits)}
           onUpdateInventory={(updatedInv) => setLocalInventory(updatedInv)}
-          onUpdateShipName={(name) => setCustomShipName(name)}
+          onUpdateShipName={(name) => {
+            setCustomShipName(name);
+            if (activeShipData) {
+              setLocalShip({ ...activeShipData, name });
+            }
+          }}
           onUpdateShip={(newShip) => {
-            // Need to apply new ship configuration to character data
-            // Since we're missing an explicit equippedShip setter inside PlayerSheet, we'll
-            // wait and see if we can dispatch it properly, for now, we'll rely on SpaceshipSheet returning the full ship structure.
-            // (Assuming we are just mutating the object properties for the mock or passing it up correctly)
-            if (newShip.hullPoints) {
-              setCustomShipName(newShip.name); // Using custom name hook to force re-render, a real DB sync goes here in a full app
+            setLocalShip(newShip);
+            if (newShip?.name) {
+              setCustomShipName(typeof newShip.name === 'object' ? newShip.name.en : newShip.name);
+            }
+            const playerId = effectivePlayer.id || effectivePlayer.uid;
+            if (playerId && newShip) {
+              assignShipToPlayer(playerId, newShip).catch((err) =>
+                console.warn('[PlayerSheet] Ship saved to local state:', err.message)
+              );
             }
           }}
         />
