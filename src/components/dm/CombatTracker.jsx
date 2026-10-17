@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { requestInitiative, setCombatTurnOrder } from '../../lib/campaignActions';
+import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
 
 const DEFAULT_ENEMIES = [
   { id: 'en_marine_01', name: 'MCRN Patrol Marine', dexMod: 2, hp: 45, maxHp: 45, initiative: null, isEnemy: true },
@@ -11,6 +12,8 @@ const DEFAULT_ENEMIES = [
 export default function CombatTracker({
   campaignId,
   players = [],
+  traits = [],
+  items = [],
   turnOrder = [],
   currentTurn = 0,
   combatActive = false,
@@ -88,20 +91,20 @@ export default function CombatTracker({
     setEnemies(updated);
   };
 
-  // Manual roll for player if AFK
+  // Manual roll for player if AFK (calculates full DEX + Alert trait + cyberware bonuses)
   const handleForceRollPlayer = (player) => {
     const pId = player.id || player.uid;
-    const dexScore = player.stats?.dexterity || 10;
-    const dexMod = Math.floor((dexScore - 10) / 2);
+    const { totalBonus, dexMod, extraBonus, bonusSources } = calculateInitiativeBonus(player, traits, items);
     const d20 = Math.floor(Math.random() * 20) + 1;
-    const total = d20 + dexMod;
+    const total = d20 + totalBonus;
 
     const rollData = {
       playerId: pId,
       playerName: player.displayName || player.name || 'Operative',
       roll: d20,
-      modifier: dexMod,
+      modifier: totalBonus,
       total,
+      breakdown: { dexMod, extraBonus, bonusSources },
       timestamp: Date.now(),
     };
 
@@ -334,8 +337,7 @@ export default function CombatTracker({
               {players.map((p) => {
                 const pId = p.id || p.uid;
                 const roll = playerRolls[pId];
-                const dexScore = p.stats?.dexterity || 10;
-                const dexMod = Math.floor((dexScore - 10) / 2);
+                const { totalBonus, dexMod, extraBonus, bonusSources } = calculateInitiativeBonus(p, traits, items);
 
                 return (
                   <div
@@ -349,8 +351,16 @@ export default function CombatTracker({
                       <span className="font-bold block text-white text-[11px]">
                         {p.displayName || p.name}
                       </span>
-                      <span className="text-[10px] text-gray-400 block">
-                        DEX: {dexMod >= 0 ? `+${dexMod}` : dexMod}
+                      <span
+                        className="text-[10px] text-gray-400 block"
+                        title={bonusSources.map((b) => `${b.name} (${b.bonus >= 0 ? '+' : ''}${b.bonus})`).join(' + ')}
+                      >
+                        Init: <strong className="text-neon-cyan">{totalBonus >= 0 ? `+${totalBonus}` : totalBonus}</strong>
+                        {extraBonus !== 0 && (
+                          <span className="text-amber-400 text-[9px] ml-1">
+                            (DEX {dexMod >= 0 ? `+${dexMod}` : dexMod}, {extraBonus >= 0 ? `+${extraBonus}` : extraBonus} traits/gear)
+                          </span>
+                        )}
                       </span>
                     </div>
 
@@ -360,7 +370,7 @@ export default function CombatTracker({
                           {roll.total}
                         </span>
                         <span className="text-[9px] text-gray-400">
-                          [{roll.roll}+{roll.modifier}]
+                          [{roll.roll}{roll.modifier >= 0 ? `+${roll.modifier}` : roll.modifier}]
                         </span>
                       </div>
                     ) : (

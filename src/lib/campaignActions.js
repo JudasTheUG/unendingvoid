@@ -197,13 +197,14 @@ export async function requestInitiative(campaignId) {
 /**
  * Operative submits their calculated initiative roll.
  */
-export async function submitInitiativeRoll(campaignId, { playerId, playerName, roll, modifier, total }) {
+export async function submitInitiativeRoll(campaignId, { playerId, playerName, roll, modifier, total, breakdown }) {
   const rollData = {
     playerId,
     playerName,
     roll,
     modifier,
     total,
+    breakdown: breakdown || null,
     timestamp: Date.now(),
   };
 

@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import VitalBar from '../shared/VitalBar';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
 import RollContextMenu from '../shared/RollContextMenu';
+import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
 
 export default function DnDCharacterHeader({
   character,
+  traits = [],
+  items = [],
   onShortRest,
   onLongRest,
   onUpdateHp,
@@ -16,6 +19,8 @@ export default function DnDCharacterHeader({
   const stats = character.stats || {};
   const dexMod = Math.floor(((stats.dexterity || 10) - 10) / 2);
   const wisMod = Math.floor(((stats.wisdom || 10) - 10) / 2);
+  const initData = calculateInitiativeBonus(character, traits, items);
+  const totalInitBonus = initData.totalBonus;
   const profBonus = character.proficiencyBonus || Math.floor(((character.level || 1) - 1) / 4) + 2;
   const passivePerception = 10 + wisMod + (character.skillProficiencies?.includes('perception') ? profBonus : 0);
 
@@ -56,7 +61,7 @@ export default function DnDCharacterHeader({
   };
 
   const handleRollInitiative = (rollMode = 'normal') => {
-    triggerInteractiveRoll('1d20', dexMod, `Initiative (${character.displayName || 'Operative'})`, rollMode);
+    triggerInteractiveRoll('1d20', totalInitBonus, `Initiative (${character.displayName || 'Operative'})`, rollMode);
   };
 
   return (
@@ -107,16 +112,16 @@ export default function DnDCharacterHeader({
                 type: 'd20',
                 title: 'Initiative Check',
                 diceNotation: '1d20',
-                bonus: dexMod,
+                bonus: totalInitBonus,
                 onSelect: (mode) => handleRollInitiative(mode),
               });
             }}
             className="glass-panel px-3 py-1.5 border-neon-cyan/40 hover:border-neon-cyan min-w-[70px] hover:bg-neon-cyan/10 transition-all cursor-pointer group"
-            title="Left-click: Roll initiative · Right-click: Advantage / Disadvantage"
+            title={`Left-click: Roll initiative · Right-click: Advantage / Disadvantage\nTotal: +${totalInitBonus} (${initData.bonusSources.map((b) => `${b.name} ${b.bonus >= 0 ? '+' : ''}${b.bonus}`).join(', ')})`}
           >
             <span className="text-[9px] uppercase text-gray-400 group-hover:text-neon-cyan block">Initiative</span>
             <span className="text-sm font-bold text-neon-green">
-              {dexMod >= 0 ? `+${dexMod}` : dexMod}
+              {totalInitBonus >= 0 ? `+${totalInitBonus}` : totalInitBonus}
             </span>
           </button>
 

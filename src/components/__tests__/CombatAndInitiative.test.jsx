@@ -59,6 +59,29 @@ describe('InitiativeRollModal & Leeeerooyy Button', () => {
     expect(rollButton).toBeInTheDocument();
   });
 
+  it('computes and displays Alert trait (+10) along with DEX modifier (+3 = +13)', () => {
+    const alertChar = {
+      id: 'char_alert',
+      name: 'Anthony Alert',
+      displayName: 'Anthony Alert',
+      stats: { dexterity: 16 }, // +3
+      traits: [{ id: 'trait_alert', name: 'Alert Feat', initiativeBonus: 10 }],
+    };
+
+    render(
+      <InitiativeRollModal
+        character={alertChar}
+        campaignId="camp_1"
+        forceOpen={true}
+      />
+    );
+
+    // Total should be +13
+    expect(screen.getByText('+13')).toBeInTheDocument();
+    expect(screen.getByText('DEX: +3')).toBeInTheDocument();
+    expect(screen.getByText('Alert Feat: +10')).toBeInTheDocument();
+  });
+
   it('clicking "Leeeerooyy..." rolls initiative, shows outcome, and submits', async () => {
     const { submitInitiativeRoll } = await import('../../lib/campaignActions');
 

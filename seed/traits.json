@@ -105,5 +105,22 @@
     },
     "statModifiers": {},
     "rollModifier": 3
+  },
+  {
+    "id": "trait_alert",
+    "type": "buff",
+    "name": {
+      "en": "Alert (Combat Reflexes)",
+      "tr": "Teyakkuz (Savaş Refleksleri)",
+      "de": "Wachsam (Gefechtsreflexe)"
+    },
+    "description": {
+      "en": "Always on the lookout for danger. Gain a +10 bonus to initiative and cannot be surprised in combat.",
+      "tr": "Daima tehlikeye karşı tetikte. İnisiyatife +10 bonus kazanır ve baskına uğramaz.",
+      "de": "Stets auf der Hut vor Gefahren. Erhält einen +10-Bonus auf die Initiative und kann nicht überrascht werden."
+    },
+    "statModifiers": {},
+    "initiativeBonus": 10,
+    "rollModifier": 5
   }
 ]

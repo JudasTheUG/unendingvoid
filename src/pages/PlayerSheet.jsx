@@ -162,6 +162,8 @@ export default function PlayerSheet() {
       <InitiativeRollModal
         character={effectivePlayer}
         campaignId={effectivePlayer.campaignId}
+        traits={allTraits}
+        items={allItems}
       />
 
       {/* Navigation & Breadcrumbs Bar */}
@@ -236,6 +238,8 @@ export default function PlayerSheet() {
           {/* D&D Beyond Top Character Header */}
           <DnDCharacterHeader
             character={{ ...effectivePlayer, credits: currentCredits }}
+            traits={allTraits}
+            items={allItems}
             onShortRest={handleShortRest}
             onLongRest={handleLongRest}
             onUpdateHp={handleUpdateHp}

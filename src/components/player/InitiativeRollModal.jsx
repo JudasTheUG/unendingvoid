@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
 import { submitInitiativeRoll } from '../../lib/campaignActions';
+import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
 
 export default function InitiativeRollModal({
   character,
   campaignId,
+  traits = [],
+  items = [],
   forceOpen = false,
   onClose = null,
 }) {
@@ -15,8 +18,11 @@ export default function InitiativeRollModal({
   const [rollResult, setRollResult] = useState(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const dexScore = character?.stats?.dexterity || 10;
-  const dexMod = Math.floor((dexScore - 10) / 2);
+  const initData = calculateInitiativeBonus(character, traits, items);
+  const totalBonus = initData.totalBonus;
+  const dexMod = initData.dexMod;
+  const extraBonus = initData.extraBonus;
+  const bonusSources = initData.bonusSources;
   const charId = character?.id || character?.uid || 'operative';
   const charName = character?.displayName || character?.name || 'Operative';
 
@@ -55,14 +61,14 @@ export default function InitiativeRollModal({
 
     // Roll d20
     const d20 = Math.floor(Math.random() * 20) + 1;
-    const total = d20 + dexMod;
+    const total = d20 + totalBonus;
 
-    // Trigger 3D dice overlay animation
-    triggerInteractiveRoll('1d20', dexMod, `Initiative Check: ${charName}`);
+    // Trigger 3D dice overlay animation with the full computed initiative modifier
+    triggerInteractiveRoll('1d20', totalBonus, `Initiative Check: ${charName}`);
 
     // Wait slightly for dramatic effect
     setTimeout(async () => {
-      setRollResult({ d20, dexMod, total });
+      setRollResult({ d20, totalBonus, dexMod, extraBonus, total, bonusSources });
       setHasSubmitted(true);
       setIsRolling(false);
 
@@ -72,7 +78,7 @@ export default function InitiativeRollModal({
           playerId: charId,
           playerName: charName,
           roll: d20,
-          modifier: dexMod,
+          modifier: totalBonus,
           total,
         });
       } catch (err) {
@@ -109,17 +115,31 @@ export default function InitiativeRollModal({
           </p>
         </div>
 
-        {/* Character Tactical Card */}
-        <div className="bg-[#0e1628] p-3.5 rounded-xl border border-slate-700 flex items-center justify-between text-left">
-          <div>
-            <span className="text-[10px] text-gray-500 uppercase block">Operative</span>
-            <span className="font-display text-sm font-bold text-white block">{charName}</span>
+        {/* Character Tactical Card & Initiative Breakdown */}
+        <div className="bg-[#0e1628] p-3.5 rounded-xl border border-slate-700 space-y-2 text-left">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div>
+              <span className="text-[10px] text-gray-500 uppercase block">Operative</span>
+              <span className="font-display text-sm font-bold text-white block">{charName}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-gray-500 uppercase block">Total Initiative Bonus</span>
+              <span className="text-base font-black text-neon-green">
+                {totalBonus >= 0 ? `+${totalBonus}` : totalBonus}
+              </span>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-[10px] text-gray-500 uppercase block">Reflexes (DEX)</span>
-            <span className="text-sm font-bold text-neon-cyan">
-              {dexMod >= 0 ? `+${dexMod}` : dexMod}
+
+          {/* Sources Breakdown Badge */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px]">
+            <span className="px-2 py-0.5 rounded bg-black/60 text-neon-cyan border border-neon-cyan/40 font-bold">
+              DEX: {dexMod >= 0 ? `+${dexMod}` : dexMod}
             </span>
+            {bonusSources.filter((b) => b.type !== 'stat').map((b, idx) => (
+              <span key={idx} className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                {b.name}: +{b.bonus}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -133,12 +153,17 @@ export default function InitiativeRollModal({
               <span className="text-3xl font-black font-display text-white">
                 {rollResult.total}
               </span>
-              <span className="text-xs text-gray-300 font-mono">
-                [ d20: <strong className="text-neon-cyan">{rollResult.d20}</strong> + DEX:{' '}
-                <strong className="text-amber-400">{rollResult.dexMod >= 0 ? `+${rollResult.dexMod}` : rollResult.dexMod}</strong> ]
-              </span>
+              <div className="text-xs text-gray-300 font-mono text-left">
+                <div>
+                  [ d20: <strong className="text-neon-cyan">{rollResult.d20}</strong> + Bonus:{' '}
+                  <strong className="text-neon-green">+{rollResult.totalBonus}</strong> ]
+                </div>
+                <div className="text-[10px] text-gray-400">
+                  {rollResult.bonusSources.map((b) => `${b.name} (${b.bonus >= 0 ? '+' : ''}${b.bonus})`).join(' + ')}
+                </div>
+              </div>
             </div>
-            <p className="text-[11px] text-neon-green font-bold flex items-center justify-center gap-1">
+            <p className="text-[11px] text-neon-green font-bold flex items-center justify-center gap-1 pt-1">
               <span>📡</span>
               <span>{t('combat.telemetryRelayed') || 'Telemetry relayed to DM. Formulating battle grid...'}</span>
             </p>

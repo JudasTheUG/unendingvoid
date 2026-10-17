@@ -25,6 +25,7 @@ export default function DMPanel() {
   const { docs: campaigns = [] } = useCollection('campaigns');
   const { docs: allPlayers = [], loading: playersLoading } = useCollection('players');
   const { docs: traits = [] } = useCollection('traits');
+  const { docs: items = [] } = useCollection('items');
 
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [levelUpModalPlayer, setLevelUpModalPlayer] = useState(null);
@@ -160,6 +161,8 @@ export default function DMPanel() {
       <CombatTracker
         campaignId={campaign?.id || campaignId}
         players={partyCharacters}
+        traits={traits}
+        items={items}
         turnOrder={turnOrder}
         currentTurn={currentTurn}
         combatActive={combatActive}
