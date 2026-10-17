@@ -520,5 +520,33 @@
     "broadcastNow": "Funkspruch senden",
     "dmScreenBadge": "DM Geheim",
     "dualViewActive": "Live-Doppeltelemetriestrom Aktiv"
+  },
+  "combat": {
+    "panelTitle": "Taktischer Kampf & Initiativen-Kommando",
+    "allPlayersReady": "Alle Spieler bereit",
+    "awaitingRolls": "Warte auf Operative-Würfe...",
+    "askInitiative": "Initiative anfordern",
+    "openBoard": "Karte öffnen",
+    "endCombat": "Kampf beenden",
+    "startCombat": "Kampf starten",
+    "prevTurn": "Zurück",
+    "nextTurn": "Nächster Zug",
+    "turnOrder": "Taktische Initiativenreihenfolge",
+    "currentTurnActing": "Aktueller Zug",
+    "operativeInitiativeStatus": "Operative-Initiativenstatus",
+    "modeGround": "Spieler vs Spieler (Boden)",
+    "modeShip": "Schiff vs Schiff (Weltraum)",
+    "finalizeTurnOrder": "Reihenfolge festlegen & Kampf beginnen",
+    "enterBoard": "▤ Taktisches Kampfbrett betreten"
+  },
+  "combatBoard": {
+    "tacticalCommand": "Taktisches Kommando",
+    "mode": "Modus",
+    "scale": "Maßstab",
+    "status": "Status",
+    "normal": "Normal",
+    "groundScale": "5 Fuß/Feld",
+    "shipScale": "1 km/Feld",
+    "campaignNotFound": "Kampagne nicht gefunden."
   }
 }

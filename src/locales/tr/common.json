@@ -520,5 +520,33 @@
     "broadcastNow": "Telsiz Yayını Yap",
     "dmScreenBadge": "DM Gizli",
     "dualViewActive": "Canlı Çift Telemetri Akışı Aktif"
+  },
+  "combat": {
+    "panelTitle": "Taktiksel Çatışma & İnisiyatif Komutası",
+    "allPlayersReady": "Tüm Oyuncular Hazır",
+    "awaitingRolls": "Operatif Zar Atışları Bekleniyor...",
+    "askInitiative": "İnisiyatif İste",
+    "openBoard": "Haritayı Aç",
+    "endCombat": "Çatışmayı Bitir",
+    "startCombat": "Çatışmayı Başlat",
+    "prevTurn": "Önceki",
+    "nextTurn": "Sonraki Tur",
+    "turnOrder": "Taktiksel İnisiyatif Sırası",
+    "currentTurnActing": "Şu Anki Sıradaki",
+    "operativeInitiativeStatus": "Operatif İnisiyatif Durumu",
+    "modeGround": "Oyuncu vs Oyuncu (Kara)",
+    "modeShip": "Gemi vs Gemi (Uzay)",
+    "finalizeTurnOrder": "Sırayı Kesinleştir & Çatışmaya Gir",
+    "enterBoard": "▤ Taktiksel Çatışma Haritasına Gir"
+  },
+  "combatBoard": {
+    "tacticalCommand": "Taktik Komuta",
+    "mode": "Mod",
+    "scale": "Ölçek",
+    "status": "Durum",
+    "normal": "Normal",
+    "groundScale": "5 ft/kare",
+    "shipScale": "1 km/kare",
+    "campaignNotFound": "Sefer bulunamadı."
   }
 }

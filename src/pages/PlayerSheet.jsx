@@ -345,7 +345,7 @@ export default function PlayerSheet() {
             onClick={() => window.open(`/combat/${effectivePlayer.campaignId}`, '_blank')}
             className="w-full sm:w-auto px-6 py-2 rounded-xl bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 text-xs font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)]"
           >
-            ▤ Enter Tactical Combat Board
+            {t('combat.enterBoard') || '▤ Enter Tactical Combat Board'}
           </button>
         </div>
       )}

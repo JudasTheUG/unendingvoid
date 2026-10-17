@@ -59,31 +59,6 @@ export default function CombatTracker({
     }
   }, [campaignId]);
 
-  // Real-time Firestore synchronization for campaign initiative rolls
-  useEffect(() => {
-    if (!campaignId || !db) return;
-
-    try {
-      const unsub = onSnapshot(
-        doc(db, 'campaigns', campaignId),
-        (snap) => {
-          if (!snap.exists()) return;
-          const camp = snap.data();
-          if (camp.initiativeRolls) {
-            setPlayerRolls(camp.initiativeRolls);
-          }
-          if (camp.initiativeRequested !== undefined) {
-            setIsAwaitingRolls(Boolean(camp.initiativeRequested));
-          }
-        },
-        (err) => console.warn('[CombatTracker] Campaign snapshot notice:', err.message)
-      );
-
-      return () => unsub();
-    } catch (e) {
-      console.warn('[CombatTracker] Firestore listener error:', e);
-    }
-  }, [campaignId]);
 
   // Sync player rolls from storage / custom events
   useEffect(() => {
@@ -596,11 +571,11 @@ export default function CombatTracker({
             <div className="mb-4 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-3 rounded-lg bg-black/40 border border-slate-800">
                <label className="flex items-center gap-2 cursor-pointer">
                  <input type="radio" name="combatMode" value="ground" checked={combatMode === 'ground'} onChange={() => setCombatMode('ground')} className="text-neon-cyan focus:ring-neon-cyan bg-black/60 border-slate-600" />
-                 <span className="text-[11px] font-bold text-gray-300 uppercase">Player vs Player (Ground)</span>
+                 <span className="text-[11px] font-bold text-gray-300 uppercase">{t('combat.modeGround') || 'Player vs Player (Ground)'}</span>
                </label>
                <label className="flex items-center gap-2 cursor-pointer">
                  <input type="radio" name="combatMode" value="ship" checked={combatMode === 'ship'} onChange={() => setCombatMode('ship')} className="text-neon-cyan focus:ring-neon-cyan bg-black/60 border-slate-600" />
-                 <span className="text-[11px] font-bold text-gray-300 uppercase">Ship vs Ship (Space)</span>
+                 <span className="text-[11px] font-bold text-gray-300 uppercase">{t('combat.modeShip') || 'Ship vs Ship (Space)'}</span>
                </label>
             </div>
 

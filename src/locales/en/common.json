@@ -520,5 +520,33 @@
     "broadcastNow": "Broadcast Comms",
     "dmScreenBadge": "DM Secret",
     "dualViewActive": "Live Dual Telemetry Stream Active"
+  },
+  "combat": {
+    "panelTitle": "Tactical Combat & Initiative Command",
+    "allPlayersReady": "All Players Ready",
+    "awaitingRolls": "Awaiting Operative Rolls...",
+    "askInitiative": "Ask Initiative",
+    "openBoard": "Open Board",
+    "endCombat": "End Combat",
+    "startCombat": "Start Combat",
+    "prevTurn": "Prev",
+    "nextTurn": "Next Turn",
+    "turnOrder": "Tactical Initiative Order",
+    "currentTurnActing": "Current Turn Acting",
+    "operativeInitiativeStatus": "Operative Initiative Status",
+    "modeGround": "Player vs Player (Ground)",
+    "modeShip": "Ship vs Ship (Space)",
+    "finalizeTurnOrder": "Finalize Turn Order & Engage Combat",
+    "enterBoard": "▤ Enter Tactical Combat Board"
+  },
+  "combatBoard": {
+    "tacticalCommand": "Tactical Command",
+    "mode": "Mode",
+    "scale": "Scale",
+    "status": "Status",
+    "normal": "Normal",
+    "groundScale": "5 ft/sq",
+    "shipScale": "1 km/sq",
+    "campaignNotFound": "Campaign not found."
   }
 }

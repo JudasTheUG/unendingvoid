@@ -38,12 +38,6 @@ export default function CombatBoardPage() {
       setLoading(false);
     });
 
-    // Subscribe to players
-    const unsubPlayers = onSnapshot(doc(db, 'players', 'metadata_or_query_all_is_too_broad'), () => {}); // A real query to all players? No, use the activeCharacters list!
-    // Since activeCharacters is just a summary, we might need a snapshot query for all in roster.
-
-    // Actually, campaign.activeCharacters has { characterId, name, hp, maxHp, ... }. For full stats, we can just use the summary or fetch individual docs.
-    // For now, let's fetch full documents for all active characters to be safe.
     return () => {
       unsubCamp();
     };
@@ -70,7 +64,7 @@ export default function CombatBoardPage() {
   }, [campaign?.activeCharacters]);
 
   if (loading) return <LoadingSpinner />;
-  if (!campaign) return <div className="text-white p-8">Campaign not found.</div>;
+  if (!campaign) return <div className="text-white p-8">{t('combatBoard.campaignNotFound') || 'Campaign not found.'}</div>;
 
   const combatMode = campaign.combatMode || 'ground';
   const turnOrder = campaign.turnOrder || [];
@@ -85,6 +79,8 @@ export default function CombatBoardPage() {
      if (p) return { ...p, isEnemy: false };
      let e = enemies.find(x => x.id === id);
      if (e) return { ...e, isEnemy: true };
+     let ac = (campaign.activeCharacters || []).find(x => (x.characterId || x.uid) === id);
+     if (ac) return { ...ac, id, isEnemy: false };
      return { id, name: id, isEnemy: false };
   });
 
@@ -239,7 +235,9 @@ export default function CombatBoardPage() {
 
       {/* Left Panel: Turn Order & Stats */}
       <div className="w-full sm:w-80 bg-black border-r border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto">
-        <h2 className="text-neon-cyan font-bold uppercase border-b border-white/10 pb-2">Tactical Command</h2>
+        <h2 className="text-neon-cyan font-bold uppercase border-b border-white/10 pb-2">
+          {t('combatBoard.tacticalCommand') || 'Tactical Command'}
+        </h2>
         <div className="space-y-3">
           {allCombatants.map((c, idx) => {
             const isActive = currentTurn === idx;
@@ -271,7 +269,7 @@ export default function CombatBoardPage() {
                        {effectsList.map(ef => <option key={ef} value={ef}>{ef}</option>)}
                      </select>
                    ) : (
-                     <span className="text-[10px] text-amber-400 uppercase block">Status: {effect || 'Normal'}</span>
+                     <span className="text-[10px] text-amber-400 uppercase block">{t('combatBoard.status') || 'Status'}: {effect || (t('combatBoard.normal') || 'Normal')}</span>
                    )}
                  </div>
               </div>
@@ -283,7 +281,7 @@ export default function CombatBoardPage() {
       {/* Center Panel: Grid */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 bg-grid-pattern relative overflow-auto">
         <div className="absolute top-4 left-4 bg-black/60 px-3 py-1 rounded text-xs font-bold border border-slate-700 uppercase">
-          Mode: <span className="text-neon-cyan">{combatMode}</span> | Scale: <span className="text-neon-cyan">{combatMode === 'ship' ? '1 km/sq' : '5 ft/sq'}</span>
+          {t('combatBoard.mode') || 'Mode'}: <span className="text-neon-cyan">{combatMode === 'ship' ? (t('combat.modeShip') || 'Ship vs Ship (Space)') : (t('combat.modeGround') || 'Player vs Player (Ground)')}</span> | {t('combatBoard.scale') || 'Scale'}: <span className="text-neon-cyan">{combatMode === 'ship' ? (t('combatBoard.shipScale') || '1 km/sq') : (t('combatBoard.groundScale') || '5 ft/sq')}</span>
         </div>
 
         <div

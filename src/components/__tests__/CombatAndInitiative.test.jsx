@@ -212,4 +212,44 @@ describe('CombatTracker DM Initiative Flow', () => {
     const readyElements = screen.getAllByText('combat.allPlayersReady');
     expect(readyElements.length).toBeGreaterThan(0);
   });
+
+  it('allows DM to switch combatMode and passes mode to setCombatTurnOrder', async () => {
+    const { setCombatTurnOrder } = await import('../../lib/campaignActions');
+
+    render(
+      <CombatTracker
+        campaignId="camp_1"
+        players={mockPlayers}
+        turnOrder={['p1', 'p2']}
+        currentTurn={0}
+        combatActive={false}
+      />
+    );
+
+    // Default combatMode is ground
+    const shipRadio = screen.getByLabelText(/combat.modeShip/i);
+    fireEvent.click(shipRadio);
+    expect(shipRadio.checked).toBe(true);
+
+    const finalizeBtn = screen.getByText('combat.finalizeTurnOrder');
+    await act(async () => {
+      fireEvent.click(finalizeBtn);
+    });
+
+    expect(setCombatTurnOrder).toHaveBeenCalledWith('camp_1', expect.any(Array), 'ship', expect.any(Array));
+  });
+
+  it('renders Open Board button when combat is active', () => {
+    render(
+      <CombatTracker
+        campaignId="camp_1"
+        players={mockPlayers}
+        turnOrder={['p1', 'p2']}
+        currentTurn={0}
+        combatActive={true}
+      />
+    );
+
+    expect(screen.getByTitle('Open Combat Board')).toBeInTheDocument();
+  });
 });
