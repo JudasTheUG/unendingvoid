@@ -154,7 +154,7 @@ export default function PlayerSheet() {
   };
 
   return (
-    <div className="min-h-dvh bg-void-bg text-white relative p-4 md:p-6 lg:p-8 space-y-6">
+    <div className="min-h-dvh bg-void-bg text-white relative p-4 md:p-6 lg:p-8 pb-44 md:pb-52 lg:pb-56 space-y-6">
       {/* 3D Dice Layer */}
       <DiceOverlay user={user} profile={effectivePlayer} isDM={false} modifier={0} />
 

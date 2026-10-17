@@ -132,7 +132,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-void-bg text-white p-4 md:p-8 space-y-6">
+    <div className="min-h-dvh bg-void-bg text-white p-4 md:p-8 pb-44 md:pb-52 space-y-6">
       {/* Top Navigation Bar */}
       <header className="glass-panel p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-l-neon-cyan shadow-[0_0_20px_rgba(0,240,255,0.2)]">
         <div>

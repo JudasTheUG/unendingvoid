@@ -108,7 +108,7 @@ export default function CampaignPage() {
   const isDM = campaign.dmId === user?.uid;
 
   return (
-    <div className="min-h-dvh bg-void-bg text-white p-4 md:p-8 space-y-6">
+    <div className="min-h-dvh bg-void-bg text-white p-4 md:p-8 pb-44 md:pb-52 space-y-6">
       {/* Campaign Header */}
       <div className="glass-panel p-6 border-l-4 border-l-neon-magenta flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
