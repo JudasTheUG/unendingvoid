@@ -1,0 +1,176 @@
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { triggerInteractiveRoll } from '../dice/DiceOverlay';
+import { submitInitiativeRoll } from '../../lib/campaignActions';
+
+export default function InitiativeRollModal({
+  character,
+  campaignId,
+  forceOpen = false,
+  onClose = null,
+}) {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(forceOpen);
+  const [isRolling, setIsRolling] = useState(false);
+  const [rollResult, setRollResult] = useState(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  const dexScore = character?.stats?.dexterity || 10;
+  const dexMod = Math.floor((dexScore - 10) / 2);
+  const charId = character?.id || character?.uid || 'operative';
+  const charName = character?.displayName || character?.name || 'Operative';
+
+  // Listen for DM's "Ask Initiative" broadcast
+  useEffect(() => {
+    const handleAskInitiative = (e) => {
+      // Reset and open modal
+      setRollResult(null);
+      setHasSubmitted(false);
+      setIsRolling(false);
+      setIsOpen(true);
+    };
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'unendingvoid:initiative_request' && e.newValue) {
+        handleAskInitiative();
+      }
+    };
+
+    window.addEventListener('unendingvoid:ask_initiative', handleAskInitiative);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('unendingvoid:ask_initiative', handleAskInitiative);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (forceOpen) setIsOpen(true);
+  }, [forceOpen]);
+
+  const handleRollInitiative = async () => {
+    if (isRolling || hasSubmitted) return;
+    setIsRolling(true);
+
+    // Roll d20
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + dexMod;
+
+    // Trigger 3D dice overlay animation
+    triggerInteractiveRoll('1d20', dexMod, `Initiative Check: ${charName}`);
+
+    // Wait slightly for dramatic effect
+    setTimeout(async () => {
+      setRollResult({ d20, dexMod, total });
+      setHasSubmitted(true);
+      setIsRolling(false);
+
+      // Transmit result to DM
+      try {
+        await submitInitiativeRoll(campaignId, {
+          playerId: charId,
+          playerName: charName,
+          roll: d20,
+          modifier: dexMod,
+          total,
+        });
+      } catch (err) {
+        console.warn('[InitiativeRollModal] Submission error:', err.message);
+      }
+
+      // Auto dismiss after 2.5 seconds
+      setTimeout(() => {
+        setIsOpen(false);
+        if (onClose) onClose();
+      }, 2500);
+    }, 1000);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[90] flex items-center justify-center p-4 animate-fade-in font-mono">
+      <div className="relative max-w-md w-full bg-[#070b14] border-2 border-red-500 rounded-2xl p-6 shadow-[0_0_50px_rgba(239,68,68,0.5)] space-y-5 text-center overflow-hidden">
+        {/* Top Warning Stripe */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 animate-pulse"></div>
+
+        {/* Tactical Header */}
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/40 text-red-400 text-xs font-bold uppercase tracking-widest animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-red-500"></span>
+            <span>{t('combat.alertHeader') || 'TACTICAL ALERT // ENGAGEMENT IMMINENT'}</span>
+          </div>
+          <h2 className="font-display text-2xl font-black text-white tracking-wide uppercase pt-2">
+            {t('combat.rollInitiativeTitle') || 'ROLL FOR INITIATIVE'}
+          </h2>
+          <p className="text-xs text-gray-400">
+            {t('combat.dmPrompt') || 'The Dungeon Master has called for tactical initiative! Commit your reflexes to battle.'}
+          </p>
+        </div>
+
+        {/* Character Tactical Card */}
+        <div className="bg-[#0e1628] p-3.5 rounded-xl border border-slate-700 flex items-center justify-between text-left">
+          <div>
+            <span className="text-[10px] text-gray-500 uppercase block">Operative</span>
+            <span className="font-display text-sm font-bold text-white block">{charName}</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] text-gray-500 uppercase block">Reflexes (DEX)</span>
+            <span className="text-sm font-bold text-neon-cyan">
+              {dexMod >= 0 ? `+${dexMod}` : dexMod}
+            </span>
+          </div>
+        </div>
+
+        {/* Outcome Display or Action Button */}
+        {rollResult ? (
+          <div className="bg-red-500/10 border border-red-500/40 p-4 rounded-xl space-y-2 animate-fade-in">
+            <span className="text-[10px] uppercase text-red-400 tracking-widest font-bold block">
+              // INITIATIVE COMMITTED //
+            </span>
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-3xl font-black font-display text-white">
+                {rollResult.total}
+              </span>
+              <span className="text-xs text-gray-300 font-mono">
+                [ d20: <strong className="text-neon-cyan">{rollResult.d20}</strong> + DEX:{' '}
+                <strong className="text-amber-400">{rollResult.dexMod >= 0 ? `+${rollResult.dexMod}` : rollResult.dexMod}</strong> ]
+              </span>
+            </div>
+            <p className="text-[11px] text-neon-green font-bold flex items-center justify-center gap-1">
+              <span>📡</span>
+              <span>{t('combat.telemetryRelayed') || 'Telemetry relayed to DM. Formulating battle grid...'}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="pt-2">
+            {/* The exact requested button name across any language: "Leeeerooyy..." */}
+            <button
+              onClick={handleRollInitiative}
+              disabled={isRolling}
+              className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-display font-black text-xl uppercase tracking-widest transition-all shadow-[0_0_25px_rgba(239,68,68,0.6)] hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-2"
+            >
+              <span>⚡</span>
+              <span>{isRolling ? (t('combat.rolling') || 'ROLLING...') : 'Leeeerooyy...'}</span>
+              <span>⚡</span>
+            </button>
+          </div>
+        )}
+
+        {/* Dismiss Button */}
+        {!isRolling && !rollResult && (
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              if (onClose) onClose();
+            }}
+            className="text-[10px] text-gray-500 hover:text-gray-300 uppercase tracking-widest transition-colors"
+          >
+            {t('common.cancel') || 'Dismiss'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -17,6 +17,7 @@ import EESysMarketplace, { EE_CATALOG_ITEMS } from '../components/market/EESysMa
 import TraitsList from '../components/player/TraitsList';
 import PlayerNotesTab from '../components/player/PlayerNotesTab';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
+import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote } from '../lib/playerActions';
 import { logout } from '../lib/authService';
@@ -156,6 +157,12 @@ export default function PlayerSheet() {
     <div className="min-h-dvh bg-void-bg text-white relative p-4 md:p-6 lg:p-8 space-y-6">
       {/* 3D Dice Layer */}
       <DiceOverlay user={user} profile={effectivePlayer} modifier={0} />
+
+      {/* Initiative Roll Pop-Up Modal */}
+      <InitiativeRollModal
+        character={effectivePlayer}
+        campaignId={effectivePlayer.campaignId}
+      />
 
       {/* Navigation & Breadcrumbs Bar */}
       <div className="flex items-center justify-between glass-panel px-4 py-2 text-xs font-mono">

@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createCampaign, createCharacter, addCharacterToCampaign } from '../campaignActions';
+import {
+  createCampaign,
+  createCharacter,
+  addCharacterToCampaign,
+  requestInitiative,
+  submitInitiativeRoll,
+  setCombatTurnOrder,
+} from '../campaignActions';
 import { addDoc, setDoc, updateDoc, doc, collection } from 'firebase/firestore';
 
 vi.mock('firebase/firestore', () => ({
@@ -73,4 +80,58 @@ describe('campaignActions', () => {
 
     expect(updateDoc).toHaveBeenCalledTimes(2);
   });
+
+  it('requestInitiative sets initiativeRequested flag and resets rolls', async () => {
+    const res = await requestInitiative('camp-123');
+
+    expect(res.initiativeRequested).toBe(true);
+    expect(res.combatActive).toBe(false);
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({
+        initiativeRequested: true,
+        initiativeRolls: {},
+      })
+    );
+  });
+
+  it('submitInitiativeRoll records calculated player roll', async () => {
+    const rollData = {
+      playerId: 'player-kael',
+      playerName: 'Kaelen Voss',
+      roll: 16,
+      modifier: 2,
+      total: 18,
+    };
+
+    const res = await submitInitiativeRoll('camp-123', rollData);
+
+    expect(res.total).toBe(18);
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({
+        'initiativeRolls.player-kael': expect.objectContaining({
+          playerId: 'player-kael',
+          total: 18,
+        }),
+      })
+    );
+  });
+
+  it('setCombatTurnOrder stores sorted turn order and activates combat', async () => {
+    const turnOrder = ['player-kael', 'enemy-1', 'player-lyra'];
+    const res = await setCombatTurnOrder('camp-123', turnOrder);
+
+    expect(res.combatActive).toBe(true);
+    expect(res.initiativeRequested).toBe(false);
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({
+        turnOrder,
+        combatActive: true,
+        initiativeRequested: false,
+      })
+    );
+  });
 });
+

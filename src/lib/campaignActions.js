@@ -156,3 +156,117 @@ export async function createCharacter({
   await setDoc(characterRef, newChar);
   return newChar;
 }
+
+/**
+ * DM requests all operatives to roll initiative.
+ */
+export async function requestInitiative(campaignId) {
+  const payload = {
+    initiativeRequested: true,
+    initiativeRequestedAt: Date.now(),
+    initiativeRolls: {},
+    combatActive: false,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    localStorage.setItem(
+      'unendingvoid:initiative_request',
+      JSON.stringify({ campaignId, timestamp: Date.now() })
+    );
+    localStorage.removeItem('unendingvoid:initiative_rolls');
+    window.dispatchEvent(
+      new CustomEvent('unendingvoid:ask_initiative', { detail: { campaignId, timestamp: Date.now() } })
+    );
+  } catch (e) {
+    console.warn('Local broadcast failed:', e);
+  }
+
+  if (campaignId && db) {
+    try {
+      const campaignRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campaignRef, payload);
+    } catch (err) {
+      console.warn('[campaignActions] Firestore update error in requestInitiative:', err.message);
+    }
+  }
+
+  return payload;
+}
+
+/**
+ * Operative submits their calculated initiative roll.
+ */
+export async function submitInitiativeRoll(campaignId, { playerId, playerName, roll, modifier, total }) {
+  const rollData = {
+    playerId,
+    playerName,
+    roll,
+    modifier,
+    total,
+    timestamp: Date.now(),
+  };
+
+  try {
+    const raw = localStorage.getItem('unendingvoid:initiative_rolls') || '{}';
+    const rolls = JSON.parse(raw);
+    rolls[playerId] = rollData;
+    localStorage.setItem('unendingvoid:initiative_rolls', JSON.stringify(rolls));
+    window.dispatchEvent(
+      new CustomEvent('unendingvoid:initiative_submitted', { detail: { campaignId, ...rollData } })
+    );
+  } catch (e) {
+    console.warn('Local broadcast failed:', e);
+  }
+
+  if (campaignId && db) {
+    try {
+      const campaignRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campaignRef, {
+        [`initiativeRolls.${playerId}`]: rollData,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore update error in submitInitiativeRoll:', err.message);
+    }
+  }
+
+  return rollData;
+}
+
+/**
+ * DM finalizes turn order after player and enemy initiatives are calculated.
+ */
+export async function setCombatTurnOrder(campaignId, turnOrder) {
+  const payload = {
+    turnOrder,
+    currentTurn: 0,
+    combatActive: true,
+    initiativeRequested: false,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    localStorage.setItem(
+      'unendingvoid:combat_order',
+      JSON.stringify({ campaignId, turnOrder, timestamp: Date.now() })
+    );
+    window.dispatchEvent(
+      new CustomEvent('unendingvoid:combat_order_set', { detail: { campaignId, turnOrder } })
+    );
+  } catch (e) {
+    console.warn('Local combat order broadcast failed:', e);
+  }
+
+  if (campaignId && db) {
+    try {
+      const campaignRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campaignRef, payload);
+    } catch (err) {
+      console.warn('[campaignActions] Firestore update error in setCombatTurnOrder:', err.message);
+    }
+  }
+
+  return payload;
+}
+

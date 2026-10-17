@@ -48,6 +48,21 @@
     "endCombat": "Kampf beenden",
     "nextTurn": "Nächster Zug"
   },
+  "combat": {
+    "alertHeader": "TAKTISCHER ALARM // GEFECHT UNVERMEIDLICH",
+    "rollInitiativeTitle": "AUF INITIATIVE WÜRFELN",
+    "dmPrompt": "Der Spielleiter fordert taktische Initiative! Setzen Sie Ihre Reflexe für den Kampf ein.",
+    "telemetryRelayed": "Telemetrie an SL übermittelt. Gefechtsmatrix wird berechnet...",
+    "panelTitle": "Taktisches Gefechts- & Initiativekommando",
+    "askInitiative": "Initiative anfordern",
+    "awaitingRolls": "Warte auf Würfe der Einsatzkräfte...",
+    "turnOrder": "Taktische Initiativereihenfolge",
+    "prevTurn": "Vorheriger Zug",
+    "nextTurn": "Nächster Zug",
+    "startCombat": "Kampf beginnen",
+    "endCombat": "Kampf beenden",
+    "rolling": "WIRD GEWÜRFELT..."
+  },
   "dice": {
     "roll": "Würfeln",
     "notation": "Würfelnotation",

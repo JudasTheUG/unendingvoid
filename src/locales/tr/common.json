@@ -48,6 +48,21 @@
     "endCombat": "Savaşı Bitir",
     "nextTurn": "Sonraki Tur"
   },
+  "combat": {
+    "alertHeader": "TAKTİK ALARM // ÇATIŞMA KAÇINILMAZ",
+    "rollInitiativeTitle": "İNİSİYATİF İÇİN ZAR AT",
+    "dmPrompt": "Oyun Yöneticisi taktik inisiyatif istedi! Reflekslerini savaşa ada.",
+    "telemetryRelayed": "Telemetri GM'e iletildi. Savaş ızgarası oluşturuluyor...",
+    "panelTitle": "Taktik Çatışma ve İnisiyatif Komutası",
+    "askInitiative": "İnisiyatif İste",
+    "awaitingRolls": "Ajan Zarları Bekleniyor...",
+    "turnOrder": "Taktik İnisiyatif Sırası",
+    "prevTurn": "Önceki Tur",
+    "nextTurn": "Sonraki Tur",
+    "startCombat": "Savaşı Başlat",
+    "endCombat": "Savaşı Bitir",
+    "rolling": "ATILIYOR..."
+  },
   "dice": {
     "roll": "At",
     "notation": "Zar Notasyonu",

@@ -48,6 +48,21 @@
     "endCombat": "End Combat",
     "nextTurn": "Next Turn"
   },
+  "combat": {
+    "alertHeader": "TACTICAL ALERT // ENGAGEMENT IMMINENT",
+    "rollInitiativeTitle": "ROLL FOR INITIATIVE",
+    "dmPrompt": "The Dungeon Master has called for tactical initiative! Commit your reflexes to battle.",
+    "telemetryRelayed": "Telemetry relayed to DM. Formulating battle grid...",
+    "panelTitle": "Tactical Combat & Initiative Command",
+    "askInitiative": "Ask Initiative",
+    "awaitingRolls": "Awaiting Operative Rolls...",
+    "turnOrder": "Tactical Initiative Order",
+    "prevTurn": "Prev Turn",
+    "nextTurn": "Next Turn",
+    "startCombat": "Start Combat",
+    "endCombat": "End Combat",
+    "rolling": "ROLLING..."
+  },
   "dice": {
     "roll": "Roll",
     "notation": "Dice Notation",

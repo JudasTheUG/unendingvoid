@@ -53,7 +53,8 @@ export default function DMPanel() {
 
   const selectedPlayer = allPlayers.find((p) => (p.id || p.uid) === selectedPlayerId);
 
-  const turnOrder = partyCharacters.map((p) => p.id || p.uid);
+  const [customTurnOrder, setCustomTurnOrder] = useState(null);
+  const turnOrder = customTurnOrder || partyCharacters.map((p) => p.id || p.uid);
 
   const handleNextTurn = () => {
     if (turnOrder.length === 0) return;
@@ -157,6 +158,7 @@ export default function DMPanel() {
 
       {/* Combat & Initiative Bar */}
       <CombatTracker
+        campaignId={campaign?.id || campaignId}
         players={partyCharacters}
         turnOrder={turnOrder}
         currentTurn={currentTurn}
@@ -164,6 +166,7 @@ export default function DMPanel() {
         onToggleCombat={() => setCombatActive(!combatActive)}
         onNextTurn={handleNextTurn}
         onPrevTurn={handlePrevTurn}
+        onUpdateTurnOrder={(combatants) => setCustomTurnOrder(combatants.map((c) => c.id))}
       />
 
       {/* Operatives Roster with Level Up & Edit Controls */}
