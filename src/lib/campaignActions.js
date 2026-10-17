@@ -234,6 +234,71 @@ export async function requestInitiative(campaignId, targetPlayers = []) {
 }
 
 /**
+ * DM cancels or resets an initiative request.
+ */
+export async function cancelInitiative(campaignId, players = []) {
+  let playerIds = (players || []).map((p) => p.id || p.uid).filter(Boolean);
+
+  if (playerIds.length === 0 && campaignId && db) {
+    try {
+      const campSnap = await getDoc(doc(db, 'campaigns', campaignId));
+      if (campSnap.exists()) {
+        const active = campSnap.data()?.activeCharacters || [];
+        playerIds = active.map((ac) => ac.characterId || ac.uid).filter(Boolean);
+      }
+    } catch (e) {
+      console.warn('[campaignActions] Notice fetching campaign active characters:', e.message);
+    }
+  }
+
+  const payload = {
+    initiativeRequested: false,
+    initiativeRequestedAt: null,
+    initiativeRolls: {},
+    combatActive: false,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    localStorage.removeItem('unendingvoid:initiative_request');
+    localStorage.removeItem('unendingvoid:initiative_rolls');
+    window.dispatchEvent(
+      new CustomEvent('unendingvoid:cancel_initiative', { detail: { campaignId, timestamp: Date.now() } })
+    );
+  } catch (e) {
+    console.warn('Local broadcast failed:', e);
+  }
+
+  if (campaignId && db) {
+    try {
+      const campaignRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campaignRef, payload);
+    } catch (err) {
+      console.warn('[campaignActions] Firestore update error in cancelInitiative:', err.message);
+    }
+  }
+
+  if (playerIds.length > 0 && db) {
+    await Promise.all(
+      playerIds.map(async (pId) => {
+        try {
+          const pRef = doc(db, 'players', pId);
+          await updateDoc(pRef, {
+            initiativeRequested: false,
+            initiativeRequestedAt: null,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (err) {
+          console.warn(`[campaignActions] Error resetting player ${pId} in Firestore:`, err.message);
+        }
+      })
+    );
+  }
+
+  return payload;
+}
+
+/**
  * Operative submits their calculated initiative roll.
  */
 export async function submitInitiativeRoll(campaignId, { playerId, playerName, roll, modifier, total, breakdown }) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
@@ -16,7 +16,7 @@ import DiceOverlay from '../components/dice/DiceOverlay';
 import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { deleteCampaign, removeCharacterFromCampaign } from '../lib/campaignActions';
+import { deleteCampaign, removeCharacterFromCampaign, cancelInitiative } from '../lib/campaignActions';
 import ShipAssignmentModal from '../components/dm/ShipAssignmentModal';
 
 export default function DMPanel() {
@@ -61,6 +61,33 @@ export default function DMPanel() {
   const selectedPlayer = allPlayers.find((p) => (p.id || p.uid) === selectedPlayerId);
 
   const turnOrder = customTurnOrder || partyCharacters.map((p) => p.id || p.uid);
+
+  useEffect(() => {
+    if (campaign?.combatActive !== undefined) {
+      setCombatActive(Boolean(campaign.combatActive));
+    }
+  }, [campaign?.combatActive]);
+
+  const handleToggleCombat = async () => {
+    const nextState = !combatActive;
+    setCombatActive(nextState);
+    if (!nextState && (campaign?.id || campaignId)) {
+      try {
+        await cancelInitiative(campaign?.id || campaignId, partyCharacters);
+      } catch (err) {
+        console.warn('[DMPanel] Error resetting combat active in campaign:', err.message);
+      }
+    } else if (nextState && (campaign?.id || campaignId) && db) {
+      try {
+        await updateDoc(doc(db, 'campaigns', campaign?.id || campaignId), {
+          combatActive: true,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.warn('[DMPanel] Error setting combat active in campaign:', err.message);
+      }
+    }
+  };
 
   const handleNextTurn = () => {
     if (turnOrder.length === 0) return;
@@ -250,7 +277,7 @@ export default function DMPanel() {
         turnOrder={turnOrder}
         currentTurn={currentTurn}
         combatActive={combatActive}
-        onToggleCombat={() => setCombatActive(!combatActive)}
+        onToggleCombat={handleToggleCombat}
         onNextTurn={handleNextTurn}
         onPrevTurn={handlePrevTurn}
         onUpdateTurnOrder={(combatants) => setCustomTurnOrder(combatants.map((c) => c.id))}

@@ -20,6 +20,7 @@ vi.mock('../dice/DiceOverlay', () => ({
 // Mock campaign actions
 vi.mock('../../lib/campaignActions', () => ({
   requestInitiative: vi.fn().mockResolvedValue({ initiativeRequested: true }),
+  cancelInitiative: vi.fn().mockResolvedValue({ initiativeRequested: false }),
   submitInitiativeRoll: vi.fn().mockResolvedValue({ total: 18 }),
   setCombatTurnOrder: vi.fn().mockResolvedValue({ combatActive: true }),
 }));
@@ -251,5 +252,35 @@ describe('CombatTracker DM Initiative Flow', () => {
     );
 
     expect(screen.getByTitle('Open Combat Board')).toBeInTheDocument();
+  });
+
+  it('allows DM to cancel active initiative request via Cancel Request button', async () => {
+    const { cancelInitiative } = await import('../../lib/campaignActions');
+
+    render(
+      <CombatTracker
+        campaignId="camp_1"
+        players={mockPlayers}
+        turnOrder={['p1', 'p2']}
+        currentTurn={0}
+        combatActive={false}
+      />
+    );
+
+    // Click Ask Initiative to enter awaiting rolls state
+    const askButton = screen.getByTitle("Broadcast initiative request to all players with 'Leeeerooyy...' button");
+    await act(async () => {
+      fireEvent.click(askButton);
+    });
+
+    // Cancel Request button should appear
+    const cancelBtn = screen.getByText('combat.cancelInitiative');
+    expect(cancelBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(cancelBtn);
+    });
+
+    expect(cancelInitiative).toHaveBeenCalledWith('camp_1', mockPlayers);
   });
 });

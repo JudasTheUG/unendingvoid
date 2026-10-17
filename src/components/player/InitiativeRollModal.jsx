@@ -48,12 +48,14 @@ export default function InitiativeRollModal({
   // 1. Listen for character doc initiativeRequested flag (real-time from Firestore)
   useEffect(() => {
     if (character?.initiativeRequested) {
-      const reqAt = character.initiativeRequestedAt || Date.now();
-      if (reqAt > lastPromptTimestamp.current || lastPromptTimestamp.current === 0) {
+      const reqAt = Number(character.initiativeRequestedAt) || 0;
+      const isFresh = reqAt === 0 || Date.now() - reqAt < 1000 * 60 * 60 * 2;
+      if (isFresh && (reqAt > lastPromptTimestamp.current || lastPromptTimestamp.current === 0)) {
         triggerPrompt(reqAt);
       }
     } else if (character?.initiativeRequested === false) {
       lastPromptTimestamp.current = 0;
+      setIsOpen(false);
     }
   }, [character?.initiativeRequested, character?.initiativeRequestedAt]);
 
@@ -68,12 +70,13 @@ export default function InitiativeRollModal({
           if (!snap.exists()) return;
           const camp = snap.data();
           if (camp.initiativeRequested) {
-            const reqAt = camp.initiativeRequestedAt || 0;
+            const reqAt = Number(camp.initiativeRequestedAt) || 0;
+            const isFresh = reqAt === 0 || Date.now() - reqAt < 1000 * 60 * 60 * 2;
             const targetIds = camp.targetPlayerIds || [];
             const isTarget = isCandidateTarget(targetIds);
             const alreadyRolled = candidateIds.some((id) => Boolean(camp.initiativeRolls?.[id]));
 
-            if (isTarget && !alreadyRolled && (reqAt > lastPromptTimestamp.current || lastPromptTimestamp.current === 0)) {
+            if (!camp.combatActive && isFresh && isTarget && !alreadyRolled && (reqAt > lastPromptTimestamp.current || lastPromptTimestamp.current === 0)) {
               triggerPrompt(reqAt);
             }
           } else if (camp.combatActive || camp.initiativeRequested === false) {
@@ -90,7 +93,7 @@ export default function InitiativeRollModal({
     }
   }, [effectiveCampaignId, charId]);
 
-  // 3. Listen for DM's "Ask Initiative" broadcast locally / storage
+  // 3. Listen for DM's "Ask Initiative" broadcast locally / storage / cancel
   useEffect(() => {
     const handleAskInitiative = (e) => {
       const targetIds = e.detail?.targetPlayerIds;
@@ -99,25 +102,36 @@ export default function InitiativeRollModal({
       }
     };
 
+    const handleCancelInitiative = () => {
+      lastPromptTimestamp.current = 0;
+      setIsOpen(false);
+    };
+
     const handleStorageChange = (e) => {
-      if (e.key === 'unendingvoid:initiative_request' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          const targetIds = parsed.targetPlayerIds;
-          if (isCandidateTarget(targetIds)) {
-            triggerPrompt(parsed.timestamp || Date.now());
+      if (e.key === 'unendingvoid:initiative_request') {
+        if (!e.newValue) {
+          handleCancelInitiative();
+        } else {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            const targetIds = parsed.targetPlayerIds;
+            if (isCandidateTarget(targetIds)) {
+              triggerPrompt(parsed.timestamp || Date.now());
+            }
+          } catch (_) {
+            triggerPrompt();
           }
-        } catch (_) {
-          triggerPrompt();
         }
       }
     };
 
     window.addEventListener('unendingvoid:ask_initiative', handleAskInitiative);
+    window.addEventListener('unendingvoid:cancel_initiative', handleCancelInitiative);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('unendingvoid:ask_initiative', handleAskInitiative);
+      window.removeEventListener('unendingvoid:cancel_initiative', handleCancelInitiative);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [charId]);
@@ -177,13 +191,13 @@ export default function InitiativeRollModal({
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/40 text-red-400 text-xs font-bold uppercase tracking-widest animate-pulse">
             <span className="w-2 h-2 rounded-full bg-red-500"></span>
-            <span>{t('combat.alertHeader') || 'TACTICAL ALERT // ENGAGEMENT IMMINENT'}</span>
+            <span>{t('combat.alertHeader', 'TACTICAL ALERT // ENGAGEMENT IMMINENT')}</span>
           </div>
           <h2 className="font-display text-2xl font-black text-white tracking-wide uppercase pt-2">
-            {t('combat.rollInitiativeTitle') || 'ROLL FOR INITIATIVE'}
+            {t('combat.rollInitiativeTitle', 'ROLL FOR INITIATIVE')}
           </h2>
           <p className="text-xs text-gray-400">
-            {t('combat.dmPrompt') || 'The Dungeon Master has called for tactical initiative! Commit your reflexes to battle.'}
+            {t('combat.dmPrompt', 'The Dungeon Master has called for tactical initiative! Commit your reflexes to battle.')}
           </p>
         </div>
 
@@ -237,7 +251,7 @@ export default function InitiativeRollModal({
             </div>
             <p className="text-[11px] text-neon-green font-bold flex items-center justify-center gap-1 pt-1">
               <span>📡</span>
-              <span>{t('combat.telemetryRelayed') || 'Telemetry relayed to DM. Formulating battle grid...'}</span>
+              <span>{t('combat.telemetryRelayed', 'Telemetry relayed to DM. Formulating battle grid...')}</span>
             </p>
           </div>
         ) : (
@@ -249,7 +263,7 @@ export default function InitiativeRollModal({
               className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-display font-black text-xl uppercase tracking-widest transition-all shadow-[0_0_25px_rgba(239,68,68,0.6)] hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-2"
             >
               <span>⚡</span>
-              <span>{isRolling ? (t('combat.rolling') || 'ROLLING...') : 'Leeeerooyy...'}</span>
+              <span>{isRolling ? t('combat.rolling', 'ROLLING...') : 'Leeeerooyy...'}</span>
               <span>⚡</span>
             </button>
           </div>
@@ -264,7 +278,7 @@ export default function InitiativeRollModal({
             }}
             className="text-[10px] text-gray-500 hover:text-gray-300 uppercase tracking-widest transition-colors"
           >
-            {t('common.cancel') || 'Dismiss'}
+            {t('common.cancel', 'Dismiss')}
           </button>
         )}
       </div>

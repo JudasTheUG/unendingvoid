@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { requestInitiative, submitInitiativeRoll, setCombatTurnOrder } from '../../lib/campaignActions';
+import { requestInitiative, cancelInitiative, submitInitiativeRoll, setCombatTurnOrder } from '../../lib/campaignActions';
 import { calculateInitiativeBonus } from '../../lib/initiativeCalculator';
 
 const DEFAULT_ENEMIES = [
@@ -47,7 +47,10 @@ export default function CombatTracker({
             setPlayerRolls(camp.initiativeRolls);
           }
           if (camp.initiativeRequested !== undefined) {
-            setIsAwaitingRolls(Boolean(camp.initiativeRequested));
+            const requestedAt = Number(camp.initiativeRequestedAt) || 0;
+            const isFresh = requestedAt === 0 || Date.now() - requestedAt < 1000 * 60 * 60 * 2;
+            const isRequested = Boolean(camp.initiativeRequested) && isFresh && !camp.combatActive;
+            setIsAwaitingRolls(isRequested);
           }
         },
         (err) => console.warn('[CombatTracker] Campaign snapshot notice:', err.message)
@@ -58,7 +61,6 @@ export default function CombatTracker({
       console.warn('[CombatTracker] Firestore listener error:', e);
     }
   }, [campaignId]);
-
 
   // Sync player rolls from storage / custom events
   useEffect(() => {
@@ -104,6 +106,17 @@ export default function CombatTracker({
       await requestInitiative(campaignId, players);
     } catch (err) {
       console.warn('[CombatTracker] Failed to request initiative:', err.message);
+    }
+  };
+
+  // DM cancels or clears the active initiative request
+  const handleCancelInitiative = async () => {
+    setIsAwaitingRolls(false);
+    setPlayerRolls({});
+    try {
+      await cancelInitiative(campaignId, players);
+    } catch (err) {
+      console.warn('[CombatTracker] Failed to cancel initiative:', err.message);
     }
   };
 
@@ -262,7 +275,7 @@ export default function CombatTracker({
           <span className="text-xl">⚔️</span>
           <div>
             <h2 className="font-display text-sm text-white font-black uppercase tracking-wider">
-              {t('combat.panelTitle') || 'Tactical Combat & Initiative Command'}
+              {t('combat.panelTitle', 'Tactical Combat & Initiative Command')}
             </h2>
             <p className="text-[11px] text-gray-400">
               {combatActive
@@ -275,25 +288,39 @@ export default function CombatTracker({
         <div className="flex flex-wrap items-center gap-2">
           {/* Ask Initiative Button */}
           {!combatActive && (
-            <button
-              onClick={handleAskInitiative}
-              className={`px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border
-                         ${allPlayersReady
-                           ? 'bg-neon-green/20 text-neon-green border-neon-green/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                           : isAwaitingRolls
-                             ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 animate-pulse'
-                             : 'bg-red-600/20 hover:bg-red-600/30 text-red-300 border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.3)]'}`}
-              title="Broadcast initiative request to all players with 'Leeeerooyy...' button"
-            >
-              <span>{allPlayersReady ? '✅' : (isAwaitingRolls ? '⏳' : '🚨')}</span>
-              <span>
-                {allPlayersReady
-                  ? (t('combat.allPlayersReady') || 'All Players Ready')
-                  : isAwaitingRolls
-                    ? (t('combat.awaitingRolls') || 'Awaiting Operative Rolls...')
-                    : (t('combat.askInitiative') || 'Ask Initiative')}
-              </span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleAskInitiative}
+                className={`px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border
+                           ${allPlayersReady
+                             ? 'bg-neon-green/20 text-neon-green border-neon-green/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                             : isAwaitingRolls
+                               ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 animate-pulse'
+                               : 'bg-red-600/20 hover:bg-red-600/30 text-red-300 border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.3)]'}`}
+                title="Broadcast initiative request to all players with 'Leeeerooyy...' button"
+              >
+                <span>{allPlayersReady ? '✅' : (isAwaitingRolls ? '⏳' : '🚨')}</span>
+                <span>
+                  {allPlayersReady
+                    ? t('combat.allPlayersReady', 'All Players Ready')
+                    : isAwaitingRolls
+                      ? t('combat.awaitingRolls', 'Awaiting Operative Rolls...')
+                      : t('combat.askInitiative', 'Ask Initiative')}
+                </span>
+              </button>
+
+              {isAwaitingRolls && (
+                <button
+                  type="button"
+                  onClick={handleCancelInitiative}
+                  className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/50 font-bold uppercase tracking-wider text-[10px] transition-all flex items-center gap-1 shadow-sm"
+                  title={t('combat.cancelInitiative', 'Cancel initiative request and reset rolls')}
+                >
+                  <span>✕</span>
+                  <span>{t('combat.cancelInitiative', 'Cancel Request')}</span>
+                </button>
+              )}
+            </div>
           )}
 
           {/* Open Combat Board */}
@@ -303,7 +330,7 @@ export default function CombatTracker({
               className="px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-all bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 text-[10px] flex items-center justify-center"
               title="Open Combat Board"
             >
-              ▤ {t('combat.openBoard') || 'Open Board'}
+              ▤ {t('combat.openBoard', 'Open Board')}
             </button>
           )}
 
@@ -315,7 +342,7 @@ export default function CombatTracker({
                          ? 'bg-neon-red text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                          : 'bg-white/10 text-gray-300 hover:bg-white/20 border border-white/10'}`}
           >
-            {combatActive ? (t('combat.endCombat') || 'End Combat') : (t('combat.startCombat') || 'Start Combat')}
+            {combatActive ? t('combat.endCombat', 'End Combat') : t('combat.startCombat', 'Start Combat')}
           </button>
         </div>
       </div>
@@ -343,7 +370,7 @@ export default function CombatTracker({
                 onClick={onPrevTurn}
                 className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs text-gray-300 font-mono transition-colors"
               >
-                ◀ {t('combat.prevTurn') || 'Prev'}
+                ◀ {t('combat.prevTurn', 'Prev')}
               </button>
               <button
                 onClick={() => {
@@ -354,7 +381,7 @@ export default function CombatTracker({
                 }}
                 className="px-4 py-1.5 bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 rounded-lg text-xs font-mono font-bold transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]"
               >
-                {t('combat.nextTurn') || 'Next Turn'} ▶
+                {t('combat.nextTurn', 'Next Turn')} ▶
               </button>
             </div>
           </div>
@@ -362,7 +389,7 @@ export default function CombatTracker({
           {/* Turn Order Strip */}
           <div className="space-y-1.5">
             <span className="text-[10px] uppercase font-mono text-gray-400 tracking-wider">
-              {t('combat.turnOrder') || 'Tactical Initiative Order'}
+              {t('combat.turnOrder', 'Tactical Initiative Order')}
             </span>
             <div className="flex flex-wrap gap-2">
               {turnOrder.map((cId, idx) => {
@@ -400,7 +427,7 @@ export default function CombatTracker({
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
               <span className="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
                 <span>👥</span>
-                <span>{t('combat.operativeInitiativeStatus') || 'Operative Initiative Status'} ({players.length})</span>
+                <span>{t('combat.operativeInitiativeStatus', 'Operative Initiative Status')} ({players.length})</span>
               </span>
               <div className="flex items-center gap-2">
                 {!allPlayersReady && players.length > 0 && (
@@ -408,16 +435,16 @@ export default function CombatTracker({
                     type="button"
                     onClick={handleAutoRollAllPlayers}
                     className="px-2.5 py-0.5 rounded bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1"
-                    title={t('combat.autoRollAllOperatives') || 'Auto Roll All Operatives'}
+                    title={t('combat.autoRollAllOperatives', 'Auto-Roll Pending Operatives')}
                   >
                     <span>⚡</span>
-                    <span>{t('combat.autoRollAllOperatives') || 'Auto-Roll Pending Operatives'}</span>
+                    <span>{t('combat.autoRollAllOperatives', 'Auto-Roll Pending Operatives')}</span>
                   </button>
                 )}
                 <span className={`text-[10px] font-bold flex items-center gap-1 ${allPlayersReady ? 'text-neon-green' : 'text-gray-400'}`}>
                   {allPlayersReady && <span>✅</span>}
                   {allPlayersReady
-                    ? (t('combat.allPlayersReady') || 'All Players Ready')
+                    ? t('combat.allPlayersReady', 'All Players Ready')
                     : `${Object.keys(playerRolls).length}/${players.length} Submitted`}
                 </span>
               </div>
@@ -467,9 +494,9 @@ export default function CombatTracker({
                       <button
                         onClick={() => handleForceRollPlayer(p)}
                         className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-gray-300 text-[10px] uppercase font-bold"
-                        title={t('combat.rollForPlayer') || 'Force roll for this player'}
+                        title={t('combat.rollForPlayer', 'Roll for Player')}
                       >
-                        {t('combat.rollForPlayer') || 'Roll for Player'}
+                        {t('combat.rollForPlayer', 'Roll for Player')}
                       </button>
                     )}
                   </div>
@@ -483,10 +510,10 @@ export default function CombatTracker({
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2">
                 <span className="text-red-400 font-bold uppercase text-[11px]">
-                  💀 {t('combat.hostileCombatants') || 'Hostile Combatants'} ({enemies.length})
+                  💀 {t('combat.hostileCombatants', 'Hostile Combatants')} ({enemies.length})
                 </span>
                 <span className="text-[10px] text-gray-400">
-                  {t('combat.hostileAutoRollHint') || 'Auto-roll or manual initiative'}
+                  {t('combat.hostileAutoRollHint', 'Auto-roll or manual initiative')}
                 </span>
               </div>
 
@@ -496,7 +523,7 @@ export default function CombatTracker({
                 className="px-3 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1"
               >
                 <span>🎲</span>
-                <span>{t('combat.autoRollHostiles') || 'Auto-Roll Hostile Initiatives'}</span>
+                <span>{t('combat.autoRollHostiles', 'Auto-Roll Hostile Initiatives')}</span>
               </button>
             </div>
 
@@ -571,11 +598,11 @@ export default function CombatTracker({
             <div className="mb-4 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-3 rounded-lg bg-black/40 border border-slate-800">
                <label className="flex items-center gap-2 cursor-pointer">
                  <input type="radio" name="combatMode" value="ground" checked={combatMode === 'ground'} onChange={() => setCombatMode('ground')} className="text-neon-cyan focus:ring-neon-cyan bg-black/60 border-slate-600" />
-                 <span className="text-[11px] font-bold text-gray-300 uppercase">{t('combat.modeGround') || 'Player vs Player (Ground)'}</span>
+                 <span className="text-[11px] font-bold text-gray-300 uppercase">{t('combat.modeGround', 'Player vs Player (Ground)')}</span>
                </label>
                <label className="flex items-center gap-2 cursor-pointer">
                  <input type="radio" name="combatMode" value="ship" checked={combatMode === 'ship'} onChange={() => setCombatMode('ship')} className="text-neon-cyan focus:ring-neon-cyan bg-black/60 border-slate-600" />
-                 <span className="text-[11px] font-bold text-gray-300 uppercase">{t('combat.modeShip') || 'Ship vs Ship (Space)'}</span>
+                 <span className="text-[11px] font-bold text-gray-300 uppercase">{t('combat.modeShip', 'Ship vs Ship (Space)')}</span>
                </label>
             </div>
 
@@ -584,7 +611,7 @@ export default function CombatTracker({
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-display font-black text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
             >
               <span>⚡</span>
-              <span>{t('combat.finalizeTurnOrder') || 'Finalize Turn Order & Engage Combat'}</span>
+              <span>{t('combat.finalizeTurnOrder', 'Finalize Turn Order & Engage Combat')}</span>
               <span>⚡</span>
             </button>
           </div>
