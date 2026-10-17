@@ -290,11 +290,17 @@ export async function submitInitiativeRoll(campaignId, { playerId, playerName, r
 /**
  * DM finalizes turn order after player and enemy initiatives are calculated.
  */
-export async function setCombatTurnOrder(campaignId, turnOrder) {
+export async function setCombatTurnOrder(campaignId, turnOrder, combatMode = 'ground', enemies = []) {
   const payload = {
     turnOrder,
     currentTurn: 0,
     combatActive: true,
+    combatMode,
+    enemies,
+    combatState: {
+      tokens: {}, // e.g. { "charId": { x: 5, y: 5 }, "en_1": { x: 10, y: 10 } }
+      targets: {}, // e.g. { "charId": "en_1" }
+    },
     initiativeRequested: false,
     updatedAt: serverTimestamp(),
   };
@@ -302,10 +308,10 @@ export async function setCombatTurnOrder(campaignId, turnOrder) {
   try {
     localStorage.setItem(
       'unendingvoid:combat_order',
-      JSON.stringify({ campaignId, turnOrder, timestamp: Date.now() })
+      JSON.stringify({ campaignId, turnOrder, combatMode, enemies, timestamp: Date.now() })
     );
     window.dispatchEvent(
-      new CustomEvent('unendingvoid:combat_order_set', { detail: { campaignId, turnOrder } })
+      new CustomEvent('unendingvoid:combat_order_set', { detail: { campaignId, turnOrder, combatMode, enemies } })
     );
   } catch (e) {
     console.warn('Local combat order broadcast failed:', e);
@@ -321,6 +327,78 @@ export async function setCombatTurnOrder(campaignId, turnOrder) {
   }
 
   return payload;
+}
+
+export async function updateTokenPosition(campaignId, tokenId, x, y) {
+  if (!campaignId || !db) return;
+  const campaignRef = doc(db, 'campaigns', campaignId);
+  try {
+    await updateDoc(campaignRef, {
+      [`combatState.tokens.${tokenId}`]: { x, y },
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.error('Failed to update token position:', err);
+  }
+}
+
+export async function setCombatTarget(campaignId, sourceId, targetId) {
+  if (!campaignId || !db) return;
+  const campaignRef = doc(db, 'campaigns', campaignId);
+  try {
+    if (targetId) {
+      await updateDoc(campaignRef, {
+        [`combatState.targets.${sourceId}`]: targetId,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await updateDoc(campaignRef, {
+        [`combatState.targets.${sourceId}`]: null,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (err) {
+    console.error('Failed to set combat target:', err);
+  }
+}
+
+export async function updateCombatantStats(campaignId, combatantId, isEnemy, stats) {
+  if (!campaignId || !db) return;
+  const campaignRef = doc(db, 'campaigns', campaignId);
+  try {
+    if (isEnemy) {
+      const campSnap = await getDoc(campaignRef);
+      if (campSnap.exists()) {
+        const enemies = campSnap.data().enemies || [];
+        const updatedEnemies = enemies.map((e) => {
+          if (e.id === combatantId) {
+            return { ...e, ...stats };
+          }
+          return e;
+        });
+        await updateDoc(campaignRef, {
+          enemies: updatedEnemies,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    } else {
+      if (stats.effect !== undefined) {
+        await updateDoc(campaignRef, {
+          [`combatState.playerEffects.${combatantId}`]: stats.effect || null,
+          updatedAt: serverTimestamp(),
+        });
+      }
+      if (stats.hp !== undefined) {
+         const playerRef = doc(db, 'players', combatantId);
+         await updateDoc(playerRef, {
+           hp: stats.hp,
+           updatedAt: serverTimestamp()
+         });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to update combatant stats:', err);
+  }
 }
 
 /**

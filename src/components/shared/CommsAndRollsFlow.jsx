@@ -497,6 +497,24 @@ export default function CommsAndRollsFlow({
                     <h4 className="font-bold text-white text-xs">{item.title}</h4>
                     <p className="text-[11px] text-gray-300 leading-relaxed whitespace-pre-wrap">{item.content}</p>
 
+                    {/* Attached Tactical Image */}
+                    {item.imageUrl && (
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedImage(item.imageUrl)}
+                          className="relative group rounded-lg overflow-hidden border border-slate-700 hover:border-neon-cyan transition-all block w-full max-h-36"
+                        >
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                            <span>🔍</span> Expand Telemetry Image
+                          </div>
+                        </button>
                     {/* Image Preview or Tactical External Attachment Card */}
                     {item.imageUrl && (
                       <div className="mt-2">

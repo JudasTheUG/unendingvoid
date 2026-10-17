@@ -31,6 +31,33 @@ export default function CombatTracker({
   const [newEnemyName, setNewEnemyName] = useState('');
   const [newEnemyDex, setNewEnemyDex] = useState(1);
   const [roundCount, setRoundCount] = useState(1);
+  const [combatMode, setCombatMode] = useState('ground');
+
+  // Real-time Firestore synchronization for campaign initiative rolls
+  useEffect(() => {
+    if (!campaignId || !db) return;
+
+    try {
+      const unsub = onSnapshot(
+        doc(db, 'campaigns', campaignId),
+        (snap) => {
+          if (!snap.exists()) return;
+          const camp = snap.data();
+          if (camp.initiativeRolls) {
+            setPlayerRolls(camp.initiativeRolls);
+          }
+          if (camp.initiativeRequested !== undefined) {
+            setIsAwaitingRolls(Boolean(camp.initiativeRequested));
+          }
+        },
+        (err) => console.warn('[CombatTracker] Campaign snapshot notice:', err.message)
+      );
+
+      return () => unsub();
+    } catch (e) {
+      console.warn('[CombatTracker] Firestore listener error:', e);
+    }
+  }, [campaignId]);
 
   // Real-time Firestore synchronization for campaign initiative rolls
   useEffect(() => {
@@ -231,7 +258,7 @@ export default function CombatTracker({
     }
 
     try {
-      await setCombatTurnOrder(campaignId, orderedIds);
+      await setCombatTurnOrder(campaignId, orderedIds, combatMode, enemies);
     } catch (err) {}
 
     setIsAwaitingRolls(false);
@@ -291,6 +318,17 @@ export default function CombatTracker({
                     ? (t('combat.awaitingRolls') || 'Awaiting Operative Rolls...')
                     : (t('combat.askInitiative') || 'Ask Initiative')}
               </span>
+            </button>
+          )}
+
+          {/* Open Combat Board */}
+          {combatActive && (
+            <button
+              onClick={() => window.open(`/combat/${campaignId}`, '_blank')}
+              className="px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-all bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 text-[10px] flex items-center justify-center"
+              title="Open Combat Board"
+            >
+              ▤ {t('combat.openBoard') || 'Open Board'}
             </button>
           )}
 
@@ -555,6 +593,17 @@ export default function CombatTracker({
 
           {/* Formulate & Start Combat Button */}
           <div className="pt-2 pb-4">
+            <div className="mb-4 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-3 rounded-lg bg-black/40 border border-slate-800">
+               <label className="flex items-center gap-2 cursor-pointer">
+                 <input type="radio" name="combatMode" value="ground" checked={combatMode === 'ground'} onChange={() => setCombatMode('ground')} className="text-neon-cyan focus:ring-neon-cyan bg-black/60 border-slate-600" />
+                 <span className="text-[11px] font-bold text-gray-300 uppercase">Player vs Player (Ground)</span>
+               </label>
+               <label className="flex items-center gap-2 cursor-pointer">
+                 <input type="radio" name="combatMode" value="ship" checked={combatMode === 'ship'} onChange={() => setCombatMode('ship')} className="text-neon-cyan focus:ring-neon-cyan bg-black/60 border-slate-600" />
+                 <span className="text-[11px] font-bold text-gray-300 uppercase">Ship vs Ship (Space)</span>
+               </label>
+            </div>
+
             <button
               onClick={handleFinalizeTurnOrder}
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-display font-black text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
