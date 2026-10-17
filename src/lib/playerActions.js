@@ -60,3 +60,11 @@ export const removePlayerNote = (userId, note) =>
     notes: arrayRemove(note),
     updatedAt: serverTimestamp(),
   });
+
+export const setPlayerEEMembership = (userId, hasEEMembership = true) =>
+  updateDoc(doc(db, 'players', userId), {
+    hasEEMembership,
+    inventory: arrayUnion('item_ee_membership'),
+    updatedAt: serverTimestamp(),
+  });
+

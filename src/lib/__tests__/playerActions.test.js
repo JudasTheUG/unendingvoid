@@ -15,6 +15,7 @@ import {
   setSpaceship,
   addPlayerNote,
   removePlayerNote,
+  setPlayerEEMembership,
 } from '../playerActions';
 
 // Mock Firebase functions
@@ -188,6 +189,18 @@ describe('playerActions', () => {
     expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
     expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
       notes: 'arrayRemove([object Object])',
+      updatedAt: 'serverTimestampMock',
+    });
+  });
+
+  it('setPlayerEEMembership calls updateDoc with hasEEMembership and arrayUnion for item_ee_membership', async () => {
+    await setPlayerEEMembership(mockUserId, true);
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(arrayUnion).toHaveBeenCalledWith('item_ee_membership');
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      hasEEMembership: true,
+      inventory: 'arrayUnion(item_ee_membership)',
       updatedAt: 'serverTimestampMock',
     });
   });

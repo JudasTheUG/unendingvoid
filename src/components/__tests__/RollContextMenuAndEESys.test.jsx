@@ -91,6 +91,45 @@ describe('EESysMarketplace', () => {
     expect(screen.getByText(/EQUIVALENT EXCHANGE SYSTEM \/\/ E.E.Sys/i)).toBeInTheDocument();
     expect(screen.getByText(/All Catalog/i)).toBeInTheDocument();
   });
+
+  it('unlocks marketplace when player document has hasEEMembership flag or raw string in inventory', () => {
+    // Flag test
+    const { rerender } = render(
+      <EESysMarketplace
+        player={{ displayName: 'Anthony', credits: 250, hasEEMembership: true }}
+        inventoryItems={[]}
+      />
+    );
+    expect(screen.queryByText(/RESTRICTED ACCESS TERMINAL/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/ACTIVE MEMBER/i)).toBeInTheDocument();
+
+    // Raw string inventory test (as stored in Firestore arrayUnion)
+    rerender(
+      <EESysMarketplace
+        player={{ displayName: 'Anthony', credits: 250, inventory: ['item_ee_membership'] }}
+        inventoryItems={[]}
+      />
+    );
+    expect(screen.queryByText(/RESTRICTED ACCESS TERMINAL/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/ACTIVE MEMBER/i)).toBeInTheDocument();
+  });
+
+  it('persists membership across sessions via localStorage fallback', () => {
+    const mockId = 'player-persisted-77';
+    localStorage.setItem(`unendingvoid:ee_membership:${mockId}`, 'true');
+
+    render(
+      <EESysMarketplace
+        player={{ id: mockId, displayName: 'Anthony', credits: 250 }}
+        inventoryItems={[]}
+      />
+    );
+
+    expect(screen.queryByText(/RESTRICTED ACCESS TERMINAL/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/ACTIVE MEMBER/i)).toBeInTheDocument();
+
+    localStorage.removeItem(`unendingvoid:ee_membership:${mockId}`);
+  });
 });
 
 describe('SpaceshipSheet', () => {

@@ -49,7 +49,7 @@ const isEmptyModule = (modId) => {
   return !modId || modId === 'wpn_none' || modId === 'shield_none' || modId === 'cargo_none' || modId === 'warp_none' || modId === 'scan_none';
 };
 
-export default function ShipBuilder({ activeShip, inventoryItems = [], onAssemble }) {
+export default function ShipBuilder({ player = null, activeShip, inventoryItems = [], onAssemble }) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
 
@@ -89,7 +89,21 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
     setSelectedSlot(null);
   };
 
-  const isEESysMember = inventoryItems.some((it) => it.id === 'item_ee_membership');
+  const playerId = player?.id || player?.uid;
+  const isEESysMember =
+    Boolean(player?.hasEEMembership) ||
+    (playerId && typeof window !== 'undefined' && localStorage.getItem(`unendingvoid:ee_membership:${playerId}`) === 'true') ||
+    inventoryItems.some((it) => {
+      if (!it) return false;
+      if (typeof it === 'string') return it === 'item_ee_membership' || it === 'ee_membership';
+      const itName = typeof it.name === 'object' ? (it.name?.en || '') : (it.name || '');
+      return (
+        it.id === 'item_ee_membership' ||
+        it.id === 'ee_membership' ||
+        it.type === 'license' ||
+        itName.toLowerCase().includes('equivalent exchange')
+      );
+    });
 
   // Calculate unowned parts cost compared to current ship modules
   const unownedPartsCost = SLOT_ORDER.reduce((total, slot) => {

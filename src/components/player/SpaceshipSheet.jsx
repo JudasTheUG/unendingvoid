@@ -64,6 +64,7 @@ export const DEFAULT_SHIP = {
 export default function SpaceshipSheet({
   ship = null,
   inventoryItems = [],
+  player = null,
   onUpdateCredits,
   onUpdateInventory,
   onUpdateShipName,
@@ -172,6 +173,7 @@ export default function SpaceshipSheet({
 
       {viewMode === 'drydock' && (
         <ShipBuilder
+          player={player}
           activeShip={activeShip}
           inventoryItems={inventoryItems}
           onAssemble={handleAssembleShip}

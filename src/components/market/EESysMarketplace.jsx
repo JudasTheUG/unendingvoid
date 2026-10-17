@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addItemToInventory, removeItemFromInventory, updateCredits } from '../../lib/playerActions';
+import { addItemToInventory, removeItemFromInventory, updateCredits, setPlayerEEMembership } from '../../lib/playerActions';
 
 // Curated E.E.Sys Interstellar Marketplace Catalog
 export const EE_CATALOG_ITEMS = [
@@ -129,14 +129,24 @@ export const EE_CATALOG_ITEMS = [
 
 export const MEMBERSHIP_ITEM = {
   id: 'item_ee_membership',
-  name: 'Equivalent Exchange Membership',
+  name: {
+    en: 'Equivalent Exchange Membership',
+    tr: 'Eşdeğer Değişim Üyeliği',
+    de: 'Äquivalenztausch-Mitgliedschaft',
+  },
   type: 'license',
   rarity: 'legendary',
   value: 100,
   category: 'license',
-  description:
-    'Encrypted syndicate certificate granting full operational rights in the galactic Equivalent Exchange System (E.E.Sys) network.',
+  description: {
+    en: 'Encrypted syndicate certificate granting full operational rights in the galactic Equivalent Exchange System (E.E.Sys) network.',
+    tr: 'Galaktik Eşdeğer Değişim Sistemi (E.E.Sys) ağında tam operasyonel haklar sağlayan şifreli sendika sertifikası.',
+    de: 'Verschlüsseltes Syndikatszertifikat, das volle Zugriffsrechte im galaktischen Äquivalenztausch-Netzwerk (E.E.Sys) gewährt.',
+  },
 };
+
+// Ensure catalog always includes the membership item for inventory resolution
+EE_CATALOG_ITEMS.push(MEMBERSHIP_ITEM);
 
 export default function EESysMarketplace({
   player,
@@ -153,13 +163,19 @@ export default function EESysMarketplace({
 
   // Check if user has "Equivalent Exchange Membership"
   const hasMembership =
-    player?.hasEEMembership ||
+    Boolean(player?.hasEEMembership) ||
+    (playerId && typeof window !== 'undefined' && localStorage.getItem(`unendingvoid:ee_membership:${playerId}`) === 'true') ||
+    (Array.isArray(player?.inventory) &&
+      (player.inventory.includes('item_ee_membership') || player.inventory.includes('ee_membership'))) ||
     inventoryItems.some((it) => {
-      const itName = typeof it.name === 'object' ? (it.name.en || '') : (it.name || '');
+      if (!it) return false;
+      if (typeof it === 'string') return it === 'item_ee_membership' || it === 'ee_membership';
+      const itName = typeof it.name === 'object' ? (it.name?.en || '') : (it.name || '');
       return (
-        itName.toLowerCase().includes('equivalent exchange membership') ||
+        itName.toLowerCase().includes('equivalent exchange') ||
         it.id === 'item_ee_membership' ||
-        it.id === 'ee_membership'
+        it.id === 'ee_membership' ||
+        it.type === 'license'
       );
     });
 
@@ -168,9 +184,14 @@ export default function EESysMarketplace({
       const cost = Math.min(100, currentCredits);
       const newCredits = Math.max(0, currentCredits - cost);
 
-      // Add membership to inventory
+      // Save to localStorage immediately as reliable local fallback
+      if (playerId && typeof window !== 'undefined') {
+        localStorage.setItem(`unendingvoid:ee_membership:${playerId}`, 'true');
+      }
+
+      // Add membership to inventory & set flag in Firestore
       if (playerId) {
-        await addItemToInventory(playerId, MEMBERSHIP_ITEM.id);
+        await setPlayerEEMembership(playerId, true);
         await updateCredits(playerId, newCredits);
       }
 
@@ -181,7 +202,9 @@ export default function EESysMarketplace({
       setTimeout(() => setPurchaseSuccessMsg(null), 5000);
     } catch (err) {
       console.warn('[EESys] Membership local unlock:', err.message);
-      // Fallback local unlock
+      if (playerId && typeof window !== 'undefined') {
+        localStorage.setItem(`unendingvoid:ee_membership:${playerId}`, 'true');
+      }
       if (onUpdateInventory) onUpdateInventory([...inventoryItems, MEMBERSHIP_ITEM]);
     }
   };
@@ -346,11 +369,14 @@ export default function EESysMarketplace({
   // UNLOCKED MARKETPLACE TERMINAL (OPERATIVE HAS MEMBERSHIP)
   // ════════════════════════════════════════════════════════════════════════════
   const filteredCatalog = EE_CATALOG_ITEMS.filter((item) => {
+    if (item.id === 'item_ee_membership') return false;
     const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
+    const itemName = typeof item.name === 'object' ? (item.name?.en || '') : (item.name || '');
+    const itemDesc = typeof item.description === 'object' ? (item.description?.en || '') : (item.description || '');
     const matchesSearch =
       !searchQuery ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      itemDesc.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 

@@ -13,7 +13,7 @@ import DnDActionsTab from '../components/player/DnDActionsTab';
 import InventoryList from '../components/player/InventoryList';
 import SpaceshipCard from '../components/player/SpaceshipCard';
 import SpaceshipSheet from '../components/player/SpaceshipSheet';
-import EESysMarketplace, { EE_CATALOG_ITEMS } from '../components/market/EESysMarketplace';
+import EESysMarketplace, { EE_CATALOG_ITEMS, MEMBERSHIP_ITEM } from '../components/market/EESysMarketplace';
 import TraitsList from '../components/player/TraitsList';
 import PlayerNotesTab from '../components/player/PlayerNotesTab';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
@@ -105,15 +105,39 @@ export default function PlayerSheet() {
 
   // Resolve inventory items
   const rawInventory = localInventory !== null ? localInventory : (effectivePlayer.inventory || []);
-  const inventoryItems = rawInventory
+  const allKnownCatalog = [MEMBERSHIP_ITEM, ...EE_CATALOG_ITEMS, ...allItems];
+  const resolvedItems = rawInventory
     .map((itemOrId) => {
       if (typeof itemOrId === 'object' && itemOrId !== null) return itemOrId;
-      return (
-        allItems.find((it) => it.id === itemOrId) ||
-        EE_CATALOG_ITEMS.find((it) => it.id === itemOrId)
-      );
+      if (itemOrId === 'item_ee_membership' || itemOrId === 'ee_membership') {
+        return MEMBERSHIP_ITEM;
+      }
+      return allKnownCatalog.find((it) => it.id === itemOrId);
     })
     .filter(Boolean);
+
+  const playerId = effectivePlayer.id || effectivePlayer.uid;
+  const hasLocalEELicense =
+    typeof window !== 'undefined' &&
+    playerId &&
+    localStorage.getItem(`unendingvoid:ee_membership:${playerId}`) === 'true';
+
+  const hasEELicense =
+    Boolean(effectivePlayer.hasEEMembership) ||
+    hasLocalEELicense ||
+    rawInventory.some(
+      (it) =>
+        it === 'item_ee_membership' ||
+        it === 'ee_membership' ||
+        it?.id === 'item_ee_membership' ||
+        it?.id === 'ee_membership'
+    );
+
+  const inventoryItems =
+    hasEELicense &&
+    !resolvedItems.some((it) => it.id === 'item_ee_membership' || it.id === 'ee_membership')
+      ? [MEMBERSHIP_ITEM, ...resolvedItems]
+      : resolvedItems;
 
   if (playerLoading && !player && !profile) return <LoadingSpinner />;
 
@@ -350,6 +374,7 @@ export default function PlayerSheet() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {mainTab === 'ship' && (
         <SpaceshipSheet
+          player={{ ...effectivePlayer, credits: currentCredits, hasEEMembership: hasEELicense }}
           ship={{
             name: shipDisplayName,
             hull: equippedShip?.hullPoints || 180,
@@ -359,7 +384,7 @@ export default function PlayerSheet() {
             subWarpSpeed: equippedShip?.speed || 42,
             modules: equippedShip?.modules,
             cargoCapacity: equippedShip?.cargoCapacity,
-            weapons: equippedShip?.weapons
+            weapons: equippedShip?.weapons,
           }}
           inventoryItems={inventoryItems}
           onUpdateCredits={(credits) => setLocalCredits(credits)}
@@ -382,7 +407,7 @@ export default function PlayerSheet() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {mainTab === 'market' && (
         <EESysMarketplace
-          player={{ ...effectivePlayer, credits: currentCredits }}
+          player={{ ...effectivePlayer, credits: currentCredits, hasEEMembership: hasEELicense }}
           inventoryItems={inventoryItems}
           onUpdateCredits={(credits) => setLocalCredits(credits)}
           onUpdateInventory={(updatedInv) => setLocalInventory(updatedInv)}
