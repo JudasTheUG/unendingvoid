@@ -15,6 +15,8 @@ const SLOT_ORDER = [
   'weapon1',
   'weapon2',
   'weapon3',
+  'reactor',
+  'shieldGenerator',
 ];
 
 const SLOT_ICONS = {
@@ -29,6 +31,22 @@ const SLOT_ICONS = {
   weapon1: '🎯',
   weapon2: '💥',
   weapon3: '⚡',
+  reactor: '⚛️',
+  shieldGenerator: '🔰',
+};
+
+const UNMOUNT_MAP = {
+  weapon1: 'wpn_none',
+  weapon2: 'wpn_none',
+  weapon3: 'wpn_none',
+  shieldGenerator: 'shield_none',
+  cargoBay: 'cargo_none',
+  warpDrive: 'warp_none',
+  scanner: 'scan_none',
+};
+
+const isEmptyModule = (modId) => {
+  return !modId || modId === 'wpn_none' || modId === 'shield_none' || modId === 'cargo_none' || modId === 'warp_none' || modId === 'scan_none';
 };
 
 export default function ShipBuilder({ activeShip, inventoryItems = [], onAssemble }) {
@@ -36,8 +54,12 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
   const currentLang = i18n.language || 'en';
 
   const [equippedModules, setEquippedModules] = useState(() => {
-    if (activeShip && activeShip.modules && Object.keys(activeShip.modules).length > 0) {
-      return { ...activeShip.modules };
+    if (activeShip && activeShip.modules && !Array.isArray(activeShip.modules) && Object.keys(activeShip.modules).length > 0) {
+      return {
+        reactor: 'reactor_tokamak_vanguard',
+        shieldGenerator: 'shield_harmonic_matrix',
+        ...activeShip.modules,
+      };
     }
     // Fallback default setup (Strike Corvette Kusaragi class)
     return {
@@ -52,6 +74,8 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
       weapon1: 'wpn_railgun_mk2',
       weapon2: 'wpn_none',
       weapon3: 'wpn_none',
+      reactor: 'reactor_tokamak_vanguard',
+      shieldGenerator: 'shield_harmonic_matrix',
     };
   });
 
@@ -140,12 +164,13 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
             <span className="text-[10px] text-slate-500 uppercase">Click bay to mount / replace</span>
           </div>
 
-          {/* 11 Modular Bay Cards */}
+          {/* Modular Bay Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {SLOT_ORDER.map((slot, index) => {
               const modId = equippedModules[slot];
               const catalogArr = slot.startsWith('weapon') ? shipModulesCatalog.weapons : shipModulesCatalog[slot];
               const mod = catalogArr?.find((m) => m.id === modId);
+              const isNone = isEmptyModule(modId);
 
               const slotKey = slot.startsWith('weapon') ? slot : slot;
               const slotLabel = t(`spaceship.slots.${slotKey}`, slot);
@@ -181,14 +206,26 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
                     {slotLabel}
                   </span>
 
-                  <span className="block text-xs font-bold text-white truncate group-hover:text-neon-cyan transition-colors">
-                    {mod ? mod.name[currentLang] || mod.name.en : t('spaceship.emptyBay', 'Empty Bay')}
+                  <span
+                    className={`block text-xs font-bold truncate transition-colors ${
+                      isNone ? 'text-slate-500 italic group-hover:text-neon-cyan' : 'text-white group-hover:text-neon-cyan'
+                    }`}
+                  >
+                    {mod && !isNone ? mod.name[currentLang] || mod.name.en : t('spaceship.emptyBay', 'Empty Bay')}
                   </span>
 
                   {/* Micro telemetry badge */}
                   <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
-                    <span>{mod?.mass !== undefined ? `${mod.mass} MT` : '0 MT'}</span>
-                    <span>{mod?.powerDraw !== undefined ? `${mod.powerDraw} MW` : mod?.reactorOutput ? `+${mod.reactorOutput} MW` : '0 MW'}</span>
+                    <span>{mod?.mass !== undefined && !isNone ? `${mod.mass} MT` : '0 MT'}</span>
+                    <span>
+                      {mod?.reactorOutput && !isNone
+                        ? `+${mod.reactorOutput} MW`
+                        : mod?.shields && !isNone
+                        ? `+${mod.shields} SH`
+                        : mod?.powerDraw !== undefined && !isNone
+                        ? `${mod.powerDraw} MW`
+                        : '0 MW'}
+                    </span>
                   </div>
                 </button>
               );
@@ -198,7 +235,7 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
           {/* Module Selector Panel (Arsenal Drawer) */}
           {selectedSlot && (
             <div className="tactical-panel p-5 border border-[#ea580c]/60 mt-4 animate-fade-in shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-              <div className="flex items-center justify-between border-b border-slate-700/80 pb-3 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-700/80 pb-3 mb-4 gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-[#ea580c] text-lg">⚙️</span>
                   <div>
@@ -210,13 +247,26 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSlot(null)}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-slate-600 transition-colors"
-                >
-                  ✕ CLOSE BAY
-                </button>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  {UNMOUNT_MAP[selectedSlot] && !isEmptyModule(equippedModules[selectedSlot]) && (
+                    <button
+                      type="button"
+                      onClick={() => handleModuleSelect(selectedSlot, UNMOUNT_MAP[selectedSlot])}
+                      className="px-2.5 py-1 rounded bg-rose-950/70 hover:bg-rose-900 text-rose-300 hover:text-white text-xs border border-rose-500/60 transition-colors flex items-center gap-1.5 font-bold"
+                    >
+                      <span>🗑️</span>
+                      <span>{t('spaceship.unmount', 'Unmount / Empty Bay')}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSlot(null)}
+                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-slate-600 transition-colors"
+                  >
+                    ✕ {t('spaceship.closeBay', 'Close Bay')}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
@@ -267,6 +317,12 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
                               <span className="text-slate-200 font-bold">{opt.powerDraw} MW</span>
                             </div>
                           )}
+                          {opt.shields !== undefined && opt.shields > 0 && (
+                            <div>
+                              <span className="text-slate-500 uppercase">{t('spaceship.specs.shields', 'Shields')}:</span>{' '}
+                              <span className="text-cyan-400 font-bold">+{opt.shields}</span>
+                            </div>
+                          )}
                           {opt.thrust !== undefined && (
                             <div>
                               <span className="text-slate-500 uppercase">{t('spaceship.specs.thrust', 'Thrust')}:</span>{' '}
@@ -299,19 +355,19 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
                           )}
                           {opt.maxLandingMass !== undefined && (
                             <div>
-                              <span className="text-slate-500 uppercase">Landing:</span>{' '}
+                              <span className="text-slate-500 uppercase">{t('spaceship.specs.landing', 'Landing')}:</span>{' '}
                               <span className="text-slate-200 font-bold">{opt.maxLandingMass} MT</span>
                             </div>
                           )}
                           {opt.toHit !== undefined && (
                             <div>
-                              <span className="text-slate-500 uppercase">Fire Check:</span>{' '}
+                              <span className="text-slate-500 uppercase">{t('spaceship.specs.toHit', 'Fire Check')}:</span>{' '}
                               <span className="text-cyan-400 font-bold">+{opt.toHit}</span>
                             </div>
                           )}
                           {opt.damageDice && opt.damageDice !== '0' && (
                             <div>
-                              <span className="text-slate-500 uppercase">Yield:</span>{' '}
+                              <span className="text-slate-500 uppercase">{t('spaceship.specs.yield', 'Yield')}:</span>{' '}
                               <span className="text-amber-400 font-bold">{opt.damageDice}+{opt.damageBonus} {opt.damageType}</span>
                             </div>
                           )}
@@ -320,7 +376,7 @@ export default function ShipBuilder({ activeShip, inventoryItems = [], onAssembl
                         {!isEquipped && (
                           <div className="mt-2 flex justify-end">
                             <span className="text-[10px] text-neon-cyan font-bold uppercase tracking-wider">
-                              [ MOUNT MODULE ]
+                              [ {t('spaceship.mountModule', 'Mount Module')} ]
                             </span>
                           </div>
                         )}

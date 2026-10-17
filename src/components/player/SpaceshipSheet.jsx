@@ -4,6 +4,7 @@ import VitalBar from '../shared/VitalBar';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
 import RollContextMenu from '../shared/RollContextMenu';
 import ShipBuilder from './ShipBuilder';
+import { shipModulesCatalog } from '../../lib/shipModulesCatalog';
 
 export const DEFAULT_SHIP = {
   id: 'ship_kusaragi',
@@ -12,8 +13,8 @@ export const DEFAULT_SHIP = {
   rarity: 'Legendary',
   hull: 180,
   maxHull: 180,
-  shields: 120,
-  maxShields: 120,
+  shields: 210,
+  maxShields: 210,
   subWarpSpeed: 42, // km/s
   armorClass: 16,
   cargoCapacity: 80,
@@ -420,7 +421,10 @@ export default function SpaceshipSheet({
                   {t('spaceship.installedModules', 'Installed Ship Modules')}
                 </h3>
                 <span className="text-[10px] text-[#ea580c] font-mono font-bold">
-                  {Array.isArray(activeShip.modules) ? activeShip.modules.length : 10} {t('spaceship.systemsOnline', 'Systems Online')}
+                  {Array.isArray(activeShip.modules)
+                    ? activeShip.modules.length
+                    : Object.keys(activeShip.modules || {}).length}{' '}
+                  {t('spaceship.systemsOnline', 'Systems Online')}
                 </span>
               </div>
 
@@ -440,22 +444,51 @@ export default function SpaceshipSheet({
                         <p className="text-[11px] text-slate-400 leading-snug">{mod.desc}</p>
                       </div>
                     ))
-                  : Object.entries(activeShip.modules || {}).map(([slotKey, modId]) => (
-                      <div
-                        key={slotKey}
-                        className="p-3 rounded bg-[#070b14] border border-slate-800 space-y-1"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-slate-400 uppercase font-semibold">
-                            {t(`spaceship.slots.${slotKey}`, slotKey)}
-                          </span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/50">
-                            ONLINE
+                  : Object.entries(activeShip.modules || {}).map(([slotKey, modId]) => {
+                      const catalogArr = slotKey.startsWith('weapon')
+                        ? shipModulesCatalog.weapons
+                        : shipModulesCatalog[slotKey];
+                      const mod = catalogArr?.find((m) => m.id === modId);
+                      const isNone =
+                        !modId ||
+                        modId === 'wpn_none' ||
+                        modId === 'shield_none' ||
+                        modId === 'cargo_none' ||
+                        modId === 'warp_none' ||
+                        modId === 'scan_none';
+                      const modName = isNone
+                        ? t('spaceship.emptyBay', 'Empty Bay')
+                        : mod?.name?.[currentLang] || mod?.name?.en || modId;
+
+                      return (
+                        <div
+                          key={slotKey}
+                          className="p-3 rounded bg-[#070b14] border border-slate-800 space-y-1"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold">
+                              {t(`spaceship.slots.${slotKey}`, slotKey)}
+                            </span>
+                            <span
+                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                                isNone
+                                  ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                                  : 'bg-emerald-950 text-emerald-400 border border-emerald-500/50'
+                              }`}
+                            >
+                              {isNone ? 'UNMOUNTED' : 'ONLINE'}
+                            </span>
+                          </div>
+                          <span
+                            className={`font-bold text-xs block ${
+                              isNone ? 'text-slate-500 italic' : 'text-white'
+                            }`}
+                          >
+                            {modName}
                           </span>
                         </div>
-                        <span className="font-bold text-white text-xs block">{modId}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
               </div>
             </div>
           </div>

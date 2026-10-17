@@ -112,4 +112,86 @@ describe('Ship Validation Engine', () => {
     expect(validation.isFlightReady).toBe(true);
     expect(validation.errors.length).toBe(0);
   });
+
+  it('should compute reactor output and shield generator stats correctly', () => {
+    const shipWithReactorAndShields = {
+      hull: 'hull_corvette_class_b', // 90 MW base, 50 shields base
+      flightDeck: 'cockpit_tactical',
+      thrusterEngines: 'eng_plasma_heavy',
+      warpDrive: 'warp_class_3',
+      cargoBay: 'cargo_light_40',
+      fuelTanks: 'fuel_pressurized_180',
+      scanner: 'scan_radar_mk1',
+      landingSystems: 'gear_heavy_pistons',
+      weapon1: 'wpn_railgun_mk2',
+      weapon2: 'wpn_none',
+      weapon3: 'wpn_none',
+      reactor: 'reactor_tokamak_vanguard', // 160 MW
+      shieldGenerator: 'shield_harmonic_matrix', // 160 shields, 20 MW draw
+    };
+
+    const stats = calculateShipDerivedStats(shipWithReactorAndShields, shipModulesCatalog);
+    // Reactor output = 50 (hull) + 160 (tokamak) = 210 MW
+    expect(stats.reactorOutput).toBe(210);
+    // Max shields = 60 (hull) + 160 (harmonic matrix) = 220 shields
+    expect(stats.maxShields).toBe(220);
+    expect(stats.totalPowerDraw).toBeGreaterThan(0);
+    expect(stats.reactorOutput).toBeGreaterThan(stats.totalPowerDraw); // Sufficient power
+
+    const validation = validateShipBuild(shipWithReactorAndShields, shipModulesCatalog);
+    expect(validation.isFlightReady).toBe(true);
+    expect(validation.warnings.length).toBe(0); // No power grid overload warning
+  });
+
+  it('should allow flight readiness with dummy starter scout build without mass or thrust deficit', () => {
+    const starterScoutShip = {
+      hull: 'hull_scout_class_a',
+      flightDeck: 'cockpit_explorer',
+      thrusterEngines: 'eng_ion_light', // rated for 260 MT
+      warpDrive: 'warp_class_1',
+      cargoBay: 'cargo_light_40',
+      fuelTanks: 'fuel_cryo_60',
+      scanner: 'scan_radar_mk1',
+      landingSystems: 'gear_light_struts', // rated for 260 MT
+      weapon1: 'wpn_railgun_mk2',
+      weapon2: 'wpn_none',
+      weapon3: 'wpn_none',
+      reactor: 'reactor_fusion_micro', // 80 MW (total 120 MW)
+      shieldGenerator: 'shield_tactical_deflector', // +80 shields
+    };
+
+    const validation = validateShipBuild(starterScoutShip, shipModulesCatalog);
+    expect(validation.isFlightReady).toBe(true);
+    expect(validation.errors).toEqual([]);
+    expect(validation.stats.totalMass).toBeLessThanOrEqual(260);
+    expect(validation.stats.totalPowerDraw).toBeLessThanOrEqual(validation.stats.reactorOutput);
+  });
+
+  it('should properly handle unmounted optional components', () => {
+    const unmountedVessel = {
+      hull: 'hull_scout_class_a',
+      flightDeck: 'cockpit_explorer',
+      thrusterEngines: 'eng_ion_light',
+      warpDrive: 'warp_none', // Unmounted
+      cargoBay: 'cargo_none', // Unmounted
+      fuelTanks: 'fuel_cryo_60',
+      scanner: 'scan_none', // Unmounted
+      landingSystems: 'gear_light_struts',
+      weapon1: 'wpn_none', // Unmounted
+      weapon2: 'wpn_none',
+      weapon3: 'wpn_none',
+      reactor: 'reactor_fusion_micro',
+      shieldGenerator: 'shield_none', // Unmounted (0 shields)
+    };
+
+    const stats = calculateShipDerivedStats(unmountedVessel, shipModulesCatalog);
+    expect(stats.cargoCapacity).toBe(0);
+    expect(stats.jumpRange).toBe(0);
+    expect(stats.weapons).toEqual([]);
+    // Scout hull base shields is 30, shield_none adds 0
+    expect(stats.maxShields).toBe(30);
+
+    const validation = validateShipBuild(unmountedVessel, shipModulesCatalog);
+    expect(validation.isFlightReady).toBe(true);
+  });
 });

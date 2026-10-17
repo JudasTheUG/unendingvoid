@@ -128,7 +128,11 @@
       "capacity": "Cargo Capacity",
       "fuel": "Fuel Capacity",
       "range": "Sensor Range",
-      "targetLock": "Target Lock"
+      "targetLock": "Target Lock",
+      "shields": "Shield Capacity",
+      "landing": "Landing Rating",
+      "toHit": "Fire Check",
+      "yield": "Yield"
     },
     "slots": {
       "hull": "Hull Frame",
@@ -141,8 +145,13 @@
       "landingSystems": "Landing Struts & Skids",
       "weapon1": "Weapon Battery Alpha",
       "weapon2": "Weapon Battery Bravo",
-      "weapon3": "Weapon Battery Charlie"
+      "weapon3": "Weapon Battery Charlie",
+      "reactor": "Main Power Reactor",
+      "shieldGenerator": "Deflector Shield Generator"
     },
+    "unmount": "Unmount / Empty Bay",
+    "mountModule": "Mount Module",
+    "closeBay": "Close Bay",
     "registry": "Registry",
     "save": "Save",
     "renameVessel": "Rename Vessel",

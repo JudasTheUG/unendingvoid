@@ -128,7 +128,11 @@
       "capacity": "Frachtkapazität",
       "fuel": "Treibstoffkapazität",
       "range": "Sensorreichweite",
-      "targetLock": "Zielerfassung"
+      "targetLock": "Zielerfassung",
+      "shields": "Schildkapazität",
+      "landing": "Landekapazität",
+      "toHit": "Feuerleitkontrolle",
+      "yield": "Sprengkraft"
     },
     "slots": {
       "hull": "Rumpfstruktur",
@@ -141,8 +145,13 @@
       "landingSystems": "Landestützen & Kufen",
       "weapon1": "Waffenbatterie Alpha",
       "weapon2": "Waffenbatterie Bravo",
-      "weapon3": "Waffenbatterie Charlie"
+      "weapon3": "Waffenbatterie Charlie",
+      "reactor": "Haupt-Energiereaktor",
+      "shieldGenerator": "Deflektor-Schildgenerator"
     },
+    "unmount": "Modul abmontieren / Bucht leeren",
+    "mountModule": "Modul montieren",
+    "closeBay": "Bucht schließen",
     "registry": "Registrierung",
     "save": "Speichern",
     "renameVessel": "Schiff umbenennen",

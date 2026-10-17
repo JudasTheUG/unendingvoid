@@ -88,6 +88,30 @@ describe('ShipBuilder Component (Cyberpunk x The Expanse Drydock UI)', () => {
     fireEvent.click(orderButton);
     expect(handleAssemble).toHaveBeenCalled();
   });
+
+  it('renders reactor and shield generator bays and allows unmounting optional components', () => {
+    render(<ShipBuilder activeShip={null} inventoryItems={[]} onAssemble={vi.fn()} />);
+
+    // Check that BAY-12 (Reactor) and BAY-13 (Shield Generator) are rendered
+    expect(screen.getByText(/BAY-12/i)).toBeInTheDocument();
+    expect(screen.getByText(/Main Power Reactor/i)).toBeInTheDocument();
+    expect(screen.getByText(/BAY-13/i)).toBeInTheDocument();
+    expect(screen.getByText(/Deflector Shield Generator/i)).toBeInTheDocument();
+
+    // Open BAY-13 (Shield Generator)
+    const bay13Button = screen.getByText(/BAY-13/i).closest('button');
+    fireEvent.click(bay13Button);
+
+    // Unmount button should be visible in drawer
+    const unmountButton = screen.getByRole('button', { name: /Unmount \/ Empty Bay/i });
+    expect(unmountButton).toBeInTheDocument();
+
+    // Click Unmount
+    fireEvent.click(unmountButton);
+
+    // After unmounting, the drawer closes and BAY-13 shows Empty Bay
+    expect(bay13Button).toHaveTextContent(/Empty Bay/i);
+  });
 });
 
 describe('SpaceshipSheet Mode Switching', () => {
