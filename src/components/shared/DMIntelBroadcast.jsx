@@ -66,7 +66,7 @@ export function saveLocalBroadcast(broadcast) {
  * IntelMediaPreview - Renders an inline surveillance image or a fallback tactical dossier card
  * for external links such as Pinterest pins (pin.it) and non-direct image URLs.
  */
-function IntelMediaPreview({ url, title, onOpenLightbox }) {
+export function IntelMediaPreview({ url, title, onOpenLightbox }) {
   const { t } = useTranslation();
   const [loadFailed, setLoadFailed] = useState(false);
   const isPinterest = /pin\.it|pinterest\./i.test(url);

@@ -135,4 +135,30 @@ describe('CommsAndRollsFlow Component', () => {
     fireEvent.click(broadcastBtn);
     expect(screen.getByText(/Transmit Fleet Directive/i)).toBeInTheDocument();
   });
+
+  it('renders IntelMediaPreview fallback card for external or Pinterest links that fail to load', () => {
+    render(<CommsAndRollsFlow isDM={false} user={{ uid: 'user_1' }} />);
+
+    act(() => {
+      saveLocalBroadcast({
+        id: 'intel_pinterest_test',
+        sender: 'MCRN NAVAL COMMAND',
+        channel: 'FLEET COMMAND',
+        priority: 'URGENT',
+        title: 'Tactical Recon Probe',
+        content: 'Surveillance probe photo payload.',
+        imageUrl: 'https://pin.it/broken-or-external-image',
+        timestamp: '15:00:00 UTC',
+        createdAt: Date.now(),
+      });
+    });
+
+    expect(screen.getByText('Tactical Recon Probe')).toBeInTheDocument();
+    const img = screen.getByAltText('Tactical Recon Probe');
+    fireEvent.error(img);
+
+    // After load error, Pinterest Intel Attachment card must render cleanly without broken image box
+    expect(screen.getByText(/Pinterest Intel Attachment/i)).toBeInTheDocument();
+    expect(screen.getByText(/Surveillance still hosted on Pinterest/i)).toBeInTheDocument();
+  });
 });

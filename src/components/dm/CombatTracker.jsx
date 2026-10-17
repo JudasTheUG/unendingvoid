@@ -59,6 +59,32 @@ export default function CombatTracker({
     }
   }, [campaignId]);
 
+  // Real-time Firestore synchronization for campaign initiative rolls
+  useEffect(() => {
+    if (!campaignId || !db) return;
+
+    try {
+      const unsub = onSnapshot(
+        doc(db, 'campaigns', campaignId),
+        (snap) => {
+          if (!snap.exists()) return;
+          const camp = snap.data();
+          if (camp.initiativeRolls) {
+            setPlayerRolls(camp.initiativeRolls);
+          }
+          if (camp.initiativeRequested !== undefined) {
+            setIsAwaitingRolls(Boolean(camp.initiativeRequested));
+          }
+        },
+        (err) => console.warn('[CombatTracker] Campaign snapshot notice:', err.message)
+      );
+
+      return () => unsub();
+    } catch (e) {
+      console.warn('[CombatTracker] Firestore listener error:', e);
+    }
+  }, [campaignId]);
+
   // Sync player rolls from storage / custom events
   useEffect(() => {
     const handleRollSubmitted = (e) => {

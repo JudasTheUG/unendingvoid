@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { getStoredBroadcasts, saveLocalBroadcast } from './DMIntelBroadcast';
+import { getStoredBroadcasts, saveLocalBroadcast, IntelMediaPreview } from './DMIntelBroadcast';
 import { getStoredRolls, useDiceSync } from '../../hooks/useDiceSync';
 
 export default function CommsAndRollsFlow({
@@ -510,6 +510,14 @@ export default function CommsAndRollsFlow({
                             <span>🔍</span> Expand Telemetry Image
                           </div>
                         </button>
+                    {/* Image Preview or Tactical External Attachment Card */}
+                    {item.imageUrl && (
+                      <div className="mt-2">
+                        <IntelMediaPreview
+                          url={item.imageUrl}
+                          title={item.title}
+                          onOpenLightbox={(img) => setSelectedImage(img)}
+                        />
                       </div>
                     )}
 
