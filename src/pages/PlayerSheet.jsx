@@ -75,6 +75,23 @@ export default function PlayerSheet() {
     setLocalInventory(null);
   }, [targetId]);
 
+  // Listen for combat initialization
+  React.useEffect(() => {
+    const handleCombatStart = (e) => {
+      const data = e.detail;
+      if (data && data.campaignId) {
+        // Auto-open combat board in a new tab/window when combat starts
+        // Or show a prominent alert/button
+        // Using window.open might be blocked by popup blocker, but let's attempt it
+        window.open(`/combat/${data.campaignId}`, '_blank');
+      }
+    };
+    window.addEventListener('unendingvoid:combat_order_set', handleCombatStart);
+    return () => {
+      window.removeEventListener('unendingvoid:combat_order_set', handleCombatStart);
+    };
+  }, []);
+
   const equippedShip = allItems.find(
     (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
   );
@@ -321,6 +338,17 @@ export default function PlayerSheet() {
           </button>
         </div>
       </div>
+
+      {effectivePlayer?.campaignId && (
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => window.open(`/combat/${effectivePlayer.campaignId}`, '_blank')}
+            className="w-full sm:w-auto px-6 py-2 rounded-xl bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 text-xs font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)]"
+          >
+            ▤ Enter Tactical Combat Board
+          </button>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* TAB 1: CHARACTER OPERATIVE SHEET (Named with player's name)       */}

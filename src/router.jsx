@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import PlayerSheet from './pages/PlayerSheet';
 import CampaignPage from './pages/CampaignPage';
 import DMPanel from './pages/DMPanel';
+import CombatBoardPage from './pages/CombatBoardPage';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -84,6 +85,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DMPanel />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Combat Board Standalone Window */}
+      <Route
+        path="/combat/:campaignId"
+        element={
+          <ProtectedRoute>
+            <CombatBoardPage />
           </ProtectedRoute>
         }
       />
