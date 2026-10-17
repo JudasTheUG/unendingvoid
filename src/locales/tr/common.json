@@ -611,5 +611,28 @@
     "plus7Days": "+7 Gün",
     "shortRestNotice": "Kısa Mola Tamamlandı (+2 saat geçti)",
     "longRestNotice": "Uzun Mola Tamamlandı (+8 saat geçti)"
+  },
+  "rest": {
+    "requestTitle": "Ekip Mola Talebi",
+    "askingRest": "{{name}} bir {{type}} Mola talep ediyor.",
+    "short": "Kısa",
+    "long": "Uzun",
+    "doYouAgree": "Ekiple birlikte bir {{type}} Mola yapmayı kabul ediyor musunuz?",
+    "agree": "Kabul Et",
+    "decline": "Reddet",
+    "youAgreed": "Mola talebini kabul ettiniz.",
+    "youDeclined": "Mola talebini reddettiniz.",
+    "waitingForDM": "Ekip oyları ve DM onayı bekleniyor...",
+    "cancelRequest": "Talebi İptal Et",
+    "dmTitle": "Ekip Mola Onayı",
+    "dmAsking": "{{count}}/{{total}} oyuncu {{type}} Mola istiyor",
+    "didntVote": "{{count}} oy kullanmadı",
+    "declined": "{{count}} reddetti",
+    "allowPrompt": "{{type}} Molaya izin verilsin mi?",
+    "allow": "İzin Ver",
+    "deny": "Reddet",
+    "approvedNotice": "DM {{type}} Molayı onayladı! Zaman ilerledi ve operatifler dinlendi.",
+    "deniedNotice": "DM mola talebini reddetti.",
+    "hoursInfo": "Kısa Mola: 2 Saat · Uzun Mola: 8 Saat"
   }
 }

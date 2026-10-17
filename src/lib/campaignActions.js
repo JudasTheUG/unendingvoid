@@ -785,4 +785,260 @@ export async function setCampaignTime(campaignId, newGameTimeStr) {
   return serialized;
 }
 
+/**
+ * Initiates a party rest request (short or long rest).
+ * The requesting player automatically votes 'agreed'.
+ */
+export async function requestPartyRest(campaignId, player, restType = 'short') {
+  const pId = player.id || player.uid || 'operative';
+  const pName = player.displayName || player.name || 'Operative';
+
+  const payload = {
+    id: `rest_${Date.now()}`,
+    type: restType, // 'short' (2 hours) | 'long' (8 hours)
+    requesterId: pId,
+    requesterName: pName,
+    status: 'pending',
+    requestedAt: Date.now(),
+    votes: {
+      [pId]: 'agreed',
+    },
+  };
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('unendingvoid:rest_request', JSON.stringify({ campaignId, restRequest: payload }));
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:rest_requested', {
+          detail: { campaignId, restRequest: payload, timestamp: Date.now() },
+        })
+      );
+    }
+  } catch (_) {}
+
+  if (campaignId && db) {
+    try {
+      const campRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campRef, {
+        restRequest: payload,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore error in requestPartyRest:', err.message);
+    }
+  }
+
+  return payload;
+}
+
+/**
+ * Records an operative's vote ('agreed' | 'declined') on an active rest request.
+ */
+export async function votePartyRest(campaignId, playerId, decision = 'agreed') {
+  let existingRequest = null;
+
+  if (campaignId && db) {
+    try {
+      const snap = await getDoc(doc(db, 'campaigns', campaignId));
+      if (snap.exists()) {
+        existingRequest = snap.data()?.restRequest;
+      }
+    } catch (err) {
+      console.warn('[campaignActions] Firestore notice in votePartyRest getDoc:', err.message);
+    }
+  }
+
+  if (!existingRequest && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('unendingvoid:rest_request');
+      if (raw) existingRequest = JSON.parse(raw)?.restRequest;
+    } catch (_) {}
+  }
+
+  if (!existingRequest) {
+    existingRequest = {
+      type: 'short',
+      status: 'pending',
+      votes: {},
+    };
+  }
+
+  const updatedVotes = {
+    ...(existingRequest.votes || {}),
+    [playerId]: decision,
+  };
+
+  const updatedRequest = {
+    ...existingRequest,
+    votes: updatedVotes,
+  };
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('unendingvoid:rest_request', JSON.stringify({ campaignId, restRequest: updatedRequest }));
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:rest_voted', {
+          detail: { campaignId, restRequest: updatedRequest, playerId, decision, timestamp: Date.now() },
+        })
+      );
+    }
+  } catch (_) {}
+
+  if (campaignId && db) {
+    try {
+      const campRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campRef, {
+        restRequest: updatedRequest,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore error in votePartyRest:', err.message);
+    }
+  }
+
+  return updatedRequest;
+}
+
+/**
+ * DM resolves an active rest request (Allow / Deny).
+ * If allowed, advances time (+2h for short rest, +8h for long rest) and heals participating operatives.
+ */
+export async function resolvePartyRest(campaignId, approved = true, players = [], fallbackTime = null) {
+  let existingRequest = null;
+
+  if (campaignId && db) {
+    try {
+      const snap = await getDoc(doc(db, 'campaigns', campaignId));
+      if (snap.exists()) {
+        existingRequest = snap.data()?.restRequest;
+      }
+    } catch (err) {
+      console.warn('[campaignActions] Firestore notice reading rest request:', err.message);
+    }
+  }
+
+  if (!existingRequest && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('unendingvoid:rest_request');
+      if (raw) existingRequest = JSON.parse(raw)?.restRequest;
+    } catch (_) {}
+  }
+
+  const restType = existingRequest?.type || 'short';
+  const status = approved ? 'approved' : 'denied';
+
+  const resolvedRequest = {
+    ...(existingRequest || {}),
+    status,
+    resolvedAt: Date.now(),
+  };
+
+  let updatedGameTime = null;
+
+  if (approved) {
+    const hours = restType === 'short' ? 2 : 8;
+    try {
+      updatedGameTime = await advanceCampaignTime(campaignId, hours, fallbackTime);
+    } catch (err) {
+      console.warn('[campaignActions] Error advancing time on rest approval:', err.message);
+    }
+
+    // Restore players in the campaign
+    if (players && players.length > 0 && db) {
+      await Promise.all(
+        players.map(async (p) => {
+          const pId = p.id || p.uid;
+          if (!pId) return;
+          try {
+            const pRef = doc(db, 'players', pId);
+            const maxHp = p.maxHp || 100;
+            const maxShields = p.maxShields || 50;
+            if (restType === 'long') {
+              await updateDoc(pRef, {
+                hp: maxHp,
+                shields: maxShields,
+                updatedAt: serverTimestamp(),
+              });
+            } else {
+              // Short Rest: Roll HP heal + 5 Shields
+              const conMod = Math.floor((((p.stats?.constitution || 10) - 10) / 2));
+              const heal = Math.floor(Math.random() * 10) + 1 + Math.max(0, conMod);
+              const newHp = Math.min(maxHp, (p.hp || 0) + heal);
+              const newShields = Math.min(maxShields, (p.shields || 0) + 5);
+              await updateDoc(pRef, {
+                hp: newHp,
+                shields: newShields,
+                updatedAt: serverTimestamp(),
+              });
+            }
+          } catch (err) {
+            console.warn(`[campaignActions] Error updating player ${pId} on rest approval:`, err.message);
+          }
+        })
+      );
+    }
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('unendingvoid:rest_request', JSON.stringify({ campaignId, restRequest: resolvedRequest }));
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:rest_resolved', {
+          detail: { campaignId, restRequest: resolvedRequest, approved, inGameTime: updatedGameTime, timestamp: Date.now() },
+        })
+      );
+    }
+  } catch (_) {}
+
+  if (campaignId && db) {
+    try {
+      const campRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campRef, {
+        restRequest: resolvedRequest,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore error in resolvePartyRest:', err.message);
+    }
+  }
+
+  return { restRequest: resolvedRequest, inGameTime: updatedGameTime };
+}
+
+/**
+ * Cancels or clears the active rest request.
+ */
+export async function cancelPartyRest(campaignId) {
+  const cancelledRequest = {
+    status: 'cancelled',
+    resolvedAt: Date.now(),
+  };
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('unendingvoid:rest_request');
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:rest_cancelled', {
+          detail: { campaignId, timestamp: Date.now() },
+        })
+      );
+    }
+  } catch (_) {}
+
+  if (campaignId && db) {
+    try {
+      const campRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campRef, {
+        restRequest: cancelledRequest,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore error in cancelPartyRest:', err.message);
+    }
+  }
+
+  return cancelledRequest;
+}
+
+
 

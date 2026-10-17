@@ -3,6 +3,7 @@ import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '../../lib/i18n';
 import PlayerSheet from '../../pages/PlayerSheet';
+import { resolvePartyRest } from '../../lib/campaignActions';
 
 let mockCampaignData = {
   combatActive: false,
@@ -129,7 +130,7 @@ describe('PlayerSheet - Combat Board Button Inactive Visibility Engine', () => {
     expect(screen.queryByText(/Enter Tactical Combat Board/i)).not.toBeInTheDocument();
   });
 
-  it('renders initial campaign calendar date and advances time by 2 hours on short rest', async () => {
+  it('renders initial campaign calendar date and opens rest requisition on short rest, advancing time upon DM approval', async () => {
     mockCampaignData = {
       combatActive: false,
       combatEnded: true,
@@ -146,10 +147,18 @@ describe('PlayerSheet - Combat Board Button Inactive Visibility Engine', () => {
       shortRestBtn.click();
     });
 
+    // Requisition modal should be displayed waiting for squad and DM
+    expect(screen.getByText(/Squad Rest Requisition/i)).toBeInTheDocument();
+
+    // DM authorizes the rest
+    await act(async () => {
+      await resolvePartyRest('camp_test_alpha', true, [], '2381-05-18T08:00:00');
+    });
+
     expect(screen.getByText(/18 May 2381 10:00/i)).toBeInTheDocument();
   });
 
-  it('advances calendar date by 8 hours on long rest', async () => {
+  it('advances calendar date by 8 hours on long rest upon DM authorization', async () => {
     mockCampaignData = {
       combatActive: false,
       combatEnded: true,
@@ -164,6 +173,14 @@ describe('PlayerSheet - Combat Board Button Inactive Visibility Engine', () => {
     const longRestBtn = screen.getByRole('button', { name: /Long Rest/i });
     await act(async () => {
       longRestBtn.click();
+    });
+
+    // Requisition modal should be displayed
+    expect(screen.getByText(/Squad Rest Requisition/i)).toBeInTheDocument();
+
+    // DM authorizes the long rest (+8h)
+    await act(async () => {
+      await resolvePartyRest('camp_test_alpha', true, [], '2381-05-18T08:00:00');
     });
 
     expect(screen.getByText(/18 May 2381 16:00/i)).toBeInTheDocument();

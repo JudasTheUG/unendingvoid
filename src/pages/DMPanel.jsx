@@ -16,9 +16,10 @@ import DiceOverlay from '../components/dice/DiceOverlay';
 import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { deleteCampaign, removeCharacterFromCampaign, cancelInitiative, endCombatSession, advanceCampaignTime, setCampaignTime } from '../lib/campaignActions';
+import { deleteCampaign, removeCharacterFromCampaign, cancelInitiative, endCombatSession, advanceCampaignTime, setCampaignTime, resolvePartyRest } from '../lib/campaignActions';
 import ShipAssignmentModal from '../components/dm/ShipAssignmentModal';
 import DMCalendarModal from '../components/dm/DMCalendarModal';
+import DMRestRequestBanner from '../components/dm/DMRestRequestBanner';
 import { formatGameDateTime, DEFAULT_IN_GAME_TIME } from '../lib/calendarUtils';
 
 export default function DMPanel() {
@@ -81,6 +82,62 @@ export default function DMPanel() {
     return () => {
       window.removeEventListener('unendingvoid:time_updated', handleTimeUpdated);
       window.removeEventListener('storage', handleStorage);
+    };
+  }, [campaign?.id, campaignId]);
+
+  const [localRestRequest, setLocalRestRequest] = useState(() => {
+    if (typeof localStorage === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('unendingvoid:rest_request');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const campId = campaign?.id || campaignId;
+        if (!campId || parsed?.campaignId === campId) {
+          return parsed.restRequest;
+        }
+      }
+    } catch (_) {}
+    return null;
+  });
+
+  const effectiveRestRequest = campaign?.restRequest || localRestRequest;
+
+  useEffect(() => {
+    const campId = campaign?.id || campaignId;
+    const handleRestEvent = (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (!campId || detail.campaignId === campId) {
+        setLocalRestRequest(detail.restRequest || null);
+      }
+    };
+    const handleStorageRest = (e) => {
+      if (e.key === 'unendingvoid:rest_request') {
+        if (!e.newValue) {
+          setLocalRestRequest(null);
+        } else {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            if (!campId || parsed.campaignId === campId) {
+              setLocalRestRequest(parsed.restRequest || null);
+            }
+          } catch (_) {}
+        }
+      }
+    };
+
+    window.addEventListener('unendingvoid:rest_requested', handleRestEvent);
+    window.addEventListener('unendingvoid:rest_voted', handleRestEvent);
+    window.addEventListener('unendingvoid:rest_resolved', handleRestEvent);
+    window.addEventListener('unendingvoid:rest_cancelled', handleRestEvent);
+    window.addEventListener('storage', handleStorageRest);
+
+    return () => {
+      window.removeEventListener('unendingvoid:rest_requested', handleRestEvent);
+      window.removeEventListener('unendingvoid:rest_voted', handleRestEvent);
+      window.removeEventListener('unendingvoid:rest_resolved', handleRestEvent);
+      window.removeEventListener('unendingvoid:rest_cancelled', handleRestEvent);
+      window.removeEventListener('storage', handleStorageRest);
     };
   }, [campaign?.id, campaignId]);
 
@@ -349,6 +406,18 @@ export default function DMPanel() {
           </button>
         </div>
       </div>
+
+      {/* Active Squad Rest Requisition Banner */}
+      <DMRestRequestBanner
+        restRequest={effectiveRestRequest}
+        campaignId={campaign?.id || campaignId}
+        players={partyCharacters}
+        currentCampaignTime={campaignTime}
+        onResolve={async (approved) => {
+          const resolved = await resolvePartyRest(campaign?.id || campaignId, approved, partyCharacters, campaignTime);
+          setLocalRestRequest(resolved);
+        }}
+      />
 
       {mainTab === 'console' && (
         <>

@@ -611,5 +611,28 @@
     "plus7Days": "+7 Days",
     "shortRestNotice": "Short Rest Complete (+2 hours elapsed)",
     "longRestNotice": "Long Rest Complete (+8 hours elapsed)"
+  },
+  "rest": {
+    "requestTitle": "Squad Rest Requisition",
+    "askingRest": "{{name}} is asking for a {{type}} Rest.",
+    "short": "Short",
+    "long": "Long",
+    "doYouAgree": "Do you agree to take a {{type}} Rest with the squad?",
+    "agree": "Agree",
+    "decline": "Decline",
+    "youAgreed": "You agreed to take a rest.",
+    "youDeclined": "You declined the rest request.",
+    "waitingForDM": "Waiting for squad votes and DM authorization...",
+    "cancelRequest": "Cancel Request",
+    "dmTitle": "Squad Rest Authorization",
+    "dmAsking": "{{count}}/{{total}} players asking for {{type}} Rest",
+    "didntVote": "{{count}} didn't vote",
+    "declined": "{{count}} declined",
+    "allowPrompt": "Allow {{type}} Rest?",
+    "allow": "Allow",
+    "deny": "Deny",
+    "approvedNotice": "DM authorized the {{type}} Rest! Time advanced and vitals restored.",
+    "deniedNotice": "DM denied the rest request.",
+    "hoursInfo": "Short Rest: 2 Hours · Long Rest: 8 Hours"
   }
 }

@@ -21,9 +21,10 @@ import PlayerNotesTab from '../components/player/PlayerNotesTab';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
 import CommsAndRollsFlow from '../components/shared/CommsAndRollsFlow';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
+import RestRequestModal from '../components/player/RestRequestModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer, updatePlayerAvatar } from '../lib/playerActions';
-import { advanceCampaignTime } from '../lib/campaignActions';
+import { advanceCampaignTime, requestPartyRest } from '../lib/campaignActions';
 import { DEFAULT_IN_GAME_TIME } from '../lib/calendarUtils';
 import { logout } from '../lib/authService';
 
@@ -115,6 +116,21 @@ export default function PlayerSheet() {
     );
   });
 
+  // Squad Rest Requisition state
+  const [campaignRestRequest, setCampaignRestRequest] = useState(() => {
+    if (typeof localStorage === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('unendingvoid:rest_request');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!effectivePlayer?.campaignId || parsed?.campaignId === effectivePlayer.campaignId) {
+          return parsed.restRequest;
+        }
+      }
+    } catch (_) {}
+    return null;
+  });
+
   React.useEffect(() => {
     if (!effectivePlayer?.campaignId || !db) return;
     const unsub = onSnapshot(
@@ -132,6 +148,9 @@ export default function PlayerSheet() {
           if (camp?.inGameTime) {
             setCampaignTimeState(camp.inGameTime);
           }
+          if (camp?.restRequest !== undefined) {
+            setCampaignRestRequest(camp.restRequest);
+          }
         } else {
           setIsCombatActive(false);
         }
@@ -145,9 +164,9 @@ export default function PlayerSheet() {
 
   // Listen for combat initialization and termination (window events + multi-tab storage)
   React.useEffect(() => {
+    const campId = effectivePlayer?.campaignId;
     const handleCombatStart = (e) => {
       const data = e.detail;
-      const campId = effectivePlayer?.campaignId;
       if (data && (!campId || data.campaignId === campId)) {
         setIsCombatActive(true);
         if (data.campaignId) {
@@ -166,6 +185,34 @@ export default function PlayerSheet() {
       const campId = effectivePlayer?.campaignId;
       if (data && (!campId || data.campaignId === campId) && data.inGameTime) {
         setCampaignTimeState(data.inGameTime);
+      }
+    };
+
+    const handleRestEvent = (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (!campId || detail.campaignId === campId) {
+        setCampaignRestRequest(detail.restRequest || null);
+      }
+    };
+
+    const handleRestResolved = (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (!campId || detail.campaignId === campId) {
+        setCampaignRestRequest(detail.restRequest || null);
+        if (detail.approved) {
+          const restType = detail.restRequest?.type || 'short';
+          if (restType === 'long') {
+            handleUpdateHp(effectivePlayer.maxHp || 100, effectivePlayer.maxShields || 50);
+          } else {
+            const conMod = Math.floor(((effectivePlayer.stats?.constitution || 10) - 10) / 2);
+            const healRoll = Math.floor(Math.random() * 10) + 1 + Math.max(0, conMod);
+            const newHp = Math.min(effectivePlayer.maxHp || 100, (effectivePlayer.hp || 0) + healRoll);
+            const newShields = Math.min(effectivePlayer.maxShields || 50, (effectivePlayer.shields || 0) + 5);
+            handleUpdateHp(newHp, newShields);
+          }
+        }
       }
     };
 
@@ -191,21 +238,40 @@ export default function PlayerSheet() {
         e.key === 'unendingvoid:ingame_time'
       ) {
         if (e.newValue) setCampaignTimeState(e.newValue);
+      } else if (e.key === 'unendingvoid:rest_request') {
+        if (!e.newValue) {
+          setCampaignRestRequest(null);
+        } else {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            if (!campId || parsed.campaignId === campId) {
+              setCampaignRestRequest(parsed.restRequest || null);
+            }
+          } catch (_) {}
+        }
       }
     };
 
     window.addEventListener('unendingvoid:combat_order_set', handleCombatStart);
     window.addEventListener('unendingvoid:combat_ended', handleCombatEnd);
     window.addEventListener('unendingvoid:time_updated', handleTimeUpdated);
+    window.addEventListener('unendingvoid:rest_requested', handleRestEvent);
+    window.addEventListener('unendingvoid:rest_voted', handleRestEvent);
+    window.addEventListener('unendingvoid:rest_resolved', handleRestResolved);
+    window.addEventListener('unendingvoid:rest_cancelled', handleRestEvent);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('unendingvoid:combat_order_set', handleCombatStart);
       window.removeEventListener('unendingvoid:combat_ended', handleCombatEnd);
       window.removeEventListener('unendingvoid:time_updated', handleTimeUpdated);
+      window.removeEventListener('unendingvoid:rest_requested', handleRestEvent);
+      window.removeEventListener('unendingvoid:rest_voted', handleRestEvent);
+      window.removeEventListener('unendingvoid:rest_resolved', handleRestResolved);
+      window.removeEventListener('unendingvoid:rest_cancelled', handleRestEvent);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [effectivePlayer?.campaignId]);
+  }, [effectivePlayer?.campaignId, effectivePlayer?.maxHp, effectivePlayer?.maxShields, effectivePlayer?.stats]);
 
   const equippedShip = allItems.find(
     (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
@@ -330,6 +396,17 @@ export default function PlayerSheet() {
   };
 
   const handleShortRest = async () => {
+    if (effectivePlayer?.campaignId) {
+      try {
+        const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'short');
+        setCampaignRestRequest(req);
+      } catch (err) {
+        console.warn('Failed to request squad short rest:', err);
+      }
+      return;
+    }
+
+    // Solo / offline fallback
     const conMod = Math.floor(((effectivePlayer.stats?.constitution || 10) - 10) / 2);
     const healRoll = Math.floor(Math.random() * 10) + 1 + Math.max(0, conMod);
     const newHp = Math.min(effectivePlayer.maxHp || 100, (effectivePlayer.hp || 0) + healRoll);
@@ -337,7 +414,7 @@ export default function PlayerSheet() {
 
     await handleUpdateHp(newHp, newShields);
     try {
-      const updatedTime = await advanceCampaignTime(effectivePlayer?.campaignId, 2, campaignTime);
+      const updatedTime = await advanceCampaignTime(null, 2, campaignTime);
       setCampaignTimeState(updatedTime);
     } catch (err) {
       console.warn('Failed to advance rest time:', err);
@@ -346,9 +423,20 @@ export default function PlayerSheet() {
   };
 
   const handleLongRest = async () => {
+    if (effectivePlayer?.campaignId) {
+      try {
+        const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'long');
+        setCampaignRestRequest(req);
+      } catch (err) {
+        console.warn('Failed to request squad long rest:', err);
+      }
+      return;
+    }
+
+    // Solo / offline fallback
     await handleUpdateHp(effectivePlayer.maxHp || 100, effectivePlayer.maxShields || 50);
     try {
-      const updatedTime = await advanceCampaignTime(effectivePlayer?.campaignId, 8, campaignTime);
+      const updatedTime = await advanceCampaignTime(null, 8, campaignTime);
       setCampaignTimeState(updatedTime);
     } catch (err) {
       console.warn('Failed to advance rest time:', err);
@@ -388,6 +476,15 @@ export default function PlayerSheet() {
         campaignId={effectivePlayer.campaignId}
         traits={allTraits}
         items={allItems}
+      />
+
+      {/* Squad Rest Requisition Modal */}
+      <RestRequestModal
+        restRequest={campaignRestRequest}
+        campaignId={effectivePlayer?.campaignId}
+        currentUser={effectivePlayer}
+        activeCharacters={[]}
+        onClose={() => setCampaignRestRequest(null)}
       />
 
       {/* Navigation & Breadcrumbs Bar */}

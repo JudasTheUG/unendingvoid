@@ -611,5 +611,28 @@
     "plus7Days": "+7 Tage",
     "shortRestNotice": "Kurze Rast abgeschlossen (+2 Stunden vergangen)",
     "longRestNotice": "Lange Rast abgeschlossen (+8 Stunden vergangen)"
+  },
+  "rest": {
+    "requestTitle": "Trupp-Rastanfrage",
+    "askingRest": "{{name}} fordert eine {{type}} Rast an.",
+    "short": "Kurze",
+    "long": "Lange",
+    "doYouAgree": "Stimmen Sie zu, eine {{type}} Rast mit dem Trupp einzulegen?",
+    "agree": "Zustimmen",
+    "decline": "Ablehnen",
+    "youAgreed": "Sie haben der Rast zugestimmt.",
+    "youDeclined": "Sie haben die Rast abgelehnt.",
+    "waitingForDM": "Warten auf Truppabstimmung und DM-Genehmigung...",
+    "cancelRequest": "Anfrage abbrechen",
+    "dmTitle": "Trupp-Rastgenehmigung",
+    "dmAsking": "{{count}}/{{total}} Spieler fordern eine {{type}} Rast an",
+    "didntVote": "{{count}} hat nicht abgestimmt",
+    "declined": "{{count}} abgelehnt",
+    "allowPrompt": "{{type}} Rast erlauben?",
+    "allow": "Erlauben",
+    "deny": "Ablehnen",
+    "approvedNotice": "Der DM hat die {{type}} Rast genehmigt! Zeit ist vergangen und Lebenspunkte wurden wiederhergestellt.",
+    "deniedNotice": "Der DM hat die Rastanfrage abgelehnt.",
+    "hoursInfo": "Kurze Rast: 2 Stunden · Lange Rast: 8 Stunden"
   }
 }
