@@ -45,6 +45,83 @@ const EFFECTS_LIST = [
   'Restrained',
 ];
 
+function renderEffectIcon(effect) {
+  switch (effect) {
+    case 'Blinded':
+      return '😵'; // eyes x x emoji
+    case 'Poisoned':
+      return (
+        <span
+          className="inline-block leading-none"
+          style={{ filter: 'drop-shadow(0 0 2px #22c55e) sepia(1) saturate(5000%) hue-rotate(75deg)' }}
+          title="Poisoned"
+        >
+          💀
+        </span>
+      ); // green skull emoji
+    case 'Restrained':
+      return '🪢'; // tied rope / knot emoji
+    case 'Charmed':
+      return '💖';
+    case 'Frightened':
+      return '😱';
+    case 'Stunned':
+      return '⚡';
+    case 'Prone':
+      return '⬇️';
+    case 'Paralyzed':
+      return '🧊';
+    default:
+      return '✦';
+  }
+}
+
+function getEffectPlainIcon(effect) {
+  switch (effect) {
+    case 'Blinded':
+      return '😵';
+    case 'Poisoned':
+      return '💀';
+    case 'Restrained':
+      return '🪢';
+    case 'Charmed':
+      return '💖';
+    case 'Frightened':
+      return '😱';
+    case 'Stunned':
+      return '⚡';
+    case 'Prone':
+      return '⬇️';
+    case 'Paralyzed':
+      return '🧊';
+    default:
+      return '';
+  }
+}
+
+function getEffectBadgeStyle(effect) {
+  switch (effect) {
+    case 'Blinded':
+      return 'bg-amber-950/60 text-amber-300 border-amber-500/40';
+    case 'Poisoned':
+      return 'bg-emerald-950/70 text-emerald-300 border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.25)]';
+    case 'Restrained':
+      return 'bg-orange-950/60 text-orange-300 border-orange-500/40';
+    case 'Charmed':
+      return 'bg-pink-950/60 text-pink-300 border-pink-500/40';
+    case 'Frightened':
+      return 'bg-violet-950/60 text-violet-300 border-violet-500/40';
+    case 'Stunned':
+      return 'bg-yellow-950/60 text-yellow-300 border-yellow-500/40';
+    case 'Prone':
+      return 'bg-slate-900 text-slate-300 border-slate-700';
+    case 'Paralyzed':
+      return 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40';
+    default:
+      return 'bg-black/40 text-gray-400 border-slate-800';
+  }
+}
+
 export default function CombatBoardPage() {
   const { campaignId } = useParams();
   const { user, profile } = useAuth();
@@ -533,23 +610,21 @@ export default function CombatBoardPage() {
                   <span className="absolute -top-1 -right-1 text-[10px] filter drop-shadow">💤</span>
                 )}
 
-                {/* Effect Badge (Charmed, Stunned, etc.) */}
+                {/* Effect Badge (Blinded, Poisoned, Restrained, Charmed, Stunned, etc.) */}
                 {tokenCombatant.effect && tokenCombatant.effect !== 'None' && (
                   <span
-                    className="absolute -bottom-1 -left-1 text-[8px] bg-purple-950/90 text-purple-200 border border-purple-400 rounded-full px-0.5"
+                    className={`absolute -bottom-1 -left-1 text-[8px] rounded-full px-0.5 border flex items-center justify-center ${
+                      tokenCombatant.effect === 'Poisoned'
+                        ? 'bg-emerald-950/95 border-emerald-400 text-emerald-200 shadow-[0_0_6px_rgba(16,185,129,0.5)]'
+                        : tokenCombatant.effect === 'Blinded'
+                          ? 'bg-amber-950/95 border-amber-400 text-amber-200'
+                          : tokenCombatant.effect === 'Restrained'
+                            ? 'bg-orange-950/95 border-orange-400 text-orange-200'
+                            : 'bg-purple-950/90 border-purple-400 text-purple-200'
+                    }`}
                     title={tokenCombatant.effect}
                   >
-                    {tokenCombatant.effect === 'Charmed'
-                      ? '💖'
-                      : tokenCombatant.effect === 'Frightened'
-                        ? '😱'
-                        : tokenCombatant.effect === 'Stunned'
-                          ? '⚡'
-                          : tokenCombatant.effect === 'Prone'
-                            ? '⬇️'
-                            : tokenCombatant.effect === 'Poisoned'
-                              ? '☣️'
-                              : '✦'}
+                    {renderEffectIcon(tokenCombatant.effect)}
                   </span>
                 )}
 
@@ -856,7 +931,7 @@ export default function CombatBoardPage() {
 
                     {/* Effect Area */}
                     <div>
-                      <span className="text-[9px] uppercase text-gray-500 block mb-0.5">
+                      <span className="text-[9px] uppercase text-gray-500 block mb-0.5 font-bold">
                         {t('combatBoard.effect', 'Effect')}
                       </span>
                       {isDM ? (
@@ -867,19 +942,22 @@ export default function CombatBoardPage() {
                         >
                           {EFFECTS_LIST.map((ef) => (
                             <option key={ef} value={ef}>
-                              {ef === 'None' ? t('combatBoard.none', 'None') : ef}
+                              {ef === 'None'
+                                ? t('combatBoard.none', 'None')
+                                : `${getEffectPlainIcon(ef)} ${ef}`}
                             </option>
                           ))}
                         </select>
                       ) : (
                         <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                            c.effect && c.effect !== 'None'
-                              ? 'bg-purple-950/60 text-purple-300 border-purple-500/40'
-                              : 'bg-black/40 text-gray-400 border-slate-800'
-                          }`}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getEffectBadgeStyle(
+                            c.effect
+                          )}`}
                         >
-                          {c.effect || 'None'}
+                          {c.effect && c.effect !== 'None' && (
+                            <span className="text-[11px] leading-none">{renderEffectIcon(c.effect)}</span>
+                          )}
+                          <span>{c.effect || 'None'}</span>
                         </span>
                       )}
                     </div>
