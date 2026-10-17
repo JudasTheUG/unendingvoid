@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { useDiceSync, publishRoll } from '../../hooks/useDiceSync';
 
 // Synthesize a realistic sci-fi mechanical clatter sound using Web Audio API
@@ -43,8 +44,49 @@ const DIE_THEMES = {
   d12: { border: '#a855f7', glow: 'rgba(168, 85, 247, 0.75)', baseColor: 0x1d082d, label: 'D12' },
   d20: { border: '#00f0ff', glow: 'rgba(0, 240, 255, 0.75)', baseColor: 0x051b2a, label: 'D20' },
   d100: { border: '#ec4899', glow: 'rgba(236, 72, 153, 0.75)', baseColor: 0x240618, label: 'D100' },
-  coin: { border: '#eab308', glow: 'rgba(234, 179, 8, 0.85)', baseColor: 0x2a2205, label: 'COIN' },
+  coin: { border: '#cbd5e1', glow: 'rgba(203, 213, 225, 0.85)', baseColor: 0x1e242b, label: 'LUCIFER COIN' },
 };
+
+// Cached 3D Lucifer Pentecostal Coin Geometry
+let cachedCoinGeometry = null;
+let coinLoadPromise = null;
+
+export function getOrLoadCoinGeometry() {
+  if (cachedCoinGeometry) return Promise.resolve(cachedCoinGeometry);
+  if (coinLoadPromise) return coinLoadPromise;
+
+  coinLoadPromise = new Promise((resolve) => {
+    if (typeof window === 'undefined' || typeof window.fetch !== 'function') {
+      const fallbackGeo = new THREE.CylinderGeometry(2.3, 2.3, 0.4, 36);
+      fallbackGeo.rotateX(Math.PI / 2);
+      cachedCoinGeometry = fallbackGeo;
+      resolve(fallbackGeo);
+      return;
+    }
+
+    const loader = new STLLoader();
+    loader.load(
+      '/models/lucifer-coin.stl',
+      (geom) => {
+        geom.center();
+        geom.computeVertexNormals();
+        geom.scale(0.095, 0.095, 0.095);
+        cachedCoinGeometry = geom;
+        resolve(geom);
+      },
+      undefined,
+      (err) => {
+        console.warn('[DiceOverlay] Using procedural fallback for coin:', err);
+        const fallbackGeo = new THREE.CylinderGeometry(2.3, 2.3, 0.4, 36);
+        fallbackGeo.rotateX(Math.PI / 2);
+        cachedCoinGeometry = fallbackGeo;
+        resolve(fallbackGeo);
+      }
+    );
+  });
+
+  return coinLoadPromise;
+}
 
 /**
  * Generate high-resolution canvas texture with engraved glowing numbers.
@@ -124,112 +166,6 @@ function createEngravedFaceTexture(label, dieType, isBoxFace = false, isHighligh
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
-  return texture;
-}
-
-/**
- * Generate 3D Coin face textures (HEADS and TAILS) with metallic finish, engravings, and highlight halo.
- */
-function createCoinFaceTexture(side = 'heads', isHighlighted = false) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-
-  ctx.clearRect(0, 0, 256, 256);
-
-  const isHeads = String(side).toLowerCase() === 'heads';
-  const primaryColor = isHeads ? '#eab308' : '#00f0ff';
-  const outlineColor = isHeads ? '#ffffff' : '#ff0033';
-
-  // Base metallic coin disc
-  const grad = ctx.createRadialGradient(128, 128, 15, 128, 128, 124);
-  if (isHeads) {
-    grad.addColorStop(0, isHighlighted ? '#3b2505' : '#231502');
-    grad.addColorStop(0.7, '#140c01');
-    grad.addColorStop(1, '#080400');
-  } else {
-    grad.addColorStop(0, isHighlighted ? '#063042' : '#041f2d');
-    grad.addColorStop(0.7, '#03141d');
-    grad.addColorStop(1, '#01090d');
-  }
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(128, 128, 124, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Highlight radiant halo
-  if (isHighlighted) {
-    const halo = ctx.createRadialGradient(128, 128, 20, 128, 128, 120);
-    halo.addColorStop(0, isHeads ? 'rgba(234, 179, 8, 0.85)' : 'rgba(0, 240, 255, 0.85)');
-    halo.addColorStop(0.5, isHeads ? 'rgba(66, 32, 6, 0.7)' : 'rgba(8, 51, 68, 0.7)');
-    halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = halo;
-    ctx.beginPath();
-    ctx.arc(128, 128, 120, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Outer milled gear border
-  ctx.strokeStyle = primaryColor;
-  ctx.lineWidth = isHighlighted ? 8 : 5;
-  ctx.shadowColor = primaryColor;
-  ctx.shadowBlur = isHighlighted ? 18 : 6;
-  ctx.beginPath();
-  ctx.arc(128, 128, 114, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Inner ring
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(128, 128, 96, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Center crest symbol
-  ctx.fillStyle = primaryColor;
-  ctx.font = '34px "Segoe UI Symbol", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(isHeads ? '⚡' : '🪐', 128, 86);
-
-  // Big Bold Engraved Text: HEADS or TAILS
-  const label = isHeads ? 'HEADS' : 'TAILS';
-  ctx.font = '900 44px "Orbitron", monospace, sans-serif';
-  ctx.textBaseline = 'middle';
-
-  ctx.strokeStyle = outlineColor;
-  ctx.lineWidth = 10;
-  ctx.lineJoin = 'miter';
-  ctx.miterLimit = 2;
-  ctx.strokeText(label, 128, 150);
-
-  ctx.fillStyle = '#000000';
-  ctx.fillText(label, 128, 150);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
-
-/**
- * Generate grooved metallic coin rim texture.
- */
-function createCoinRimTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#1c1917';
-  ctx.fillRect(0, 0, 512, 64);
-
-  ctx.fillStyle = '#eab308';
-  for (let x = 0; x < 512; x += 8) {
-    ctx.fillRect(x, 0, 4, 64);
-  }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.repeat.set(6, 1);
   return texture;
 }
 
@@ -457,11 +393,13 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
   const [showHistory, setShowHistory] = useState(false);
 
   // Bottom Dice Multi-Quantity Popover
-  const [quantityPopover, setQuantityPopover] = useState(null); // { x, y, dieType }
+  const [quantityPopover, setQuantityPopover] = useState(null);
   const [customQuantity, setCustomQuantity] = useState('2');
 
-  // Initialize Three.js scene
+  // Initialize Three.js scene & preload Lucifer Coin STL
   useEffect(() => {
+    getOrLoadCoinGeometry();
+
     const container = mountRef.current;
     if (!container) return;
 
@@ -480,14 +418,14 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.9);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0x00f0ff, 3.2);
+    const keyLight = new THREE.DirectionalLight(0xddeeff, 3.4);
     keyLight.position.set(12, 18, 12);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xff00aa, 2.4);
+    const fillLight = new THREE.DirectionalLight(0xaaccff, 2.5);
     fillLight.position.set(-12, -10, 10);
     scene.add(fillLight);
 
@@ -558,10 +496,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
             if (!die.userData.highlightActivated) {
               die.userData.highlightActivated = true;
 
-              if (die.userData.isCoin && die.userData.coinMesh) {
-                const slot = die.userData.winningSlot;
-                die.userData.coinMesh.material[slot].map = createCoinFaceTexture(die.userData.winningLabel, true);
-                die.userData.coinMesh.material[slot].needsUpdate = true;
+              if (die.userData.isCoin && die.userData.silverMat) {
+                die.userData.silverMat.emissive = new THREE.Color(0x385c7a);
+                die.userData.silverMat.emissiveIntensity = 0.55;
+                die.userData.silverMat.needsUpdate = true;
               } else if (die.userData.winningPlate) {
                 die.userData.winningPlate.material.map = createEngravedFaceTexture(
                   die.userData.winningLabel,
@@ -583,7 +521,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
               die.userData.winningPlate.scale.set(pulse, pulse, 1);
             }
             if (die.userData.faceSpotlight) {
-              die.userData.faceSpotlight.intensity = Math.min(3.2, 1.8 + 0.8 * pulse);
+              die.userData.faceSpotlight.intensity = Math.min(3.6, 2.0 + 1.0 * pulse);
             }
           }
         });
@@ -604,7 +542,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     };
   }, []);
 
-  // Construct 3D Die or Coin Mesh
+  // Construct 3D Die or Lucifer Silver Coin Mesh
   const createDieMesh = (dieType, seed, targetResult, isHighlightEligible = true) => {
     const theme = DIE_THEMES[dieType] || DIE_THEMES.d20;
     const dieRoot = new THREE.Group();
@@ -613,58 +551,51 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     dieRoot.userData.isHighlightEligible = isHighlightEligible;
 
     if (dieType === 'coin') {
-      // ──────────────── 3D COIN TOSS (CylinderGeometry) ────────────────
-      const radius = 2.3;
-      const height = 0.28;
-      const geometry = new THREE.CylinderGeometry(radius, radius, height, 36);
-
+      // ──────────────── LUCIFER'S PENTECOSTAL SILVER COIN ────────────────
       const targetSide = String(targetResult).toLowerCase() === 'heads' ? 'heads' : 'tails';
       const isHeads = targetSide === 'heads';
-      const winningSlot = isHeads ? 1 : 2;
 
-      const rimMat = new THREE.MeshStandardMaterial({
-        map: createCoinRimTexture(),
-        roughness: 0.25,
-        metalness: 0.85,
-        color: 0x997722,
-      });
-      const headsMat = new THREE.MeshStandardMaterial({
-        map: createCoinFaceTexture('heads', false),
-        roughness: 0.2,
-        metalness: 0.8,
-      });
-      const tailsMat = new THREE.MeshStandardMaterial({
-        map: createCoinFaceTexture('tails', false),
-        roughness: 0.2,
-        metalness: 0.8,
+      const coinGeo = cachedCoinGeometry
+        ? cachedCoinGeometry.clone()
+        : new THREE.CylinderGeometry(2.3, 2.3, 0.45, 36).rotateX(Math.PI / 2);
+
+      // Antique silver metal material
+      const silverMat = new THREE.MeshStandardMaterial({
+        color: 0xd2dbe4, // Antique Silver
+        roughness: 0.28,
+        metalness: 0.9,
+        emissive: new THREE.Color(0x15222e),
+        emissiveIntensity: 0.15,
       });
 
-      const coinMesh = new THREE.Mesh(geometry, [rimMat, headsMat, tailsMat]);
+      const coinMesh = new THREE.Mesh(coinGeo, silverMat);
       dieRoot.add(coinMesh);
 
-      // Edge bevel ring
-      const edgeGeo = new THREE.EdgesGeometry(geometry, 25);
+      // Silver perimeter edge ring
+      const edgeGeo = new THREE.EdgesGeometry(coinGeo, 30);
       const edgeMat = new THREE.LineBasicMaterial({
-        color: new THREE.Color(theme.border),
-        linewidth: 2,
+        color: new THREE.Color(0xdce7f3),
+        linewidth: 1,
         transparent: true,
-        opacity: 0.75,
+        opacity: 0.4,
       });
       dieRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
 
-      // Settle orientation: Heads top (0, 1, 0) or Tails bottom (0, -1, 0)
-      const targetNormal = isHeads ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, -1, 0);
-      const targetUp = isHeads ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1);
+      // In the Lucifer Coin STL:
+      // +Z face is the Devil Face (Lucifer / Heads)
+      // -Z face is the Crucifix (Cross / Tails)
+      const targetNormal = isHeads ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1);
+      const targetUp = new THREE.Vector3(0, 1, 0);
       dieRoot.userData.targetQuaternion = computeSettlingQuaternion(targetNormal, targetUp, cameraLookDir);
 
       dieRoot.userData.isCoin = true;
       dieRoot.userData.coinMesh = coinMesh;
-      dieRoot.userData.winningSlot = winningSlot;
+      dieRoot.userData.silverMat = silverMat;
       dieRoot.userData.winningLabel = targetSide;
 
       if (isHighlightEligible) {
-        const spotPos = targetNormal.clone().multiplyScalar(2.2);
-        const faceSpot = new THREE.PointLight(theme.border, 0, 10, 1.4);
+        const spotPos = targetNormal.clone().multiplyScalar(2.6);
+        const faceSpot = new THREE.PointLight(0xaad4f5, 0, 12, 1.8);
         faceSpot.position.copy(spotPos);
         dieRoot.add(faceSpot);
         dieRoot.userData.faceSpotlight = faceSpot;
@@ -902,7 +833,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     const rollMode = rollData.rollMode || 'normal';
 
     if (isCoin) {
-      // ──────────────── COIN TOSS (1 or more coins) ────────────────
+      // ──────────────── LUCIFER'S SILVER COIN TOSS ────────────────
       const results = rollData.results || ['HEADS'];
       const count = Math.min(results.length, 10);
 
@@ -910,12 +841,12 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
         const coinSide = results[i] || 'HEADS';
         const coinMesh = createDieMesh('coin', seed + i * 47, coinSide, true);
         if (count <= 4) {
-          coinMesh.position.x += (i - (count - 1) / 2) * 3.2;
+          coinMesh.position.x += (i - (count - 1) / 2) * 3.4;
         } else {
           const cols = Math.ceil(count / 2);
           const row = Math.floor(i / cols);
           const col = i % cols;
-          coinMesh.position.x += (col - (cols - 1) / 2) * 2.8;
+          coinMesh.position.x += (col - (cols - 1) / 2) * 3.0;
           coinMesh.position.y += row === 0 ? 1.2 : -1.2;
         }
         diceGroup.add(coinMesh);
@@ -933,7 +864,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       dieOnes.position.x = 2.4;
       diceGroup.add(dieOnes);
     } else if (rollMode === 'advantage' || rollMode === 'disadvantage') {
-      // ──────────────── ADVANTAGE / DISADVANTAGE (2 d20s, winning die highlighted) ────────────────
+      // ──────────────── ADVANTAGE / DISADVANTAGE ────────────────
       const results = rollData.results || [10, 10];
       const winIdx = rollData.winningIndex !== undefined ? rollData.winningIndex : 0;
 
@@ -945,7 +876,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       die2.position.x = 2.2;
       diceGroup.add(die2);
     } else {
-      // ──────────────── MULTIPLE STANDARD DICE (d4, d6, d8, d10, d12, d20, Critical) ────────────────
+      // ──────────────── MULTIPLE STANDARD DICE ────────────────
       const match = notationStr.match(/(\d*)d(\d+)/i) || [null, '1', '20'];
       const rawCount = Number(match[1]) || 1;
       const count = Math.min(rawCount, 10);
@@ -1027,7 +958,9 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     let rollPayload;
 
     if (rollStr.includes('coin')) {
-      // ──────────────── COIN TOSS ────────────────
+      // Preload Lucifer Coin STL if not already ready
+      await getOrLoadCoinGeometry();
+
       const count = Math.max(1, Math.min(10, quantityOverride || parseInt(rollStr, 10) || 1));
       const results = [];
       for (let i = 0; i < count; i++) {
@@ -1037,7 +970,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       const headsCount = results.filter((r) => r === 'HEADS').length;
       const tailsCount = results.length - headsCount;
       const totalDisplay = count === 1 ? results[0] : `${headsCount}H / ${tailsCount}T`;
-      const formattedNotation = `${count > 1 ? count : ''}🪙 Coin Toss`;
+      const formattedNotation = `${count > 1 ? `${count}× ` : ''}🪙 Lucifer's Silver Coin`;
 
       rollPayload = {
         userId: user?.uid || 'guest',
@@ -1047,7 +980,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
         results,
         total: totalDisplay,
         modifier: 0,
-        purpose: purpose === 'action' ? 'Coin Toss' : purpose,
+        purpose: purpose === 'action' ? "Lucifer's Coin Toss (Pentecostal)" : purpose,
         isCoin: true,
         physicsSeed: seed,
       };
@@ -1127,7 +1060,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
         count = quantityOverride;
       }
 
-      // CRITICAL HIT DOUBLES DICE COUNT (e.g. 2d6+2 becomes 4d6+2)
+      // CRITICAL HIT DOUBLES DICE COUNT
       if (rollMode === 'critical') {
         count *= 2;
       }
@@ -1199,7 +1132,11 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
               </div>
               <div className="text-xs text-gray-300 font-mono mt-1">
                 {activeRollBanner.isCoin ? (
-                  <>Result: [{activeRollBanner.results?.join(', ')}]</>
+                  <>
+                    Relic Face: [
+                    {activeRollBanner.results?.map((r) => `${r} (${r === 'HEADS' ? 'Devil' : 'Cross'})`).join(', ')}
+                    ]
+                  </>
                 ) : activeRollBanner.tensResult !== undefined ? (
                   <>Percentile: [{activeRollBanner.tensResult} + {activeRollBanner.onesResult}]</>
                 ) : activeRollBanner.rollMode === 'advantage' || activeRollBanner.rollMode === 'disadvantage' ? (
@@ -1237,7 +1174,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
           📜
         </button>
 
-        {/* Die Selector Buttons + Coin Toss */}
+        {/* Die Selector Buttons + Lucifer's Silver Coin */}
         <div className="glass-panel px-3 py-1.5 flex items-center gap-1.5 border-white/10">
           {['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'].map((d) => (
             <button
@@ -1265,7 +1202,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
             </button>
           ))}
 
-          {/* Coin Toss Button */}
+          {/* Lucifer's Silver Coin Button */}
           <button
             onClick={() => handleRoll('coin')}
             onContextMenu={(e) => {
@@ -1278,11 +1215,11 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
               setCustomQuantity('2');
             }}
             disabled={isRolling}
-            title="Left-click: Flip 1 coin · Right-click: Flip multiple coins"
-            className="px-2.5 py-1 rounded text-xs font-mono font-bold uppercase transition-all bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-[0_0_8px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95 flex items-center gap-1"
+            title="Left-click: Flip Lucifer's Silver Coin · Right-click: Flip multiple"
+            className="px-2.5 py-1 rounded text-xs font-mono font-bold uppercase transition-all bg-slate-300/20 text-slate-200 border border-slate-300/50 shadow-[0_0_10px_rgba(203,213,225,0.35)] hover:scale-105 active:scale-95 flex items-center gap-1"
           >
             <span>🪙</span>
-            <span>Coin</span>
+            <span>Silver Coin</span>
           </button>
         </div>
       </div>
@@ -1291,17 +1228,17 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       {quantityPopover && (
         <div
           style={{
-            left: `${Math.min(quantityPopover.x - 60, window.innerWidth - 240)}px`,
+            left: `${Math.min(quantityPopover.x - 60, window.innerWidth - 250)}px`,
             bottom: '65px',
           }}
-          className="fixed z-50 w-60 glass-panel p-3 border border-neon-cyan/50 bg-void-bg/95 shadow-[0_0_25px_rgba(0,240,255,0.35)] rounded-xl font-mono text-xs animate-fade-in"
+          className="fixed z-50 w-64 glass-panel p-3 border border-neon-cyan/50 bg-void-bg/95 shadow-[0_0_25px_rgba(0,240,255,0.35)] rounded-xl font-mono text-xs animate-fade-in"
           onClick={(e) => e.stopPropagation()}
           onContextMenu={(e) => e.preventDefault()}
         >
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2">
             <span className="font-display font-bold text-neon-cyan uppercase tracking-wider text-[11px]">
               {quantityPopover.dieType === 'coin'
-                ? '🪙 Flip Multiple Coins'
+                ? "🪙 Lucifer's Silver Coin"
                 : `🎲 Roll Multiple ${quantityPopover.dieType.toUpperCase()}`}
             </span>
             <button
@@ -1322,7 +1259,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                   key={num}
                   onClick={() => {
                     if (quantityPopover.dieType === 'coin') {
-                      handleRoll('coin', 0, 'Coin Toss', 'normal', num);
+                      handleRoll('coin', 0, "Lucifer's Coin Toss", 'normal', num);
                     } else if (quantityPopover.dieType === 'd100') {
                       handleRoll('1d100');
                     } else {
@@ -1350,7 +1287,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                 onClick={() => {
                   const count = Math.max(1, Math.min(10, parseInt(customQuantity, 10) || 1));
                   if (quantityPopover.dieType === 'coin') {
-                    handleRoll('coin', 0, 'Coin Toss', 'normal', count);
+                    handleRoll('coin', 0, "Lucifer's Coin Toss", 'normal', count);
                   } else if (quantityPopover.dieType === 'd100') {
                     handleRoll('1d100');
                   } else {
@@ -1360,7 +1297,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                 }}
                 className="flex-1 py-1 px-2 rounded bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50 font-bold uppercase text-[11px] transition-all"
               >
-                Roll {customQuantity || 1}d
+                Roll {customQuantity || 1}×
               </button>
             </div>
           </div>
@@ -1411,10 +1348,6 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
 
 /**
  * Trigger a roll programmatically from anywhere in the app with exact die type, modifier, label, and rollMode.
- * @param {string} notation - e.g. '1d20', '2d6', '1d8', 'coin'
- * @param {number} modifier - e.g. 3, -1
- * @param {string} label - e.g. 'Pulse Carbine Hit', 'Athletics Check'
- * @param {'normal'|'advantage'|'disadvantage'|'critical'} [rollMode='normal'] - Tactical roll mode
  */
 export function triggerInteractiveRoll(notation, modifier = 0, label = 'Action', rollMode = 'normal') {
   window.dispatchEvent(
