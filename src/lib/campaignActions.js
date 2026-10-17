@@ -3,6 +3,8 @@ import {
   doc,
   addDoc,
   updateDoc,
+  deleteDoc,
+  getDoc,
   setDoc,
   arrayUnion,
   arrayRemove,
@@ -269,5 +271,54 @@ export async function setCombatTurnOrder(campaignId, turnOrder) {
   }
 
   return payload;
+}
+
+/**
+ * Permanently deletes a campaign.
+ */
+export async function deleteCampaign(campaignId) {
+  if (!campaignId || !db) return false;
+  try {
+    const campaignRef = doc(db, 'campaigns', campaignId);
+    await deleteDoc(campaignRef);
+    return true;
+  } catch (err) {
+    console.error('[campaignActions] deleteCampaign error:', err);
+    throw err;
+  }
+}
+
+/**
+ * Removes an operative / character from an active campaign.
+ */
+export async function removeCharacterFromCampaign(campaignId, characterId) {
+  if (!campaignId || !characterId || !db) return false;
+  try {
+    const campaignRef = doc(db, 'campaigns', campaignId);
+    const characterRef = doc(db, 'players', characterId);
+
+    const campSnap = await getDoc(campaignRef);
+    if (campSnap.exists()) {
+      const activeCharacters = campSnap.data().activeCharacters || [];
+      const updatedActive = activeCharacters.filter(
+        (ac) => (ac.characterId || ac.uid) !== characterId
+      );
+      await updateDoc(campaignRef, {
+        activeCharacters: updatedActive,
+        updatedAt: serverTimestamp(),
+      });
+    }
+
+    // Also clear campaignId on character doc
+    await updateDoc(characterRef, {
+      campaignId: null,
+      updatedAt: serverTimestamp(),
+    });
+
+    return true;
+  } catch (err) {
+    console.error('[campaignActions] removeCharacterFromCampaign error:', err);
+    throw err;
+  }
 }
 

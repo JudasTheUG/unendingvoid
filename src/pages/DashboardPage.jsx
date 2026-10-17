@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useCollection } from '../hooks/useCollection';
-import { createCampaign, createCharacter } from '../lib/campaignActions';
+import { createCampaign, createCharacter, deleteCampaign } from '../lib/campaignActions';
 import LanguageSwitcher from '../components/shared/LanguageSwitcher';
 import { logout } from '../lib/authService';
 
@@ -16,6 +16,21 @@ export default function DashboardPage() {
   const [showCreateCharModal, setShowCreateCharModal] = useState(false);
   const [showCreateCampModal, setShowCreateCampModal] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+
+  const handleDeleteCampaign = async (camp) => {
+    const confirmDelete = window.confirm(
+      t('campaign.confirmDeleteCampaign', `Are you sure you want to permanently delete campaign "${camp.name}"? This action cannot be undone.`)
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await deleteCampaign(camp.id);
+      alert(t('campaign.campaignDeleted', 'Campaign successfully deleted.'));
+    } catch (err) {
+      console.error('[DashboardPage] Delete campaign error:', err);
+      alert(t('campaign.failedToDelete', 'Failed to delete campaign') + ': ' + err.message);
+    }
+  };
 
   // Form states for Character creation
   const [charName, setCharName] = useState('');
@@ -348,12 +363,22 @@ export default function DashboardPage() {
                     </div>
 
                     {isDM ? (
-                      <button
-                        onClick={() => navigate(`/dm/${camp.id}`)}
-                        className="w-full py-2 rounded bg-neon-magenta/20 hover:bg-neon-magenta/30 text-neon-magenta border border-neon-magenta/50 text-xs font-mono font-bold uppercase tracking-wider transition-all"
-                      >
-                        Start Campaign (DM Console) 👑
-                      </button>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => navigate(`/dm/${camp.id}`)}
+                          className="w-full py-2 rounded bg-neon-magenta/20 hover:bg-neon-magenta/30 text-neon-magenta border border-neon-magenta/50 text-xs font-mono font-bold uppercase tracking-wider transition-all"
+                        >
+                          Start Campaign (DM Console) 👑
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCampaign(camp)}
+                          className="w-full py-1.5 rounded bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-500/30 hover:border-rose-500/60 text-[11px] font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+                          title={t('campaign.deleteCampaign', 'Delete Campaign')}
+                        >
+                          <span>🗑️</span>
+                          <span>{t('campaign.deleteCampaign', 'Delete Campaign')}</span>
+                        </button>
+                      </div>
                     ) : (
                       <button
                         onClick={() => navigate(`/campaign/${camp.id}`)}

@@ -15,6 +15,7 @@ import DiceOverlay from '../components/dice/DiceOverlay';
 import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { deleteCampaign, removeCharacterFromCampaign } from '../lib/campaignActions';
 
 export default function DMPanel() {
   const { campaignId } = useParams();
@@ -31,6 +32,7 @@ export default function DMPanel() {
   const [levelUpModalPlayer, setLevelUpModalPlayer] = useState(null);
   const [combatActive, setCombatActive] = useState(false);
   const [currentTurn, setCurrentTurn] = useState(0);
+  const [customTurnOrder, setCustomTurnOrder] = useState(null);
 
   // Level up form states
   const [hpBonus, setHpBonus] = useState(8);
@@ -54,7 +56,6 @@ export default function DMPanel() {
 
   const selectedPlayer = allPlayers.find((p) => (p.id || p.uid) === selectedPlayerId);
 
-  const [customTurnOrder, setCustomTurnOrder] = useState(null);
   const turnOrder = customTurnOrder || partyCharacters.map((p) => p.id || p.uid);
 
   const handleNextTurn = () => {
@@ -109,6 +110,44 @@ export default function DMPanel() {
     }
   };
 
+  // Delete Campaign
+  const handleDeleteCampaign = async () => {
+    if (!campaign) return;
+    const confirmDelete = window.confirm(
+      t('campaign.confirmDeleteCampaign', `Are you sure you want to permanently delete campaign "${campaign.name}"? This action cannot be undone.`)
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await deleteCampaign(campaign.id);
+      alert(t('campaign.campaignDeleted', 'Campaign successfully deleted.'));
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[DMPanel] Delete campaign error:', err);
+      alert(t('campaign.failedToDelete', 'Failed to delete campaign') + ': ' + err.message);
+    }
+  };
+
+  // Remove Operative from Campaign
+  const handleRemoveCharacter = async (player) => {
+    if (!campaign) return;
+    const charId = player.id || player.uid;
+    const charName = player.displayName || player.name || 'Operative';
+    const confirmRemove = window.confirm(
+      t('campaign.confirmRemoveCharacter', `Remove operative "${charName}" from this campaign roster?`)
+    );
+    if (!confirmRemove) return;
+
+    try {
+      await removeCharacterFromCampaign(campaign.id, charId);
+      alert(t('campaign.characterRemoved', `Operative "${charName}" removed from campaign.`));
+      if (selectedPlayerId === charId) setSelectedPlayerId(null);
+    } catch (err) {
+      console.error('[DMPanel] Remove character error:', err);
+      alert(t('campaign.failedToRemove', 'Failed to remove operative') + ': ' + err.message);
+    }
+  };
+
   return (
     <div className="min-h-dvh bg-void-bg text-white relative p-4 md:p-6 lg:p-8 space-y-6">
       {/* 3D Dice Layer */}
@@ -149,6 +188,16 @@ export default function DMPanel() {
 
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
+          {campaign && (
+            <button
+              onClick={handleDeleteCampaign}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider text-rose-400 border border-rose-500/40 hover:bg-rose-950/40 hover:border-rose-500 transition-all duration-200 flex items-center gap-1.5"
+              title={t('campaign.deleteCampaign', 'Delete Campaign')}
+            >
+              <span>🗑️</span>
+              <span className="hidden sm:inline">{t('campaign.deleteCampaign', 'Delete Campaign')}</span>
+            </button>
+          )}
           <button
             onClick={logout}
             className="px-3.5 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider text-gray-400 border border-white/10 hover:border-neon-red/50 hover:text-neon-red hover:bg-neon-red/10 transition-all duration-200"
@@ -236,22 +285,34 @@ export default function DMPanel() {
                     </div>
                   </div>
 
-                  {/* DM Action Buttons: Level Up + Edit */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-                    <button
-                      onClick={() => setLevelUpModalPlayer(player)}
-                      className="py-1.5 rounded bg-neon-purple/20 hover:bg-neon-purple/30 text-purple-300 border border-neon-purple/50 text-[11px] font-mono font-bold uppercase tracking-wider transition-all"
-                    >
-                      ⚡ Level Up
-                    </button>
-                    <button
-                      onClick={() =>
-                        setSelectedPlayerId(isSelected ? null : player.id || player.uid)
-                      }
-                      className="py-1.5 rounded bg-white/10 hover:bg-white/20 text-gray-200 text-[11px] font-mono font-bold uppercase tracking-wider transition-all"
-                    >
-                      {isSelected ? 'Close Edit' : '🛠️ Edit Stats'}
-                    </button>
+                  {/* DM Action Buttons: Level Up + Edit + Remove */}
+                  <div className="space-y-2 pt-2 border-t border-white/10">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setLevelUpModalPlayer(player)}
+                        className="py-1.5 rounded bg-neon-purple/20 hover:bg-neon-purple/30 text-purple-300 border border-neon-purple/50 text-[11px] font-mono font-bold uppercase tracking-wider transition-all"
+                      >
+                        ⚡ Level Up
+                      </button>
+                      <button
+                        onClick={() =>
+                          setSelectedPlayerId(isSelected ? null : player.id || player.uid)
+                        }
+                        className="py-1.5 rounded bg-white/10 hover:bg-white/20 text-gray-200 text-[11px] font-mono font-bold uppercase tracking-wider transition-all"
+                      >
+                        {isSelected ? 'Close Edit' : '🛠️ Edit Stats'}
+                      </button>
+                    </div>
+                    {campaign && (
+                      <button
+                        onClick={() => handleRemoveCharacter(player)}
+                        className="w-full py-1.5 rounded bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-500/30 hover:border-rose-500/60 text-[10px] font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1"
+                        title={t('campaign.removeFromCampaign', 'Remove from Campaign')}
+                      >
+                        <span>✕</span>
+                        <span>{t('campaign.removeFromCampaign', 'Remove from Campaign')}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );

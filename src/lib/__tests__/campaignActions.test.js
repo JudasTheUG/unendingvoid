@@ -6,8 +6,10 @@ import {
   requestInitiative,
   submitInitiativeRoll,
   setCombatTurnOrder,
+  deleteCampaign,
+  removeCharacterFromCampaign,
 } from '../campaignActions';
-import { addDoc, setDoc, updateDoc, doc, collection } from 'firebase/firestore';
+import { addDoc, setDoc, updateDoc, deleteDoc, getDoc, doc, collection } from 'firebase/firestore';
 
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
@@ -15,6 +17,8 @@ vi.mock('firebase/firestore', () => ({
   addDoc: vi.fn(),
   setDoc: vi.fn(),
   updateDoc: vi.fn(),
+  deleteDoc: vi.fn(),
+  getDoc: vi.fn(),
   arrayUnion: vi.fn((val) => val),
   arrayRemove: vi.fn((val) => val),
   serverTimestamp: vi.fn(() => 'serverTimestampMock'),
@@ -132,6 +136,33 @@ describe('campaignActions', () => {
         initiativeRequested: false,
       })
     );
+  });
+
+  it('deleteCampaign deletes campaign document from Firestore', async () => {
+    deleteDoc.mockResolvedValue();
+    const res = await deleteCampaign('camp-123');
+
+    expect(res).toBe(true);
+    expect(deleteDoc).toHaveBeenCalledWith({ id: 'mock-doc-ref' });
+  });
+
+  it('removeCharacterFromCampaign updates campaign roster and clears campaignId on character', async () => {
+    getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        activeCharacters: [
+          { characterId: 'char-1', name: 'Zara' },
+          { characterId: 'char-2', name: 'Kael' },
+        ],
+      }),
+    });
+    updateDoc.mockResolvedValue();
+
+    const res = await removeCharacterFromCampaign('camp-123', 'char-1');
+
+    expect(res).toBe(true);
+    expect(getDoc).toHaveBeenCalledWith({ id: 'mock-doc-ref' });
+    expect(updateDoc).toHaveBeenCalledTimes(2);
   });
 });
 

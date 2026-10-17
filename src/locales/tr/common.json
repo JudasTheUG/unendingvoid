@@ -213,5 +213,15 @@
     "catMilitary": "Askeri Operasyonlar",
     "catPolitics": "Galaktik Politika",
     "catOutlaw": "Yeraltı Dünyası & Ödüller"
+  },
+  "campaign": {
+    "deleteCampaign": "Seferi Sil",
+    "confirmDeleteCampaign": "Bu seferi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "campaignDeleted": "Sefer başarıyla silindi.",
+    "removeFromCampaign": "Seferden Çıkar",
+    "confirmRemoveCharacter": "Ajan bu sefer kadrosundan çıkarılsın mı?",
+    "characterRemoved": "Ajan seferden çıkarıldı.",
+    "failedToDelete": "Sefer silinemedi",
+    "failedToRemove": "Ajan çıkarılamadı"
   }
 }

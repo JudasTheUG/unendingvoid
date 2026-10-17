@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayerData } from '../hooks/usePlayerData';
 import { useCollection } from '../hooks/useCollection';
-import { addCharacterToCampaign } from '../lib/campaignActions';
+import { addCharacterToCampaign, deleteCampaign, removeCharacterFromCampaign } from '../lib/campaignActions';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 
 export default function CampaignPage() {
+  const { t } = useTranslation();
   const { campaignId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -71,6 +73,40 @@ export default function CampaignPage() {
     }
   };
 
+  const handleDeleteCampaign = async () => {
+    const confirmDelete = window.confirm(
+      t('campaign.confirmDeleteCampaign', `Are you sure you want to permanently delete campaign "${campaign.name}"? This action cannot be undone.`)
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await deleteCampaign(campaign.id);
+      alert(t('campaign.campaignDeleted', 'Campaign successfully deleted.'));
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[CampaignPage] Delete campaign error:', err);
+      alert(t('campaign.failedToDelete', 'Failed to delete campaign') + ': ' + err.message);
+    }
+  };
+
+  const handleRemoveCharacter = async (char) => {
+    const charName = char.displayName || char.name || 'Operative';
+    const confirmRemove = window.confirm(
+      t('campaign.confirmRemoveCharacter', `Remove operative "${charName}" from this campaign roster?`)
+    );
+    if (!confirmRemove) return;
+
+    try {
+      await removeCharacterFromCampaign(campaign.id, char.id || char.uid);
+      alert(t('campaign.characterRemoved', `Operative "${charName}" removed from campaign.`));
+    } catch (err) {
+      console.error('[CampaignPage] Remove character error:', err);
+      alert(t('campaign.failedToRemove', 'Failed to remove operative') + ': ' + err.message);
+    }
+  };
+
+  const isDM = campaign.dmId === user?.uid;
+
   return (
     <div className="min-h-dvh bg-void-bg text-white p-4 md:p-8 space-y-6">
       {/* Campaign Header */}
@@ -93,6 +129,16 @@ export default function CampaignPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {isDM && (
+            <button
+              onClick={handleDeleteCampaign}
+              className="px-3.5 py-1.5 rounded bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-500/30 hover:border-rose-500/60 text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5"
+              title={t('campaign.deleteCampaign', 'Delete Campaign')}
+            >
+              <span>🗑️</span>
+              <span>{t('campaign.deleteCampaign', 'Delete Campaign')}</span>
+            </button>
+          )}
           <button
             onClick={() => navigate('/dashboard')}
             className="px-3.5 py-1.5 rounded bg-white/10 hover:bg-white/20 text-xs font-mono uppercase tracking-wider text-gray-300"
@@ -156,14 +202,26 @@ export default function CampaignPage() {
                       </div>
                     </div>
 
-                    {isMine && (
-                      <button
-                        onClick={() => navigate(`/character/${char.id}`)}
-                        className="w-full py-1.5 rounded bg-neon-cyan/15 hover:bg-neon-cyan/25 text-neon-cyan border border-neon-cyan/40 text-xs font-mono font-bold uppercase tracking-wider"
-                      >
-                        Open Character Sheet ▶
-                      </button>
-                    )}
+                    <div className="space-y-1.5 pt-2 border-t border-white/5">
+                      {isMine && (
+                        <button
+                          onClick={() => navigate(`/character/${char.id}`)}
+                          className="w-full py-1.5 rounded bg-neon-cyan/15 hover:bg-neon-cyan/25 text-neon-cyan border border-neon-cyan/40 text-xs font-mono font-bold uppercase tracking-wider"
+                        >
+                          Open Character Sheet ▶
+                        </button>
+                      )}
+                      {(isMine || isDM) && (
+                        <button
+                          onClick={() => handleRemoveCharacter(char)}
+                          className="w-full py-1 rounded bg-rose-950/25 hover:bg-rose-900/40 text-rose-400 border border-rose-500/30 text-[10px] font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1"
+                          title={t('campaign.removeFromCampaign', 'Remove from Campaign')}
+                        >
+                          <span>✕</span>
+                          <span>{t('campaign.removeFromCampaign', 'Remove from Campaign')}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

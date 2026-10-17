@@ -125,32 +125,32 @@ export default function DMIntelBroadcast({
 
   return (
     <>
-      {/* Floating Tactical Comms Toggle Button on Bottom-Right */}
-      <div className="fixed bottom-5 right-64 z-50">
+      {/* Floating Tactical Comms Toggle Button - Far Right Above Dice Bar */}
+      <div className="fixed bottom-20 right-5 z-40">
         <button
           onClick={handleOpen}
-          className={`px-3 py-2 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-[0_0_20px_rgba(0,0,0,0.8)]
+          className={`px-3.5 py-2.5 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-[0_0_25px_rgba(0,0,0,0.9)]
                      ${isOpen
-                       ? 'border-amber-500 text-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                       ? 'border-amber-500 text-amber-400 bg-amber-500/15 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
                        : hasNewUnread
-                         ? 'border-neon-cyan text-neon-cyan animate-pulse shadow-[0_0_15px_rgba(0,240,255,0.4)]'
-                         : 'border-slate-700 text-gray-300 hover:text-white hover:border-slate-500'}`}
+                         ? 'border-neon-cyan text-neon-cyan animate-pulse shadow-[0_0_20px_rgba(0,240,255,0.5)]'
+                         : 'border-slate-700 text-gray-300 hover:text-white hover:border-slate-500 hover:bg-[#0e1628]'}`}
           title="Open DM Tactical Comms Feed"
         >
-          <span className="text-sm">📡</span>
-          <span className="hidden sm:inline">{t('intel.feedTitle') || 'TAC-COMMS'}</span>
+          <span className="text-base">📡</span>
+          <span>{t('intel.feedTitle') || 'TAC-COMMS'}</span>
           {hasNewUnread && (
             <span className="w-2 h-2 rounded-full bg-neon-cyan animate-ping"></span>
           )}
-          <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] text-gray-300 border border-slate-700">
+          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-gray-200 border border-slate-700 font-bold">
             {broadcasts.length}
           </span>
         </button>
       </div>
 
-      {/* 100% Opaque Tactical Intel Feed Panel */}
+      {/* 100% Opaque Tactical Intel Feed Panel - Expanded Size */}
       {isOpen && (
-        <div className="fixed bottom-20 right-5 w-88 max-h-[32rem] bg-[#070b14] p-4 z-50 shadow-[0_0_40px_rgba(0,0,0,0.95)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
+        <div className="fixed bottom-20 right-5 w-96 sm:w-[32rem] max-w-[calc(100vw-2.5rem)] max-h-[38rem] bg-[#070b14] p-4.5 z-50 shadow-[0_0_50px_rgba(0,0,0,0.98)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
           {/* Header Bar */}
           <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
             <div className="flex items-center gap-2">

@@ -213,5 +213,15 @@
     "catMilitary": "Military Ops",
     "catPolitics": "Galactic Politics",
     "catOutlaw": "Underworld & Bounties"
+  },
+  "campaign": {
+    "deleteCampaign": "Delete Campaign",
+    "confirmDeleteCampaign": "Are you sure you want to permanently delete this campaign? This action cannot be undone.",
+    "campaignDeleted": "Campaign successfully deleted.",
+    "removeFromCampaign": "Remove from Campaign",
+    "confirmRemoveCharacter": "Remove operative from this campaign roster?",
+    "characterRemoved": "Operative removed from campaign.",
+    "failedToDelete": "Failed to delete campaign",
+    "failedToRemove": "Failed to remove operative"
   }
 }

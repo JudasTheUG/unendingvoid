@@ -250,6 +250,7 @@ function createD8Data() {
 function createD10Data(labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']) {
   const R = 2.0;
   const H = 2.2;
+  const h_eq = 0.45;
   const tipTop = new THREE.Vector3(0, H, 0);
   const tipBottom = new THREE.Vector3(0, -H, 0);
 
@@ -258,51 +259,46 @@ function createD10Data(labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9
 
   for (let i = 0; i < 5; i++) {
     const angleTop = (i * 2 * Math.PI) / 5;
-    topEquator.push(new THREE.Vector3(R * Math.cos(angleTop), 0.35, R * Math.sin(angleTop)));
+    topEquator.push(new THREE.Vector3(R * Math.cos(angleTop), h_eq, R * Math.sin(angleTop)));
 
     const angleBottom = ((i + 0.5) * 2 * Math.PI) / 5;
-    bottomEquator.push(new THREE.Vector3(R * Math.cos(angleBottom), -0.35, R * Math.sin(angleBottom)));
+    bottomEquator.push(new THREE.Vector3(R * Math.cos(angleBottom), -h_eq, R * Math.sin(angleBottom)));
   }
 
   const positions = [];
   const faces = [];
 
+  const addTriangle = (p1, p2, p3, faceCenter) => {
+    const n = new THREE.Vector3().crossVectors(p2.clone().sub(p1), p3.clone().sub(p1));
+    if (n.dot(faceCenter) < 0) {
+      positions.push(p1.x, p1.y, p1.z, p3.x, p3.y, p3.z, p2.x, p2.y, p2.z);
+    } else {
+      positions.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z);
+    }
+  };
+
   for (let i = 0; i < 5; i++) {
-    const t0 = topEquator[i];
+    const u0 = topEquator[i];
+    const u1 = topEquator[(i + 1) % 5];
     const b0 = bottomEquator[i];
-    const t1 = topEquator[(i + 1) % 5];
     const b_prev = bottomEquator[(i + 4) % 5];
 
-    // Upper kite face
-    positions.push(
-      tipTop.x, tipTop.y, tipTop.z,
-      t0.x, t0.y, t0.z,
-      b_prev.x, b_prev.y, b_prev.z,
-      tipTop.x, tipTop.y, tipTop.z,
-      b_prev.x, b_prev.y, b_prev.z,
-      t1.x, t1.y, t1.z
-    );
+    // Upper kite: apex tipTop, u0, b0, u1
+    const upCenter = tipTop.clone().add(u0).add(b0).add(u1).divideScalar(4);
+    addTriangle(tipTop, u0, b0, upCenter);
+    addTriangle(tipTop, b0, u1, upCenter);
 
-    const upNormal = new THREE.Vector3().add(t0).add(b_prev).divideScalar(2).sub(tipTop).cross(t1.clone().sub(t0)).normalize();
-    const upCenter = tipTop.clone().add(t0).add(t1).add(b_prev).divideScalar(4);
+    const upNormal = upCenter.clone().normalize();
     const upUp = tipTop.clone().sub(upCenter).normalize();
-
     faces.push({ label: labels[i * 2] || String(i * 2), normal: upNormal, center: upCenter, up: upUp });
 
-    // Lower kite face
-    positions.push(
-      tipBottom.x, tipBottom.y, tipBottom.z,
-      b0.x, b0.y, b0.z,
-      t0.x, t0.y, t0.z,
-      tipBottom.x, tipBottom.y, tipBottom.z,
-      t1.x, t1.y, t1.z,
-      b0.x, b0.y, b0.z
-    );
+    // Lower kite: apex tipBottom, b0, u0, b_prev
+    const downCenter = tipBottom.clone().add(b0).add(u0).add(b_prev).divideScalar(4);
+    addTriangle(tipBottom, b0, u0, downCenter);
+    addTriangle(tipBottom, u0, b_prev, downCenter);
 
-    const downNormal = new THREE.Vector3().add(b0).add(t0).divideScalar(2).sub(tipBottom).cross(t1.clone().sub(b0)).normalize();
-    const downCenter = tipBottom.clone().add(b0).add(t0).add(t1).divideScalar(4);
-    const downUp = downCenter.clone().sub(tipBottom).normalize();
-
+    const downNormal = downCenter.clone().normalize();
+    const downUp = u0.clone().sub(tipBottom).normalize();
     faces.push({ label: labels[i * 2 + 1] || String(i * 2 + 1), normal: downNormal, center: downCenter, up: downUp });
   }
 
@@ -819,6 +815,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
         metalness: 0.88,
         emissive: new THREE.Color(theme.border),
         emissiveIntensity: 0.15,
+        side: THREE.FrontSide,
       });
       const bodyMesh = new THREE.Mesh(geometry, baseMaterial);
       dieRoot.add(bodyMesh);

@@ -213,5 +213,15 @@
     "catMilitary": "Militäreinsätze",
     "catPolitics": "Galaktische Politik",
     "catOutlaw": "Unterwelt & Kopfgelder"
+  },
+  "campaign": {
+    "deleteCampaign": "Kampagne löschen",
+    "confirmDeleteCampaign": "Möchten Sie diese Kampagne wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "campaignDeleted": "Kampagne erfolgreich gelöscht.",
+    "removeFromCampaign": "Aus Kampagne entfernen",
+    "confirmRemoveCharacter": "Einsatzkraft aus dieser Kampagnenliste entfernen?",
+    "characterRemoved": "Einsatzkraft aus der Kampagne entfernt.",
+    "failedToDelete": "Kampagne konnte nicht gelöscht werden",
+    "failedToRemove": "Einsatzkraft konnte nicht entfernt werden"
   }
 }
