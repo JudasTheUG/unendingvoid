@@ -43,7 +43,16 @@ export function getStoredBroadcasts() {
 
 export function saveLocalBroadcast(broadcast) {
   const current = getStoredBroadcasts();
-  const updated = [broadcast, ...current].slice(0, 30);
+  const map = new Map();
+  if (broadcast && broadcast.id) {
+    map.set(broadcast.id, broadcast);
+  }
+  current.forEach((b) => {
+    if (b && b.id && !map.has(b.id)) {
+      map.set(b.id, b);
+    }
+  });
+  const updated = Array.from(map.values()).slice(0, 500);
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('unendingvoid:new_broadcast', { detail: broadcast }));
@@ -137,18 +146,50 @@ export default function DMIntelBroadcast({
   const [savedIds, setSavedIds] = useState(new Set());
   const [hasNewUnread, setHasNewUnread] = useState(false);
 
-  // Sync broadcasts from Firestore (with local fallback)
+  // Sync broadcasts from Firestore (with permanent local fallback & caching)
   useEffect(() => {
     let unsubscribe = null;
     try {
       if (db) {
-        const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(25));
+        const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(500));
         unsubscribe = onSnapshot(
           q,
           (snapshot) => {
             if (!snapshot.empty) {
-              const live = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-              setBroadcasts(live);
+              const live = snapshot.docs.map((d) => {
+                const data = d.data();
+                return {
+                  id: d.id,
+                  ...data,
+                  createdMillis:
+                    data.createdAt?.toMillis
+                      ? data.createdAt.toMillis()
+                      : data.createdAt?.seconds
+                        ? data.createdAt.seconds * 1000
+                        : Number(data.createdMillis || data.createdAt) || Date.now(),
+                };
+              });
+
+              setBroadcasts((prev) => {
+                const map = new Map();
+                // Add existing local broadcasts
+                prev.forEach((b) => {
+                  if (b && b.id) map.set(b.id, b);
+                });
+                // Add live broadcasts from Firestore (authoritative)
+                live.forEach((b) => {
+                  if (b && b.id) map.set(b.id, b);
+                });
+                const merged = Array.from(map.values()).sort((a, b) => {
+                  const tA = a.createdMillis || (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : Number(a.createdAt) || 0);
+                  const tB = b.createdMillis || (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : Number(b.createdAt) || 0);
+                  return tB - tA;
+                });
+                try {
+                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged.slice(0, 500)));
+                } catch (_) {}
+                return merged;
+              });
             }
           },
           (err) => {
@@ -161,7 +202,13 @@ export default function DMIntelBroadcast({
     }
 
     const handleCustomBroadcast = (e) => {
-      setBroadcasts((prev) => [e.detail, ...prev.filter((b) => b.id !== e.detail.id)]);
+      setBroadcasts((prev) => {
+        const updated = [e.detail, ...prev.filter((b) => b.id !== e.detail.id)];
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated.slice(0, 500)));
+        } catch (_) {}
+        return updated;
+      });
       if (!isOpen) setHasNewUnread(true);
     };
 
