@@ -84,6 +84,16 @@ export const shipModulesCatalog = {
       mass: 110,
       powerDraw: 38,
       value: 1950
+    },
+    {
+      id: "item_hyper_thrusters",
+      name: { en: "Vortex Hyper-Drive Thrusters", tr: "Vorteks Hiper Motor İticileri", de: "Vortex-Hyperantrieb-Triebwerke" },
+      thrust: 950,
+      maxThrustMass: 750,
+      fuelBurnRate: 28,
+      mass: 45,
+      powerDraw: 24,
+      value: 300
     }
   ],
   reactor: [
@@ -96,6 +106,13 @@ export const shipModulesCatalog = {
     },
     {
       id: "reactor_tokamak_vanguard",
+      name: { en: "Tokamak Toroidal Fusion Core (160 MW)", tr: "Tokamak Toroidal Füzyon Çekirdeği (160 MW)", de: "Tokamak Toroidaler Fusionskern (160 MW)" },
+      reactorOutput: 160,
+      mass: 28,
+      value: 750
+    },
+    {
+      id: "item_tokamak_reactor",
       name: { en: "Tokamak Magnetic Confinement Core (160 MW)", tr: "Tokamak Manyetik Çekirdek (160 MW)", de: "Tokamak-Magnetfeldkern (160 MW)" },
       reactorOutput: 160,
       mass: 28,
@@ -142,6 +159,14 @@ export const shipModulesCatalog = {
       value: 650
     },
     {
+      id: "item_phase_shield",
+      name: { en: "Phase Barrier Shield Matrix (+160)", tr: "Faz Bariyer Kalkan Matrisi (+160)", de: "Phasenbarriere-Schildmatrix (+160)" },
+      shields: 160,
+      powerDraw: 20,
+      mass: 22,
+      value: 650
+    },
+    {
       id: "shield_heavy_citadel",
       name: { en: "Citadel Heavy Fortress Shield (+280)", tr: "Hisar Ağır Kale Kalkanı (+280)", de: "Zitadellen-Schwerer Festungsschild (+280)" },
       shields: 280,
@@ -174,6 +199,14 @@ export const shipModulesCatalog = {
       mass: 45,
       powerDraw: 26,
       value: 750
+    },
+    {
+      id: "warp_class_5",
+      name: { en: "Hyper-Graviton Warp Core Mk V", tr: "Hiper-Graviton Warp Çekirdeği Mk V", de: "Hyper-Graviton-Warpkern Mk V" },
+      jumpRating: 35,
+      mass: 50,
+      powerDraw: 30,
+      value: 950
     }
   ],
   cargoBay: [
@@ -258,6 +291,15 @@ export const shipModulesCatalog = {
       mass: 18,
       powerDraw: 12,
       value: 500
+    },
+    {
+      id: "item_quantum_scanner",
+      name: { en: "Subspace Quantum Scanner", tr: "Altuzay Kuantum Tarayıcı", de: "Subraum-Quantenscanner" },
+      rangeAU: 20,
+      targetLock: 3,
+      mass: 18,
+      powerDraw: 12,
+      value: 500
     }
   ],
   landingSystems: [
@@ -296,6 +338,32 @@ export const shipModulesCatalog = {
       mass: 0,
       powerDraw: 0,
       value: 0
+    },
+    {
+      id: "item_torpedo_launcher",
+      name: { en: "Dual Photon Torpedo Rack", tr: "Çift Foton Torpido Yuvası", de: "Doppel-Photonen-Torpedogestell" },
+      type: "Heavy Ordnance",
+      toHit: 7,
+      damageDice: "4d10",
+      damageBonus: 4,
+      damageType: "Explosive",
+      range: "4,000 / 12,000 km",
+      mass: 25,
+      powerDraw: 16,
+      value: 260
+    },
+    {
+      id: "wpn_railgun_mk1",
+      name: { en: "Light Kinetic Coilgun", tr: "Hafif Kinetik Bobin Topu", de: "Leichte kinetische Spulenkanone" },
+      type: "Kinetic Battery",
+      toHit: 5,
+      damageDice: "1d10",
+      damageBonus: 3,
+      damageType: "Kinetic",
+      range: "1,500 / 5,000 km",
+      mass: 14,
+      powerDraw: 8,
+      value: 320
     },
     {
       id: "wpn_railgun_mk2",

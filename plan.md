@@ -448,19 +448,23 @@ service cloud.firestore {
 
 #### 7.1 Catalogs & Validation Engines
 - `src/lib/shipModulesCatalog.js`: Hardpoints, weapon batteries, shield generators, impulse thrusters, and fusion reactors with power draw and mass ratings.
+  - Integrates mountable crafted modules from E.E.Sys: **Dual Photon Torpedo Rack** (`item_torpedo_launcher`, 4d10+4 Explosive yield), **Vortex Hyper-Drive Thrusters** (`item_hyper_thrusters`), **Phase Barrier Shield Matrix** (`item_phase_shield`), **Tokamak Magnetic Confinement Core** (`item_tokamak_reactor`), and **Subspace Quantum Scanner** (`item_quantum_scanner`).
 - `src/lib/shipyardCatalog.js`: 4 pre-configured corporate starship hulls:
-  1. *Void Skiff* (Recon)
-  2. *Stealth Corsair* (Infiltration)
-  3. *Heavy Frigate* (Combat)
-  4. *Dreadnought* (Capital Class)
+  1. *Vanguard Recon Skiff* (Recon)
+  2. *Kusaragi Strike Corvette* (Militia Strike)
+  3. *Aegis Heavy Frigate* (Combat Capital)
+  4. *Spectre Stealth Interceptor* (Infiltration)
 - `src/lib/shipValidation.js`:
   - **Reactor Grid Balance**: `Power Generated - Power Consumed >= 0`. Warns on grid overload.
   - **Thrust-to-Mass Ratio**: `Total Thrust / Total Mass`. Calculates maneuverability rating.
+  - **Backward-Compatible Module Aliases**: Maps legacy slot IDs safely to canonical modules (`MODULE_ALIASES`).
 
 #### 7.2 Component Implementations
 - `src/components/player/ShipBuilder.jsx`:
   - Drydock Refit Bay exclusively for **owned ships**.
   - If operative does not own a vessel, displays a locked drydock berth directing them to the Naval Shipyard.
+  - **Cargo & Inventory Module Integration**: Checks operative inventory for crafted parts (`isModuleOwnedInCargo`). Modules owned in inventory display `✓ IN CARGO (₡0)` and waive parts ordering fees when refitting.
+  - Saves starship state, full weapon arrays with dice roll telemetry, hull integrity, and shield capacitors.
 - `src/components/player/NavalShipyard.jsx`:
   - Browse and commission hulls with liquid credits.
 - `src/components/dm/ShipAssignmentModal.jsx`:

@@ -24,8 +24,12 @@ export const DEFAULT_SHIP = {
     'A customized black-ops strike corvette outfitted with silenced ion thrusters, tachyon deflectors, and heavy railgun batteries.',
   weapons: [
     {
-      id: 'ship_wpn_railgun',
-      name: 'Twin Gauss Railguns',
+      id: 'wpn_railgun_mk2',
+      name: {
+        en: 'Twin Gauss Railguns',
+        tr: 'Çift Gauss Manyetik Raylı Top',
+        de: 'Doppel-Gauss-Schienengeschütz',
+      },
       type: 'Kinetic Battery',
       toHit: 6,
       damageDice: '2d10',
@@ -34,8 +38,12 @@ export const DEFAULT_SHIP = {
       range: '2,000 / 8,000 km',
     },
     {
-      id: 'ship_wpn_plasma',
-      name: 'Heavy Plasma Lance',
+      id: 'wpn_plasma_lance',
+      name: {
+        en: 'Heavy Plasma Lance',
+        tr: 'Ağır Plazma Mızrağı',
+        de: 'Schwere Plazmalanze',
+      },
       type: 'Thermal Beam',
       toHit: 5,
       damageDice: '3d8',
@@ -44,22 +52,35 @@ export const DEFAULT_SHIP = {
       range: '1,500 / 5,000 km',
     },
     {
-      id: 'ship_wpn_torpedo',
-      name: 'Proton Torpedo Silo',
+      id: 'item_torpedo_launcher',
+      name: {
+        en: 'Dual Photon Torpedo Rack',
+        tr: 'Çift Foton Torpido Yuvası',
+        de: 'Doppel-Photonen-Torpedogestell',
+      },
       type: 'Heavy Ordnance',
       toHit: 7,
-      damageDice: '4d6',
-      damageBonus: 2,
+      damageDice: '4d10',
+      damageBonus: 4,
       damageType: 'Explosive',
-      range: '5,000 / 15,000 km',
+      range: '4,000 / 12,000 km',
     },
   ],
-  modules: [
-    { id: 'mod_cloak', name: 'Phase Cloaking Field', status: 'ONLINE', desc: 'Optical and radar sensor invisibility' },
-    { id: 'mod_repair', name: 'Auto-Repair Nano Drones', status: 'ACTIVE', desc: 'Repairs 10 Hull HP per long cruise' },
-    { id: 'mod_sensor', name: 'Subspace Sensor Array', status: 'ONLINE', desc: 'Scan enemy vessels within 10 AU' },
-    { id: 'mod_ftl', name: 'Class-5 Hyperdrive Core', status: 'READY', desc: 'Instantaneous sub-space jump capability' },
-  ],
+  modules: {
+    hull: 'hull_corvette_class_b',
+    flightDeck: 'cockpit_tactical',
+    thrusterEngines: 'eng_plasma_heavy',
+    warpDrive: 'warp_class_3',
+    cargoBay: 'cargo_light_40',
+    fuelTanks: 'fuel_pressurized_180',
+    scanner: 'scan_radar_mk1',
+    landingSystems: 'gear_heavy_pistons',
+    weapon1: 'wpn_railgun_mk2',
+    weapon2: 'wpn_plasma_lance',
+    weapon3: 'item_torpedo_launcher',
+    reactor: 'reactor_tokamak_vanguard',
+    shieldGenerator: 'shield_harmonic_matrix',
+  },
 };
 
 export default function SpaceshipSheet({
@@ -232,8 +253,14 @@ export default function SpaceshipSheet({
     setViewMode('flightDeck');
   };
 
-  const handleAssembleShip = (newModules, newStats) => {
+  const handleAssembleShip = (newModules, newStats, partsCost = 0) => {
     if (!activeShip) return;
+
+    if (partsCost > 0 && onUpdateCredits && player?.credits !== undefined) {
+      const remainingCredits = Math.max(0, player.credits - partsCost);
+      onUpdateCredits(remainingCredits);
+    }
+
     const newShipState = {
       ...activeShip,
       modules: newModules,

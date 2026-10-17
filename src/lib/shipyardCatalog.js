@@ -28,14 +28,14 @@ export const BASE_SHIPS = [
       thrusterEngines: 'eng_ion_light',
       warpDrive: 'warp_class_1',
       cargoBay: 'cargo_light_40',
-      fuelTanks: 'fuel_standard_100',
+      fuelTanks: 'fuel_cryo_60',
       scanner: 'scan_radar_mk1',
       landingSystems: 'gear_light_skids',
       weapon1: 'wpn_railgun_mk1',
       weapon2: 'wpn_none',
       weapon3: 'wpn_none',
       reactor: 'reactor_fusion_micro',
-      shieldGenerator: 'shield_deflector_bubble',
+      shieldGenerator: 'shield_tactical_deflector',
     },
     weapons: [
       {
@@ -87,14 +87,14 @@ export const BASE_SHIPS = [
       scanner: 'scan_radar_mk1',
       landingSystems: 'gear_heavy_pistons',
       weapon1: 'wpn_railgun_mk2',
-      weapon2: 'wpn_none',
-      weapon3: 'wpn_none',
+      weapon2: 'wpn_plasma_lance',
+      weapon3: 'item_torpedo_launcher',
       reactor: 'reactor_tokamak_vanguard',
       shieldGenerator: 'shield_harmonic_matrix',
     },
     weapons: [
       {
-        id: 'ship_wpn_railgun',
+        id: 'wpn_railgun_mk2',
         name: {
           en: 'Twin Gauss Railguns',
           tr: 'Çift Gauss Raylı Tüfek',
@@ -108,7 +108,7 @@ export const BASE_SHIPS = [
         range: '2,000 / 8,000 km',
       },
       {
-        id: 'ship_wpn_plasma',
+        id: 'wpn_plasma_lance',
         name: {
           en: 'Heavy Plasma Lance',
           tr: 'Ağır Plazma Mızrağı',
@@ -120,6 +120,20 @@ export const BASE_SHIPS = [
         damageBonus: 3,
         damageType: 'Thermal',
         range: '1,500 / 5,000 km',
+      },
+      {
+        id: 'item_torpedo_launcher',
+        name: {
+          en: 'Dual Photon Torpedo Rack',
+          tr: 'Çift Foton Torpido Yuvası',
+          de: 'Doppel-Photonen-Torpedogestell',
+        },
+        type: 'Heavy Ordnance',
+        toHit: 7,
+        damageDice: '4d10',
+        damageBonus: 4,
+        damageType: 'Explosive',
+        range: '4,000 / 12,000 km',
       },
     ],
   },
@@ -151,19 +165,19 @@ export const BASE_SHIPS = [
       flightDeck: 'cockpit_tactical',
       thrusterEngines: 'eng_fusion_torch',
       warpDrive: 'warp_class_5',
-      cargoBay: 'cargo_medium_120',
-      fuelTanks: 'fuel_cryo_350',
+      cargoBay: 'cargo_heavy_120',
+      fuelTanks: 'fuel_deuterium_heavy',
       scanner: 'scan_quantum_lidar',
       landingSystems: 'gear_heavy_pistons',
       weapon1: 'wpn_railgun_mk2',
-      weapon2: 'wpn_torpedo_proton',
+      weapon2: 'wpn_proton_torpedo',
       weapon3: 'wpn_plasma_lance',
-      reactor: 'reactor_antimatter_singularity',
-      shieldGenerator: 'shield_aegis_fortress',
+      reactor: 'reactor_antimatter_overdrive',
+      shieldGenerator: 'shield_heavy_citadel',
     },
     weapons: [
       {
-        id: 'ship_wpn_railgun',
+        id: 'wpn_railgun_mk2',
         name: {
           en: 'Twin Gauss Railguns',
           tr: 'Çift Gauss Raylı Tüfek',
@@ -177,7 +191,7 @@ export const BASE_SHIPS = [
         range: '2,000 / 8,000 km',
       },
       {
-        id: 'ship_wpn_torpedo',
+        id: 'wpn_proton_torpedo',
         name: {
           en: 'Proton Torpedo Silo',
           tr: 'Proton Torpido Silosu',
@@ -189,6 +203,20 @@ export const BASE_SHIPS = [
         damageBonus: 2,
         damageType: 'Explosive',
         range: '5,000 / 15,000 km',
+      },
+      {
+        id: 'wpn_plasma_lance',
+        name: {
+          en: 'Heavy Plasma Lance',
+          tr: 'Ağır Plazma Mızrağı',
+          de: 'Schwere Plasmalanze',
+        },
+        type: 'Thermal Beam',
+        toHit: 5,
+        damageDice: '3d8',
+        damageBonus: 3,
+        damageType: 'Thermal',
+        range: '1,500 / 5,000 km',
       },
     ],
   },
@@ -232,7 +260,7 @@ export const BASE_SHIPS = [
     },
     weapons: [
       {
-        id: 'ship_wpn_plasma',
+        id: 'wpn_plasma_lance',
         name: {
           en: 'Heavy Plasma Lance',
           tr: 'Ağır Plazma Mızrağı',

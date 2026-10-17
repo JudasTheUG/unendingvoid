@@ -170,6 +170,7 @@
     "unmount": "Unmount / Empty Bay",
     "mountModule": "Mount Module",
     "closeBay": "Close Bay",
+    "inInventory": "IN CARGO",
     "registry": "Registry",
     "save": "Save",
     "renameVessel": "Rename Vessel",

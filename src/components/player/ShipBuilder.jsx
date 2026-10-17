@@ -112,12 +112,21 @@ export default function ShipBuilder({
       );
     });
 
+  const isModuleOwnedInCargo = (moduleId) => {
+    if (!moduleId || isEmptyModule(moduleId)) return false;
+    return inventoryItems.some((it) => {
+      const id = typeof it === 'string' ? it : it?.id;
+      return id === moduleId;
+    });
+  };
+
   // Calculate unowned parts cost compared to current ship modules
   const unownedPartsCost = SLOT_ORDER.reduce((total, slot) => {
     const currentId = equippedModules[slot];
     const originalId = activeShip?.modules?.[slot];
 
-    if (currentId !== originalId) {
+    // If module is unchanged OR if the operative owns it in cargo/inventory, it's free to mount!
+    if (currentId !== originalId && !isModuleOwnedInCargo(currentId)) {
       const catalogArr = slot.startsWith('weapon') ? shipModulesCatalog.weapons : shipModulesCatalog[slot];
       const mod = catalogArr?.find((m) => m.id === currentId);
       if (mod) total += mod.value || 0;
@@ -125,7 +134,9 @@ export default function ShipBuilder({
     return total;
   }, 0);
 
-  const thrusterModule = shipModulesCatalog.thrusterEngines.find((e) => e.id === equippedModules.thrusterEngines);
+  const thrusterModule =
+    shipModulesCatalog.thrusterEngines.find((e) => e.id === equippedModules.thrusterEngines) ||
+    inventoryItems.find((e) => typeof e === 'object' && e?.id === equippedModules.thrusterEngines);
   const maxThrustMass = thrusterModule?.maxThrustMass || 1;
   const massRatio = Math.round((stats.totalMass / maxThrustMass) * 100);
   const isMassOverloaded = stats.totalMass > maxThrustMass;
@@ -353,12 +364,48 @@ export default function ShipBuilder({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
                 {(() => {
-                  const catalogArr = selectedSlot.startsWith('weapon')
+                  const isWeaponSlot = selectedSlot.startsWith('weapon');
+                  const baseCatalog = isWeaponSlot
                     ? shipModulesCatalog.weapons
                     : shipModulesCatalog[selectedSlot] || [];
 
-                  return catalogArr.map((opt) => {
+                  // Include any ship_module items from player inventory that fit this slot
+                  const invModules = inventoryItems
+                    .filter((item) => {
+                      if (!item || typeof item !== 'object') return false;
+                      if (item.type !== 'ship_module') return false;
+                      if (isWeaponSlot) {
+                        return item.slot === 'weapon' || item.damage || item.id === 'item_torpedo_launcher';
+                      }
+                      return item.slot === selectedSlot;
+                    })
+                    .map((item) => ({
+                      id: item.id,
+                      name: typeof item.name === 'object' ? item.name : { en: item.name },
+                      type: item.weaponType || item.type || 'Ship Subsystem',
+                      mass: item.mass ?? 20,
+                      powerDraw: item.powerDraw ?? 15,
+                      value: item.value ?? 0,
+                      damageDice: item.damageDice || (item.damage ? item.damage.split(' ')[0] : '4d10'),
+                      damageBonus: item.damageBonus ?? 4,
+                      damageType: item.damageType || (item.damage ? item.damage.split(' ')[1] : 'Explosive'),
+                      toHit: item.toHit ?? 7,
+                      range: item.range || '4,000 / 12,000 km',
+                      thrust: item.thrust,
+                      shields: item.shields,
+                      reactorOutput: item.reactorOutput,
+                    }));
+
+                  const combined = [...baseCatalog];
+                  invModules.forEach((invMod) => {
+                    if (!combined.some((m) => m.id === invMod.id)) {
+                      combined.push(invMod);
+                    }
+                  });
+
+                  return combined.map((opt) => {
                     const isEquipped = equippedModules[selectedSlot] === opt.id;
+                    const isOwnedInCargo = !isEquipped && isModuleOwnedInCargo(opt.id);
 
                     return (
                       <div
@@ -367,16 +414,22 @@ export default function ShipBuilder({
                         className={`p-3.5 border rounded transition-all text-left relative ${
                           isEquipped
                             ? 'bg-orange-950/20 border-[#ea580c]/80 cursor-default'
-                            : 'bg-[#070b14] border-slate-700/80 hover:border-neon-cyan/70 hover:bg-[#0c1424] cursor-pointer'
+                            : isOwnedInCargo
+                              ? 'bg-emerald-950/20 border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/30 cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]'
+                              : 'bg-[#070b14] border-slate-700/80 hover:border-neon-cyan/70 hover:bg-[#0c1424] cursor-pointer'
                         }`}
                       >
                         <div className="flex justify-between items-start mb-2 gap-2">
                           <span className="text-xs font-bold text-white block leading-snug">
-                            {opt.name[currentLang] || opt.name.en}
+                            {typeof opt.name === 'object' ? (opt.name[currentLang] || opt.name.en) : opt.name}
                           </span>
                           {isEquipped ? (
                             <span className="text-[9px] px-2 py-0.5 bg-[#ea580c]/20 text-[#ea580c] border border-[#ea580c]/50 rounded font-bold shrink-0">
                               {t('spaceship.equipped', 'EQUIPPED')}
+                            </span>
+                          ) : isOwnedInCargo ? (
+                            <span className="text-[9px] px-2 py-0.5 bg-emerald-950/50 text-emerald-300 border border-emerald-500/50 rounded font-bold shrink-0">
+                              ✓ {t('spaceship.inInventory', 'IN CARGO')} (₡0)
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold text-amber-400 shrink-0">
@@ -591,7 +644,7 @@ export default function ShipBuilder({
                 disabled={!isEESysMember || !validation.isFlightReady}
                 onClick={() => {
                   if (isEESysMember && validation.isFlightReady) {
-                    onAssemble(equippedModules, stats);
+                    onAssemble(equippedModules, stats, unownedPartsCost);
                   }
                 }}
                 className={`w-full py-3 px-4 rounded font-bold text-sm uppercase tracking-wider transition-all border ${
@@ -610,7 +663,7 @@ export default function ShipBuilder({
                 disabled={!validation.isFlightReady}
                 onClick={() => {
                   if (validation.isFlightReady) {
-                    onAssemble(equippedModules, stats);
+                    onAssemble(equippedModules, stats, 0);
                   }
                 }}
                 className={`w-full py-3 px-4 rounded font-bold text-sm uppercase tracking-wider transition-all border ${

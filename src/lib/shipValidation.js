@@ -1,12 +1,24 @@
 import { shipModulesCatalog } from './shipModulesCatalog.js';
 
+export const MODULE_ALIASES = {
+  wpn_torpedo_launcher: 'item_torpedo_launcher',
+  wpn_torpedo_proton: 'wpn_proton_torpedo',
+  shield_deflector_bubble: 'shield_tactical_deflector',
+  shield_aegis_fortress: 'shield_heavy_citadel',
+  reactor_antimatter_singularity: 'reactor_antimatter_overdrive',
+  cargo_medium_120: 'cargo_heavy_120',
+  fuel_cryo_350: 'fuel_deuterium_heavy',
+  fuel_standard_100: 'fuel_cryo_60',
+};
+
 export function calculateShipDerivedStats(modules, catalog) {
   // Extract installed module specs from catalog based on IDs in `modules`
   const getModule = (slot, id) => {
+    const resolvedId = MODULE_ALIASES[id] || id;
     if (slot === 'weapon1' || slot === 'weapon2' || slot === 'weapon3') {
-      return catalog.weapons.find(w => w.id === id) || catalog.weapons[0];
+      return catalog.weapons.find(w => w.id === resolvedId) || catalog.weapons[0];
     }
-    return catalog[slot]?.find(m => m.id === id) || null;
+    return catalog[slot]?.find(m => m.id === resolvedId) || null;
   };
 
   const hull = getModule('hull', modules.hull);
@@ -91,10 +103,11 @@ export function calculateShipDerivedStats(modules, catalog) {
 
 export function validateShipBuild(modules, catalog) {
   const getModule = (slot, id) => {
+    const resolvedId = MODULE_ALIASES[id] || id;
     if (slot === 'weapon1' || slot === 'weapon2' || slot === 'weapon3') {
-      return catalog.weapons.find(w => w.id === id) || catalog.weapons[0];
+      return catalog.weapons.find(w => w.id === resolvedId) || catalog.weapons[0];
     }
-    return catalog[slot]?.find(m => m.id === id);
+    return catalog[slot]?.find(m => m.id === resolvedId);
   };
 
   const mods = {

@@ -292,3 +292,113 @@ describe('SpaceshipSheet Vitals Persistence & Engineering Console', () => {
   });
 });
 
+describe('Ship Modules Catalog & Mountable Crafted Items (Dual Photon Torpedo Rack)', () => {
+  it('includes Dual Photon Torpedo Rack in the weapons catalog with expected stats', () => {
+    const torpedoModule = shipModulesCatalog.weapons.find((w) => w.id === 'item_torpedo_launcher');
+    expect(torpedoModule).toBeDefined();
+    expect(torpedoModule.name.en).toBe('Dual Photon Torpedo Rack');
+    expect(torpedoModule.type).toBe('Heavy Ordnance');
+    expect(torpedoModule.damageDice).toBe('4d10');
+    expect(torpedoModule.toHit).toBe(7);
+  });
+
+  it('renders Dual Photon Torpedo Rack in the weapon selection drawer and allows mounting', () => {
+    const handleAssemble = vi.fn();
+    render(
+      <ShipBuilder
+        activeShip={{
+          modules: {
+            hull: 'hull_corvette_class_b',
+            flightDeck: 'cockpit_tactical',
+            thrusterEngines: 'eng_plasma_heavy',
+            warpDrive: 'warp_class_3',
+            cargoBay: 'cargo_light_40',
+            fuelTanks: 'fuel_pressurized_180',
+            scanner: 'scan_radar_mk1',
+            landingSystems: 'gear_heavy_pistons',
+            weapon1: 'wpn_railgun_mk2',
+            weapon2: 'wpn_none',
+            weapon3: 'wpn_none',
+            reactor: 'reactor_tokamak_vanguard',
+            shieldGenerator: 'shield_harmonic_matrix',
+          },
+        }}
+        inventoryItems={[]}
+        onAssemble={handleAssemble}
+      />
+    );
+
+    // Open Bay 09 (Weapon Battery Alpha)
+    const bay09Btn = screen.getByText(/BAY-09/i).closest('button');
+    fireEvent.click(bay09Btn);
+
+    // The drawer should open and list Dual Photon Torpedo Rack
+    const torpedoOption = screen.getByText(/Dual Photon Torpedo Rack/i);
+    expect(torpedoOption).toBeInTheDocument();
+
+    // Click to equip Dual Photon Torpedo Rack
+    fireEvent.click(torpedoOption.closest('div'));
+
+    // Bay 09 should now show Dual Photon Torpedo Rack equipped
+    expect(bay09Btn).toHaveTextContent(/Dual Photon Torpedo Rack/i);
+  });
+
+  it('marks crafted module as IN CARGO (₡0) when present in player inventory and waives fee', () => {
+    const playerWithInventory = {
+      id: 'test_player',
+      credits: 500,
+      hasEEMembership: true,
+    };
+
+    const inventoryItems = [
+      {
+        id: 'item_torpedo_launcher',
+        name: { en: 'Dual Photon Torpedo Rack', tr: 'Çift Foton Torpido Yuvası', de: 'Doppel-Photonen-Torpedogestell' },
+        type: 'ship_module',
+        slot: 'weapon',
+        value: 260,
+      },
+    ];
+
+    render(
+      <ShipBuilder
+        player={playerWithInventory}
+        activeShip={{
+          modules: {
+            hull: 'hull_corvette_class_b',
+            flightDeck: 'cockpit_tactical',
+            thrusterEngines: 'eng_plasma_heavy',
+            warpDrive: 'warp_class_3',
+            cargoBay: 'cargo_light_40',
+            fuelTanks: 'fuel_pressurized_180',
+            scanner: 'scan_radar_mk1',
+            landingSystems: 'gear_heavy_pistons',
+            weapon1: 'wpn_none',
+            weapon2: 'wpn_none',
+            weapon3: 'wpn_none',
+            reactor: 'reactor_tokamak_vanguard',
+            shieldGenerator: 'shield_harmonic_matrix',
+          },
+        }}
+        inventoryItems={inventoryItems}
+        onAssemble={vi.fn()}
+      />
+    );
+
+    // Open Bay 09 (Weapon Battery Alpha)
+    const bay09Btn = screen.getByText(/BAY-09/i).closest('button');
+    fireEvent.click(bay09Btn);
+
+    // Should indicate IN CARGO (₡0)
+    expect(screen.getByText(/IN CARGO/i)).toBeInTheDocument();
+
+    // Select it
+    const torpedoOption = screen.getByText(/Dual Photon Torpedo Rack/i);
+    fireEvent.click(torpedoOption.closest('div'));
+
+    // Since it was owned in cargo, Assemble Vessel should be active without ordering parts fee
+    expect(screen.getByRole('button', { name: /Assemble Vessel/i })).toBeInTheDocument();
+  });
+});
+
+
