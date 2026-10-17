@@ -383,9 +383,11 @@ function createD20Data() {
 export default function DiceOverlay({ user, profile, modifier = 0 }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
   const diceGroupRef = useRef(null);
   const animFrameRef = useRef(null);
   const bannerTimerRef = useRef(null);
+  const isDiceHoveredRef = useRef(false);
 
   const [activeRollBanner, setActiveRollBanner] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -395,6 +397,21 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
   // Bottom Dice Multi-Quantity Popover
   const [quantityPopover, setQuantityPopover] = useState(null);
   const [customQuantity, setCustomQuantity] = useState('2');
+
+  // Clear all dice from 3D scene and dismiss banner
+  const clearDice = useCallback(() => {
+    if (diceGroupRef.current) {
+      while (diceGroupRef.current.children.length > 0) {
+        diceGroupRef.current.remove(diceGroupRef.current.children[0]);
+      }
+    }
+    setActiveRollBanner(null);
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    if (isDiceHoveredRef.current) {
+      document.body.style.cursor = 'default';
+      isDiceHoveredRef.current = false;
+    }
+  }, []);
 
   // Initialize Three.js scene & preload Lucifer Coin STL
   useEffect(() => {
@@ -412,6 +429,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(0, 1.5, 18);
     camera.lookAt(0, 0, 0);
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(width, height);
@@ -532,15 +550,70 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
     };
     animFrameRef.current = requestAnimationFrame(animate);
 
+    const handlePointerDown = (e) => {
+      if (!diceGroup || diceGroup.children.length === 0) return;
+      if (!cameraRef.current) return;
+
+      const mouse = new THREE.Vector2(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, cameraRef.current);
+
+      const intersects = raycaster.intersectObjects(diceGroup.children, true);
+      if (intersects.length > 0) {
+        clearDice();
+      }
+    };
+
+    const handlePointerMove = (e) => {
+      if (!diceGroup || diceGroup.children.length === 0) {
+        if (isDiceHoveredRef.current) {
+          document.body.style.cursor = 'default';
+          isDiceHoveredRef.current = false;
+        }
+        return;
+      }
+      if (!cameraRef.current) return;
+
+      const mouse = new THREE.Vector2(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, cameraRef.current);
+
+      const intersects = raycaster.intersectObjects(diceGroup.children, true);
+      if (intersects.length > 0) {
+        document.body.style.cursor = 'pointer';
+        isDiceHoveredRef.current = true;
+      } else if (isDiceHoveredRef.current) {
+        document.body.style.cursor = 'default';
+        isDiceHoveredRef.current = false;
+      }
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('pointermove', handlePointerMove);
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointermove', handlePointerMove);
+      if (isDiceHoveredRef.current) {
+        document.body.style.cursor = 'default';
+        isDiceHoveredRef.current = false;
+      }
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };
-  }, []);
+  }, [clearDice]);
 
   // Construct 3D Die or Lucifer Silver Coin Mesh
   const createDieMesh = (dieType, seed, targetResult, isHighlightEligible = true) => {
@@ -915,11 +988,12 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
         chosenResult: rollData.chosenResult,
       });
 
+      // Auto-remove dice and outcome banner from UI 5 seconds after outcome is shown
       bannerTimerRef.current = setTimeout(() => {
-        setActiveRollBanner(null);
-      }, 5500);
+        clearDice();
+      }, 5000);
     }, 1380);
-  }, []);
+  }, [clearDice]);
 
   // Listen for real-time multiplayer rolls
   useDiceSync((incomingRoll) => {
@@ -1114,10 +1188,10 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
       {/* 3D WebGL Canvas Layer */}
       <div ref={mountRef} className="fixed inset-0 pointer-events-none z-40 overflow-hidden" />
 
-      {/* Slide-in Roll Result Banner */}
+      {/* 100% Solid Opaque Roll Result Banner */}
       {activeRollBanner && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto animate-bounce-short">
-          <div className="glass-panel px-6 py-3 border-neon-cyan shadow-[0_0_30px_rgba(0,240,255,0.5)] flex items-center gap-4">
+          <div className="bg-[#060a14] border-2 border-neon-cyan shadow-[0_0_40px_rgba(0,240,255,0.7)] px-6 py-3.5 rounded-2xl flex items-center gap-4 text-white relative">
             <div className="w-12 h-12 rounded-xl bg-neon-cyan/20 border-2 border-neon-cyan flex items-center justify-center font-display font-black text-neon-cyan text-xl shadow-[0_0_15px_rgba(0,240,255,0.4)]">
               {activeRollBanner.isCoin ? '🪙' : '🎲'}
             </div>
@@ -1126,11 +1200,11 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                 <span className="font-display font-bold text-sm text-white">
                   {activeRollBanner.playerName}
                 </span>
-                <span className="text-[10px] uppercase font-mono text-neon-cyan bg-white/10 px-2 py-0.5 rounded border border-white/15">
+                <span className="text-[10px] uppercase font-mono text-neon-cyan bg-neon-cyan/15 px-2 py-0.5 rounded border border-neon-cyan/35 font-bold">
                   {activeRollBanner.purpose || activeRollBanner.notation}
                 </span>
               </div>
-              <div className="text-xs text-gray-300 font-mono mt-1">
+              <div className="text-xs text-gray-200 font-mono mt-1">
                 {activeRollBanner.isCoin ? (
                   <>
                     Relic Face: [
@@ -1142,7 +1216,7 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                 ) : activeRollBanner.rollMode === 'advantage' || activeRollBanner.rollMode === 'disadvantage' ? (
                   <>
                     Rolls: [{activeRollBanner.results?.join(', ')}] ➔ Picked:{' '}
-                    <strong className="text-neon-cyan">{activeRollBanner.chosenResult}</strong>
+                    <strong className="text-neon-cyan font-bold">{activeRollBanner.chosenResult}</strong>
                   </>
                 ) : (
                   <>Die Result: [{activeRollBanner.results?.join(', ')}]</>
@@ -1160,6 +1234,13 @@ export default function DiceOverlay({ user, profile, modifier = 0 }) {
                 {activeRollBanner.total}
               </span>
             </div>
+            <button
+              onClick={clearDice}
+              className="text-gray-400 hover:text-white ml-2 text-sm px-1.5 py-1 hover:bg-white/10 rounded transition-colors"
+              title="Dismiss banner & dice"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}
