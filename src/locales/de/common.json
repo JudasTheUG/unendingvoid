@@ -103,7 +103,10 @@
     "delete": "Löschen",
     "edit": "Bearbeiten",
     "back": "Zurück",
-    "language": "Sprache"
+    "language": "Sprache",
+    "credits": "Credits",
+    "equip": "Ausrüsten",
+    "equipped": "Ausgerüstet"
   },
   "spaceship": {
     "title": "Raumschiff-Konsole",
@@ -320,5 +323,164 @@
     "characterDeleted": "Einsatzkraft erfolgreich gelöscht.",
     "deleteFailed": "Charakter konnte nicht gelöscht werden.",
     "launchSheet": "Charakterbogen öffnen ▶"
+  },
+  "navigation": {
+    "returnToHub": "Zurück zum Hub",
+    "hub": "Hub",
+    "returnToDashboard": "Zurück zum Dashboard"
+  },
+  "vitals": {
+    "hullHealth": "Rumpf & Gesundheit (TP)",
+    "defensiveShields": "Defensive Energieschilde",
+    "damage": "Schaden",
+    "heal": "Heilen",
+    "hitDice": "Trefferwürfel",
+    "shortRest": "Kurze Rast",
+    "longRest": "Lange Rast"
+  },
+  "sheetTabs": {
+    "actions": "Aktionen & Angriffe",
+    "inventory": "Ausrüstung & Fracht",
+    "features": "Merkmale & Talente",
+    "notes": "Feldnotizen & Aufklärung",
+    "bio": "Agenten-Dossier"
+  },
+  "characterStats": {
+    "level": "Stufe",
+    "background": "Hintergrund",
+    "proficiency": "Übungsbonus",
+    "speed": "Bewegungsrate",
+    "feet": "ft.",
+    "armorClass": "Rüstungsklasse",
+    "initiative": "Initiative",
+    "passivePerception": "Passive Wahrn.",
+    "initiativeCheck": "Initiative-Wurf",
+    "initiativeHint": "Linksklick: Initiative · Rechtsklick: Vorteil / Nachteil",
+    "speciesHeritage": "Spezies & Herkunft",
+    "combatClassification": "Kampfklasse",
+    "dossier": "Agenten-Dossier",
+    "score": "Wert",
+    "savingThrows": "Rettungswürfe",
+    "proficienciesSkills": "Fertigkeiten & Talente",
+    "statCheck": "{{stat}}-Wurf",
+    "statSave": "{{stat}}-Rettungswurf",
+    "skillCheck": "{{skill}}-Wurf",
+    "rollHint": "Linksklick: {{name}} würfeln · Rechtsklick: Vorteil / Nachteil"
+  },
+  "abilities": {
+    "strength": "Stärke",
+    "dexterity": "Geschicklichkeit",
+    "constitution": "Konstitution",
+    "intelligence": "Intelligenz",
+    "wisdom": "Weisheit",
+    "charisma": "Charisma",
+    "str": "STÄ",
+    "dex": "GES",
+    "con": "KON",
+    "int": "INT",
+    "wis": "WEI",
+    "cha": "CHA"
+  },
+  "skills": {
+    "acrobatics": "Akrobatik",
+    "animalHandling": "Tierkunde",
+    "arcana": "Arkana / Technik",
+    "athletics": "Athletik",
+    "deception": "Täuschen",
+    "history": "Geschichte",
+    "insight": "Motiv erkennen",
+    "intimidation": "Einschüchtern",
+    "investigation": "Nachforschungen",
+    "medicine": "Heilkunde",
+    "nature": "Naturkunde",
+    "perception": "Wahrnehmung",
+    "performance": "Auftreten",
+    "persuasion": "Überzeugen",
+    "religion": "Religion",
+    "sleightOfHand": "Fingerfertigkeit",
+    "stealth": "Heimlichkeit",
+    "survival": "Überlebenskunst"
+  },
+  "actions": {
+    "weaponAttacks": "Waffen- & Technologieangriffe",
+    "addAttack": "+ Angriff hinzufügen",
+    "weapon": "Waffe",
+    "range": "Reichweite",
+    "toHit": "Trefferbonus",
+    "damageType": "Schaden & Typ",
+    "notes": "Notizen",
+    "standardActions": "Standard-Kampfaktionen",
+    "reactions": "Reaktionen & Kampfreflexe",
+    "dash": "Sprinten",
+    "dashDesc": "Verdoppelt Bewegungsrate im Zug",
+    "disengage": "Rückzug",
+    "disengageDesc": "Bewegung provoziert keine Gelegenheitsangriffe",
+    "dodge": "Ausweichen",
+    "dodgeDesc": "Angriffe gegen dich sind im Nachteil",
+    "overchargeShield": "Schild überladen",
+    "overchargeShieldDesc": "Bonusaktion aufwenden um 5 Schilde zu regenerieren",
+    "opportunityStrike": "Gelegenheitsangriff",
+    "opportunityStrikeDesc": "Schlage auf Gegner ein, die Reichweite betreten oder verlassen.",
+    "phaseShift": "Phasenverschiebung",
+    "phaseShiftDesc": "Halbiert kinetischen Explosionsschaden einmal pro Kampf.",
+    "fabricateAttack": "Waffenangriff konfigurieren",
+    "weaponName": "Waffenname",
+    "type": "Typ",
+    "stat": "Modifikator-Attribut",
+    "damageDice": "Schadenswürfel",
+    "notesLabel": "Notizen / Besondere Eigenschaften",
+    "close": "Schließen",
+    "toHitHint": "Linksklick: Normaler Angriff · Rechtsklick: Vorteil / Nachteil",
+    "damageHint": "Linksklick: Normaler Schaden ({{dice}}) · Rechtsklick: Kritischer Treffer",
+    "melee": "Nahkampf",
+    "ranged": "Fernkampf",
+    "heavyRanged": "Schwerer Fernkampf"
+  },
+  "weapons": {
+    "pulseCarbine": "Impulskarabiner",
+    "monomolecularBlade": "Monomolekulare Vibroklinge",
+    "plasmaCannon": "Schwere Plasmakanone"
+  },
+  "damageTypes": {
+    "energy": "Energie",
+    "slashing": "Hieb",
+    "thermal": "Thermisch",
+    "piercing": "Stich",
+    "kinetic": "Kinetisch"
+  },
+  "weaponNotes": {
+    "burstFireKinetic": "Feuerstoß, Kinetischer Dämpfer",
+    "finesseLight": "Finesse, Leicht",
+    "twoHandedMelt": "Zweihändig, Flächenschmelze"
+  },
+  "classes": {
+    "operative": "Agent",
+    "cyber_commando": "Cyber-Kommando",
+    "tech_adept": "Technik-Adept",
+    "star_pilot": "Sternenpilot"
+  },
+  "species": {
+    "augmented_human": "Augmentierter Mensch",
+    "human": "Mensch",
+    "cyborg": "Cyborg",
+    "alien": "Außerirdischer"
+  },
+  "backgrounds": {
+    "mercenary": "Söldner",
+    "ex_corporate_mercenary": "Ex-Konzernsöldner",
+    "scavenger": "Plünderer",
+    "bounty_hunter": "Kopfgeldjäger",
+    "smuggler": "Schmuggler"
+  },
+  "inventory": {
+    "cargoArmory": "Fracht & Waffenkammer",
+    "item": "Gegenstand",
+    "items": "Gegenstände",
+    "emptyCargo": "Der Frachtraum ist leer. Beschaffe Gegenstände vom DM oder Markt."
+  },
+  "traits": {
+    "cyberneticsTraits": "Kybernetik & Genetische Merkmale",
+    "active": "Aktiv",
+    "noTraits": "Keine genetischen Augmentierungen oder psychologischen Merkmale erfasst."
   }
 }

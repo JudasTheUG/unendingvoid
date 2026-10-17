@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayerData } from '../hooks/usePlayerData';
@@ -32,12 +32,12 @@ export default function CampaignPage() {
           <p className="text-xs text-gray-400">
             The campaign you requested does not exist or your quantum signal was scrambled.
           </p>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-4 py-2 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan rounded text-xs font-mono font-bold"
+          <Link
+            to="/dashboard"
+            className="inline-block px-4 py-2 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan rounded text-xs font-mono font-bold"
           >
-            Return to Dashboard
-          </button>
+            {t('navigation.returnToDashboard', 'Return to Dashboard')}
+          </Link>
         </div>
       </div>
     );
@@ -139,12 +139,12 @@ export default function CampaignPage() {
               <span>{t('campaign.deleteCampaign', 'Delete Campaign')}</span>
             </button>
           )}
-          <button
-            onClick={() => navigate('/dashboard')}
+          <Link
+            to="/dashboard"
             className="px-3.5 py-1.5 rounded bg-white/10 hover:bg-white/20 text-xs font-mono uppercase tracking-wider text-gray-300"
           >
-            ◀ Hub
-          </button>
+            ◀ {t('navigation.hub', 'Hub')}
+          </Link>
         </div>
       </div>
 
@@ -242,12 +242,12 @@ export default function CampaignPage() {
             {unassignedMyChars.length === 0 ? (
               <div className="text-xs text-gray-500 space-y-2">
                 <p>You have no unassigned operatives available.</p>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full py-1.5 rounded bg-white/10 hover:bg-white/20 text-xs font-mono text-gray-300 uppercase"
+                <Link
+                  to="/dashboard"
+                  className="block text-center w-full py-1.5 rounded bg-white/10 hover:bg-white/20 text-xs font-mono text-gray-300 uppercase"
                 >
                   Create New Character in Hub
-                </button>
+                </Link>
               </div>
             ) : (
               <form onSubmit={handleAddCharacter} className="space-y-3">

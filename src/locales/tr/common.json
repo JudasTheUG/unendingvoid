@@ -103,7 +103,10 @@
     "delete": "Sil",
     "edit": "Düzenle",
     "back": "Geri",
-    "language": "Dil"
+    "language": "Dil",
+    "credits": "Kredi",
+    "equip": "Kuşan",
+    "equipped": "Kuşanıldı"
   },
   "spaceship": {
     "title": "Uzay Gemisi Konsolu",
@@ -320,5 +323,164 @@
     "characterDeleted": "Operatif başarıyla silindi.",
     "deleteFailed": "Karakter silinemedi.",
     "launchSheet": "Karakter Sayfasını Aç ▶"
+  },
+  "navigation": {
+    "returnToHub": "Hub'a Dön",
+    "hub": "Hub",
+    "returnToDashboard": "Kontrol Paneline Dön"
+  },
+  "vitals": {
+    "hullHealth": "Gövde ve Can (HP)",
+    "defensiveShields": "Savunma Enerji Kalkanları",
+    "damage": "Hasar",
+    "heal": "İyileş",
+    "hitDice": "Can Zarı",
+    "shortRest": "Kısa Mola",
+    "longRest": "Uzun Mola"
+  },
+  "sheetTabs": {
+    "actions": "Eylemler ve Saldırılar",
+    "inventory": "Ekipman ve Kargo",
+    "features": "Özellikler ve Yetenekler",
+    "notes": "Saha Notları ve İstihbarat",
+    "bio": "Ajan Dosyası"
+  },
+  "characterStats": {
+    "level": "Seviye",
+    "background": "Geçmiş",
+    "proficiency": "Uzmanlık",
+    "speed": "Hız",
+    "feet": "ft.",
+    "armorClass": "Zırh Sınıfı",
+    "initiative": "İnisiyatif",
+    "passivePerception": "Pasif Algı",
+    "initiativeCheck": "İnisiyatif Kontrolü",
+    "initiativeHint": "Sol tık: İnisiyatif at · Sağ tık: Avantaj / Dezavantaj",
+    "speciesHeritage": "Tür ve Köken",
+    "combatClassification": "Savaş Sınıfı",
+    "dossier": "Ajan Dosyası",
+    "score": "Skor",
+    "savingThrows": "Kurtarma Zarları",
+    "proficienciesSkills": "Uzmanlıklar ve Beceriler",
+    "statCheck": "{{stat}} Kontrolü",
+    "statSave": "{{stat}} Kurtarması",
+    "skillCheck": "{{skill}} Kontrolü",
+    "rollHint": "Sol tık: {{name}} at · Sağ tık: Avantaj / Dezavantaj"
+  },
+  "abilities": {
+    "strength": "Kuvvet",
+    "dexterity": "Çeviklik",
+    "constitution": "Dayanıklılık",
+    "intelligence": "Zeka",
+    "wisdom": "Bilgelik",
+    "charisma": "Karizma",
+    "str": "GÜÇ",
+    "dex": "ÇEV",
+    "con": "DAY",
+    "int": "ZEK",
+    "wis": "BİL",
+    "cha": "KAR"
+  },
+  "skills": {
+    "acrobatics": "Akrobasi",
+    "animalHandling": "Hayvan Terbiyesi",
+    "arcana": "Arkana / Teknoloji",
+    "athletics": "Atletizm",
+    "deception": "Kandırma",
+    "history": "Tarih",
+    "insight": "Sezgi",
+    "intimidation": "Gözdağı",
+    "investigation": "Soruşturma",
+    "medicine": "Tıp",
+    "nature": "Doğa",
+    "perception": "Algı",
+    "performance": "Performans",
+    "persuasion": "İkna",
+    "religion": "Din",
+    "sleightOfHand": "El Çabukluğu",
+    "stealth": "Gizlilik",
+    "survival": "Hayatta Kalma"
+  },
+  "actions": {
+    "weaponAttacks": "Silah ve Teknolojik Saldırılar",
+    "addAttack": "+ Saldırı Ekle",
+    "weapon": "Silah",
+    "range": "Menzil",
+    "toHit": "İsabet",
+    "damageType": "Hasar ve Tür",
+    "notes": "Notlar",
+    "standardActions": "Standart Taktik Eylemler",
+    "reactions": "Tepkiler ve Savaş Refleksleri",
+    "dash": "Koş",
+    "dashDesc": "Tur boyunca hareket hızını ikiye katla",
+    "disengage": "Geri Çekil",
+    "disengageDesc": "Hareket fırsat saldırısı tetiklemez",
+    "dodge": "Sıyrıl",
+    "dodgeDesc": "Sana yapılan saldırılar dezavantajlı olur",
+    "overchargeShield": "Kalkan Aşırı Yükle",
+    "overchargeShieldDesc": "5 kalkan yenilemek için bonus eylem harca",
+    "opportunityStrike": "Fırsat Saldırısı",
+    "opportunityStrikeDesc": "Yakın dövüş menziline giren veya çıkan düşmana saldır.",
+    "phaseShift": "Faz Kayması Tepkisi",
+    "phaseShiftDesc": "Savaş başına bir kez gelen kinetik patlamanın hasarını yarıya indir.",
+    "fabricateAttack": "Yeni Silah Saldırısı Oluştur",
+    "weaponName": "Silah Adı",
+    "type": "Tür",
+    "stat": "Nitelik",
+    "damageDice": "Hasar Zarı",
+    "notesLabel": "Notlar / Özel Nitelikler",
+    "close": "Kapat",
+    "toHitHint": "Sol tık: Normal saldırı · Sağ tık: Avantaj / Dezavantaj",
+    "damageHint": "Sol tık: Normal hasar ({{dice}}) · Sağ tık: Kritik Vuruş",
+    "melee": "Yakın Dövüş",
+    "ranged": "Menzilli",
+    "heavyRanged": "Ağır Menzilli"
+  },
+  "weapons": {
+    "pulseCarbine": "Darbe Karbini",
+    "monomolecularBlade": "Monomoleküler Titro-Bıçak",
+    "plasmaCannon": "Ağır Plazma Topu"
+  },
+  "damageTypes": {
+    "energy": "Enerji",
+    "slashing": "Kesici",
+    "thermal": "Termal",
+    "piercing": "Delici",
+    "kinetic": "Kinetik"
+  },
+  "weaponNotes": {
+    "burstFireKinetic": "Seri Atış, Kinetik Sönümleyici",
+    "finesseLight": "Zarif, Hafif",
+    "twoHandedMelt": "Çift Elli, Alan Erimesi"
+  },
+  "classes": {
+    "operative": "Ajan",
+    "cyber_commando": "Siber Komando",
+    "tech_adept": "Tekno-Uzman",
+    "star_pilot": "Yıldız Pilotu"
+  },
+  "species": {
+    "augmented_human": "Güçlendirilmiş İnsan",
+    "human": "İnsan",
+    "cyborg": "Sayborg",
+    "alien": "Uzaylı"
+  },
+  "backgrounds": {
+    "mercenary": "Paralı Asker",
+    "ex_corporate_mercenary": "Eski Şirket Paralı Askeri",
+    "scavenger": "Hurdacı",
+    "bounty_hunter": "Ödül Avcısı",
+    "smuggler": "Kaçakçı"
+  },
+  "inventory": {
+    "cargoArmory": "Kargo ve Cephanelik",
+    "item": "Eşya",
+    "items": "Eşya",
+    "emptyCargo": "Kargo ambarı boş. DM'den veya pazardan eşya temin edin."
+  },
+  "traits": {
+    "cyberneticsTraits": "Sibernetik ve Genetik Nitelikler",
+    "active": "Aktif",
+    "noTraits": "Kayıtlı genetik modifikasyon veya psikolojik nitelik bulunmuyor."
   }
 }

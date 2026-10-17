@@ -103,7 +103,10 @@
     "delete": "Delete",
     "edit": "Edit",
     "back": "Back",
-    "language": "Language"
+    "language": "Language",
+    "credits": "Credits",
+    "equip": "Equip",
+    "equipped": "Equipped"
   },
   "spaceship": {
     "title": "Starship Console",
@@ -320,5 +323,164 @@
     "characterDeleted": "Operative successfully decommissioned.",
     "deleteFailed": "Failed to delete operative.",
     "launchSheet": "Launch Character Sheet ▶"
+  },
+  "navigation": {
+    "returnToHub": "Return to Hub",
+    "hub": "Hub",
+    "returnToDashboard": "Return to Dashboard"
+  },
+  "vitals": {
+    "hullHealth": "Hull & Health (HP)",
+    "defensiveShields": "Defensive Energy Shields",
+    "damage": "Damage",
+    "heal": "Heal",
+    "hitDice": "Hit Dice",
+    "shortRest": "Short Rest",
+    "longRest": "Long Rest"
+  },
+  "sheetTabs": {
+    "actions": "Actions & Attacks",
+    "inventory": "Equipment & Cargo",
+    "features": "Features & Traits",
+    "notes": "Field Notes & Intel",
+    "bio": "Operative Dossier"
+  },
+  "characterStats": {
+    "level": "Level",
+    "background": "Background",
+    "proficiency": "Proficiency",
+    "speed": "Speed",
+    "feet": "ft.",
+    "armorClass": "Armor Class",
+    "initiative": "Initiative",
+    "passivePerception": "Passive Per.",
+    "initiativeCheck": "Initiative Check",
+    "initiativeHint": "Left-click: Roll initiative · Right-click: Advantage / Disadvantage",
+    "speciesHeritage": "Species & Heritage",
+    "combatClassification": "Combat Classification",
+    "dossier": "Operative Dossier",
+    "score": "Score",
+    "savingThrows": "Saving Throws",
+    "proficienciesSkills": "Proficiencies & Skills",
+    "statCheck": "{{stat}} Check",
+    "statSave": "{{stat}} Save",
+    "skillCheck": "{{skill}} Check",
+    "rollHint": "Left-click: Roll {{name}} · Right-click: Advantage / Disadvantage"
+  },
+  "abilities": {
+    "strength": "Strength",
+    "dexterity": "Dexterity",
+    "constitution": "Constitution",
+    "intelligence": "Intelligence",
+    "wisdom": "Wisdom",
+    "charisma": "Charisma",
+    "str": "STR",
+    "dex": "DEX",
+    "con": "CON",
+    "int": "INT",
+    "wis": "WIS",
+    "cha": "CHA"
+  },
+  "skills": {
+    "acrobatics": "Acrobatics",
+    "animalHandling": "Animal Handling",
+    "arcana": "Arcana / Tech",
+    "athletics": "Athletics",
+    "deception": "Deception",
+    "history": "History",
+    "insight": "Insight",
+    "intimidation": "Intimidation",
+    "investigation": "Investigation",
+    "medicine": "Medicine",
+    "nature": "Nature",
+    "perception": "Perception",
+    "performance": "Performance",
+    "persuasion": "Persuasion",
+    "religion": "Religion",
+    "sleightOfHand": "Sleight of Hand",
+    "stealth": "Stealth",
+    "survival": "Survival"
+  },
+  "actions": {
+    "weaponAttacks": "Weapon & Technological Attacks",
+    "addAttack": "+ Add Attack",
+    "weapon": "Weapon",
+    "range": "Range",
+    "toHit": "To Hit",
+    "damageType": "Damage & Type",
+    "notes": "Notes",
+    "standardActions": "Standard Tactical Actions",
+    "reactions": "Reactions & Combat Reflexes",
+    "dash": "Dash",
+    "dashDesc": "Double movement speed for turn",
+    "disengage": "Disengage",
+    "disengageDesc": "Movement does not provoke opportunity attacks",
+    "dodge": "Dodge",
+    "dodgeDesc": "Attacks against you have disadvantage",
+    "overchargeShield": "Overcharge Shield",
+    "overchargeShieldDesc": "Expend bonus action to restore 5 shields",
+    "opportunityStrike": "Opportunity Strike",
+    "opportunityStrikeDesc": "Strike an enemy entering or leaving melee reach.",
+    "phaseShift": "Phase Shift Reaction",
+    "phaseShiftDesc": "Halve damage from an incoming kinetic blast once per combat.",
+    "fabricateAttack": "Fabricate Weapon Attack",
+    "weaponName": "Weapon Name",
+    "type": "Type",
+    "stat": "Modifier Stat",
+    "damageDice": "Damage Dice",
+    "notesLabel": "Notes / Special Properties",
+    "close": "Close",
+    "toHitHint": "Left-click: Normal attack · Right-click: Advantage / Disadvantage",
+    "damageHint": "Left-click: Normal damage ({{dice}}) · Right-click: Critical Hit",
+    "melee": "Melee",
+    "ranged": "Ranged",
+    "heavyRanged": "Heavy Ranged"
+  },
+  "weapons": {
+    "pulseCarbine": "Pulse Carbine",
+    "monomolecularBlade": "Monomolecular Vibro-Blade",
+    "plasmaCannon": "Heavy Plasma Cannon"
+  },
+  "damageTypes": {
+    "energy": "Energy",
+    "slashing": "Slashing",
+    "thermal": "Thermal",
+    "piercing": "Piercing",
+    "kinetic": "Kinetic"
+  },
+  "weaponNotes": {
+    "burstFireKinetic": "Burst Fire, Kinetic Dampener",
+    "finesseLight": "Finesse, Light",
+    "twoHandedMelt": "Two-Handed, Area Melt"
+  },
+  "classes": {
+    "operative": "Operative",
+    "cyber_commando": "Cyber-Commando",
+    "tech_adept": "Tech-Adept",
+    "star_pilot": "Star Pilot"
+  },
+  "species": {
+    "augmented_human": "Augmented Human",
+    "human": "Human",
+    "cyborg": "Cyborg",
+    "alien": "Alien"
+  },
+  "backgrounds": {
+    "mercenary": "Mercenary",
+    "ex_corporate_mercenary": "Ex-Corporate Mercenary",
+    "scavenger": "Scavenger",
+    "bounty_hunter": "Bounty Hunter",
+    "smuggler": "Smuggler"
+  },
+  "inventory": {
+    "cargoArmory": "Cargo & Armory",
+    "item": "Item",
+    "items": "Items",
+    "emptyCargo": "Cargo hold is empty. Obtain items from the DM or market."
+  },
+  "traits": {
+    "cyberneticsTraits": "Cybernetics & Genetic Traits",
+    "active": "Active",
+    "noTraits": "No genetic augmentations or psychological traits recorded."
   }
 }

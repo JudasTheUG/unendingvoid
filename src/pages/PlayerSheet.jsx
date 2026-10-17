@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayerData } from '../hooks/usePlayerData';
@@ -26,6 +26,7 @@ export default function PlayerSheet() {
   const { characterId } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const activeLocale = i18n.language || 'en';
   const { user, profile } = useAuth();
 
   const targetId = characterId || user?.uid;
@@ -186,8 +187,6 @@ export default function PlayerSheet() {
 
   if (playerLoading && !player && !profile) return <LoadingSpinner />;
 
-  const activeLocale = i18n.language || 'en';
-
   const handleUpdateHp = async (newHp, newShields) => {
     try {
       await updatePlayerHP(effectivePlayer.id || effectivePlayer.uid, newHp);
@@ -238,12 +237,12 @@ export default function PlayerSheet() {
       {/* Navigation & Breadcrumbs Bar */}
       <div className="flex items-center justify-between glass-panel px-4 py-2 text-xs font-mono">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/dashboard')}
+          <Link
+            to="/dashboard"
             className="text-neon-cyan hover:underline flex items-center gap-1 font-bold"
           >
-            ◀ Return to Hub
-          </button>
+            ◀ {t('navigation.returnToHub', 'Return to Hub')}
+          </Link>
           <span className="text-gray-600">/</span>
           <span className="text-gray-300 truncate">{playerName}</span>
         </div>
@@ -264,7 +263,7 @@ export default function PlayerSheet() {
             onClick={logout}
             className="text-gray-400 hover:text-neon-red transition-colors uppercase text-[10px]"
           >
-            Logout
+            {t('auth.logout', 'Logout')}
           </button>
         </div>
       </div>
@@ -334,11 +333,11 @@ export default function PlayerSheet() {
             <div className="lg:col-span-3 space-y-4">
               <div className="flex border-b border-white/10 gap-2 overflow-x-auto pb-1">
                 {[
-                  { id: 'actions', label: '⚔️ Actions & Attacks' },
-                  { id: 'inventory', label: '🎒 Equipment & Cargo' },
-                  { id: 'features', label: '🧬 Features & Traits' },
-                  { id: 'notes', label: '📝 Field Notes & Intel' },
-                  { id: 'bio', label: '📜 Operative Dossier' },
+                  { id: 'actions', label: `⚔️ ${t('sheetTabs.actions', 'Actions & Attacks')}` },
+                  { id: 'inventory', label: `🎒 ${t('sheetTabs.inventory', 'Equipment & Cargo')}` },
+                  { id: 'features', label: `🧬 ${t('sheetTabs.features', 'Features & Traits')}` },
+                  { id: 'notes', label: `📝 ${t('sheetTabs.notes', 'Field Notes & Intel')}` },
+                  { id: 'bio', label: `📜 ${t('sheetTabs.bio', 'Operative Dossier')}` },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -399,19 +398,25 @@ export default function PlayerSheet() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="glass-panel p-5 space-y-3 font-mono text-xs">
                     <h3 className="font-display text-sm font-bold text-white uppercase border-b border-white/10 pb-2">
-                      Operative Dossier
+                      {t('characterStats.dossier', 'Operative Dossier')}
                     </h3>
                     <div>
-                      <span className="text-[10px] text-gray-500 uppercase block">Species & Heritage</span>
-                      <p className="text-white font-bold">{effectivePlayer.species || 'Augmented Human'}</p>
+                      <span className="text-[10px] text-gray-500 uppercase block">{t('characterStats.speciesHeritage', 'Species & Heritage')}</span>
+                      <p className="text-white font-bold">
+                        {t(`species.${(effectivePlayer.species || 'augmented_human').toLowerCase().replace(/[\s-]+/g, '_')}`, effectivePlayer.species || 'Augmented Human')}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-500 uppercase block">Background</span>
-                      <p className="text-gray-300">{effectivePlayer.background || 'Ex-Corporate Mercenary'}</p>
+                      <span className="text-[10px] text-gray-500 uppercase block">{t('characterStats.background', 'Background')}</span>
+                      <p className="text-gray-300">
+                        {t(`backgrounds.${(effectivePlayer.background || 'mercenary').toLowerCase().replace(/[\s-]+/g, '_')}`, effectivePlayer.background || 'Mercenary')}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-500 uppercase block">Combat Classification</span>
-                      <p className="text-neon-cyan font-bold">{effectivePlayer.characterClass || 'Operative'}</p>
+                      <span className="text-[10px] text-gray-500 uppercase block">{t('characterStats.combatClassification', 'Combat Classification')}</span>
+                      <p className="text-neon-cyan font-bold">
+                        {t(`classes.${(effectivePlayer.characterClass || 'operative').toLowerCase().replace(/[\s-]+/g, '_')}`, effectivePlayer.characterClass || 'Operative')}
+                      </p>
                     </div>
                   </div>
 

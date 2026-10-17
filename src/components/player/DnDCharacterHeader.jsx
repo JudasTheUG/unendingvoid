@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import VitalBar from '../shared/VitalBar';
 import { triggerInteractiveRoll } from '../dice/DiceOverlay';
 import RollContextMenu from '../shared/RollContextMenu';
@@ -12,6 +13,7 @@ export default function DnDCharacterHeader({
   onLongRest,
   onUpdateHp,
 }) {
+  const { t } = useTranslation();
   const [healAmount, setHealAmount] = useState('');
   const [damageAmount, setDamageAmount] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
@@ -61,7 +63,12 @@ export default function DnDCharacterHeader({
   };
 
   const handleRollInitiative = (rollMode = 'normal') => {
-    triggerInteractiveRoll('1d20', totalInitBonus, `Initiative (${character.displayName || 'Operative'})`, rollMode);
+    triggerInteractiveRoll(
+      '1d20',
+      totalInitBonus,
+      `${t('characterStats.initiative', 'Initiative')} (${character.displayName || character.name || 'Operative'})`,
+      rollMode
+    );
   };
 
   return (
@@ -77,10 +84,10 @@ export default function DnDCharacterHeader({
               {character.displayName || character.name || 'Void Operative'}
             </h1>
             <p className="text-xs font-mono text-neon-cyan mt-0.5">
-              Level {character.level || 1} {character.characterClass || 'Operative'} · {character.species || 'Augmented Human'}
+              {t('characterStats.level', 'Level')} {character.level || 1} {t(`classes.${(character.characterClass || 'operative').toLowerCase().replace(/[\s-]+/g, '_')}`, character.characterClass || 'Operative')} · {t(`species.${(character.species || 'augmented_human').toLowerCase().replace(/[\s-]+/g, '_')}`, character.species || 'Augmented Human')}
             </p>
             <p className="text-[11px] font-mono text-gray-400">
-              Background: {character.background || 'Mercenary'}
+              {t('characterStats.background', 'Background')}: {t(`backgrounds.${(character.background || 'mercenary').toLowerCase().replace(/[\s-]+/g, '_')}`, character.background || 'Mercenary')}
             </p>
           </div>
         </div>
@@ -88,17 +95,17 @@ export default function DnDCharacterHeader({
         {/* Core Tactical Stat Badges (D&D Beyond Style) */}
         <div className="flex flex-wrap items-center gap-2 text-center font-mono">
           <div className="glass-panel px-3 py-1.5 border-white/10 min-w-[70px]">
-            <span className="text-[9px] uppercase text-gray-400 block">Proficiency</span>
+            <span className="text-[9px] uppercase text-gray-400 block">{t('characterStats.proficiency', 'Proficiency')}</span>
             <span className="text-sm font-bold text-neon-cyan">+{profBonus}</span>
           </div>
 
           <div className="glass-panel px-3 py-1.5 border-white/10 min-w-[70px]">
-            <span className="text-[9px] uppercase text-gray-400 block">Speed</span>
-            <span className="text-sm font-bold text-white">{character.speed || 30} ft.</span>
+            <span className="text-[9px] uppercase text-gray-400 block">{t('characterStats.speed', 'Speed')}</span>
+            <span className="text-sm font-bold text-white">{character.speed || 30} {t('characterStats.feet', 'ft.')}</span>
           </div>
 
           <div className="glass-panel px-3 py-1.5 border-white/10 min-w-[70px]">
-            <span className="text-[9px] uppercase text-gray-400 block">Armor Class</span>
+            <span className="text-[9px] uppercase text-gray-400 block">{t('characterStats.armorClass', 'Armor Class')}</span>
             <span className="text-sm font-bold text-neon-cyan">{character.armorClass || 14}</span>
           </div>
 
@@ -110,23 +117,25 @@ export default function DnDCharacterHeader({
                 isOpen: true,
                 position: { x: e.clientX, y: e.clientY },
                 type: 'd20',
-                title: 'Initiative Check',
+                title: t('characterStats.initiativeCheck', 'Initiative Check'),
                 diceNotation: '1d20',
                 bonus: totalInitBonus,
                 onSelect: (mode) => handleRollInitiative(mode),
               });
             }}
             className="glass-panel px-3 py-1.5 border-neon-cyan/40 hover:border-neon-cyan min-w-[70px] hover:bg-neon-cyan/10 transition-all cursor-pointer group"
-            title={`Left-click: Roll initiative · Right-click: Advantage / Disadvantage\nTotal: +${totalInitBonus} (${initData.bonusSources.map((b) => `${b.name} ${b.bonus >= 0 ? '+' : ''}${b.bonus}`).join(', ')})`}
+            title={`${t('characterStats.initiativeHint', 'Left-click: Roll initiative · Right-click: Advantage / Disadvantage')}\nTotal: +${totalInitBonus}`}
           >
-            <span className="text-[9px] uppercase text-gray-400 group-hover:text-neon-cyan block">Initiative</span>
+            <span className="text-[9px] uppercase text-gray-400 group-hover:text-neon-cyan block">
+              {t('characterStats.initiative', 'Initiative')}
+            </span>
             <span className="text-sm font-bold text-neon-green">
               {totalInitBonus >= 0 ? `+${totalInitBonus}` : totalInitBonus}
             </span>
           </button>
 
           <div className="glass-panel px-3 py-1.5 border-white/10 min-w-[70px]">
-            <span className="text-[9px] uppercase text-gray-400 block">Passive Per.</span>
+            <span className="text-[9px] uppercase text-gray-400 block">{t('characterStats.passivePerception', 'Passive Per.')}</span>
             <span className="text-sm font-bold text-amber-300">{passivePerception}</span>
           </div>
         </div>
@@ -136,13 +145,13 @@ export default function DnDCharacterHeader({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
         <div className="lg:col-span-2 space-y-3">
           <VitalBar
-            label="Hull & Health (HP)"
+            label={t('vitals.hullHealth', 'Hull & Health (HP)')}
             current={character.hp || 0}
             max={character.maxHp || 100}
             type="hp"
           />
           <VitalBar
-            label="Defensive Energy Shields"
+            label={t('vitals.defensiveShields', 'Defensive Energy Shields')}
             current={character.shields || 0}
             max={character.maxShields || 50}
             type="shield"
@@ -154,7 +163,7 @@ export default function DnDCharacterHeader({
           <div className="flex items-center gap-1.5">
             <input
               type="number"
-              placeholder="Damage"
+              placeholder={t('vitals.damage', 'Damage')}
               value={damageAmount}
               onChange={(e) => setDamageAmount(e.target.value)}
               className="w-20 bg-void-bg border border-white/10 rounded px-2 py-1 text-neon-red text-center focus:outline-none"
@@ -163,12 +172,12 @@ export default function DnDCharacterHeader({
               onClick={handleApplyDamage}
               className="px-2.5 py-1 bg-neon-red/20 text-neon-red border border-neon-red/40 hover:bg-neon-red/30 rounded font-bold uppercase text-[10px]"
             >
-              Damage
+              {t('vitals.damage', 'Damage')}
             </button>
 
             <input
               type="number"
-              placeholder="Heal"
+              placeholder={t('vitals.heal', 'Heal')}
               value={healAmount}
               onChange={(e) => setHealAmount(e.target.value)}
               className="w-20 bg-void-bg border border-white/10 rounded px-2 py-1 text-neon-green text-center focus:outline-none ml-2"
@@ -177,24 +186,24 @@ export default function DnDCharacterHeader({
               onClick={handleApplyHeal}
               className="px-2.5 py-1 bg-neon-green/20 text-neon-green border border-neon-green/40 hover:bg-neon-green/30 rounded font-bold uppercase text-[10px]"
             >
-              Heal
+              {t('vitals.heal', 'Heal')}
             </button>
           </div>
 
           <div className="flex items-center justify-between pt-1 border-t border-white/5">
-            <span className="text-[10px] text-gray-500">Hit Dice: {character.level || 1}d10</span>
+            <span className="text-[10px] text-gray-500">{t('vitals.hitDice', 'Hit Dice')}: {character.level || 1}d10</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={onShortRest}
                 className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 text-gray-300 text-[10px] uppercase font-bold"
               >
-                Short Rest
+                {t('vitals.shortRest', 'Short Rest')}
               </button>
               <button
                 onClick={onLongRest}
                 className="px-2 py-0.5 rounded bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/40 text-[10px] uppercase font-bold"
               >
-                Long Rest
+                {t('vitals.longRest', 'Long Rest')}
               </button>
             </div>
           </div>

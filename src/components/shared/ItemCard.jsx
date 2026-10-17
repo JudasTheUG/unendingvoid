@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const RARITY_STYLES = {
   common: {
@@ -37,6 +38,7 @@ const RARITY_STYLES = {
  * @param {function} [onAction] - General action callback (e.g. use consumable or remove)
  */
 export default function ItemCard({ item, locale = 'en', isEquipped = false, onEquip, onAction }) {
+  const { t } = useTranslation();
   if (!item) return null;
 
   const rarity = item.rarity || 'common';
@@ -110,7 +112,7 @@ export default function ItemCard({ item, locale = 'en', isEquipped = false, onEq
                            ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50'
                            : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}
             >
-              {isEquipped ? 'Equipped' : 'Equip'}
+              {isEquipped ? t('common.equipped', 'Equipped') : t('common.equip', 'Equip')}
             </button>
           )}
         </div>

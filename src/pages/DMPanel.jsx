@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useCollection } from '../hooks/useCollection';
@@ -164,12 +164,12 @@ export default function DMPanel() {
       <header className="glass-panel p-4 border-l-4 border-l-neon-magenta shadow-[0_0_25px_rgba(255,0,170,0.2)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/dashboard')}
+            <Link
+              to="/dashboard"
               className="text-gray-400 hover:text-white text-xs font-mono"
             >
-              ◀ Hub
-            </button>
+              ◀ {t('navigation.hub', 'Hub')}
+            </Link>
             <span className="text-gray-600">/</span>
             <h1 className="font-display text-xl md:text-2xl font-black text-neon-magenta tracking-wider drop-shadow-[0_0_12px_rgba(255,0,170,0.5)]">
               {campaign?.name || 'Void Master Command Console'}
