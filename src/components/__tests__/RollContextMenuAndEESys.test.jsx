@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../lib/i18n';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RollContextMenu from '../shared/RollContextMenu';

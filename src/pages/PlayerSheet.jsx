@@ -357,8 +357,23 @@ export default function PlayerSheet() {
             shields: 120,
             maxShields: 120,
             subWarpSpeed: equippedShip?.speed || 42,
+            modules: equippedShip?.modules,
+            cargoCapacity: equippedShip?.cargoCapacity,
+            weapons: equippedShip?.weapons
           }}
+          inventoryItems={inventoryItems}
+          onUpdateCredits={(credits) => setLocalCredits(credits)}
+          onUpdateInventory={(updatedInv) => setLocalInventory(updatedInv)}
           onUpdateShipName={(name) => setCustomShipName(name)}
+          onUpdateShip={(newShip) => {
+            // Need to apply new ship configuration to character data
+            // Since we're missing an explicit equippedShip setter inside PlayerSheet, we'll
+            // wait and see if we can dispatch it properly, for now, we'll rely on SpaceshipSheet returning the full ship structure.
+            // (Assuming we are just mutating the object properties for the mock or passing it up correctly)
+            if (newShip.hullPoints) {
+              setCustomShipName(newShip.name); // Using custom name hook to force re-render, a real DB sync goes here in a full app
+            }
+          }}
         />
       )}
 

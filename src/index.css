@@ -97,12 +97,19 @@ body {
   border-left: 3px solid #ef4444;
 }
 
+.tactical-border-orange {
+  border-left: 3px solid #ea580c;
+}
+
 /* Utility: Tactical Glow (Restrained & High-Precision) */
 .neon-glow-cyan {
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.25), 0 0 20px rgba(0, 240, 255, 0.08);
 }
 .neon-glow-amber {
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.25), 0 0 20px rgba(245, 158, 11, 0.08);
+}
+.neon-glow-orange {
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.25), 0 0 20px rgba(234, 88, 12, 0.08);
 }
 
 @keyframes fade-in {
