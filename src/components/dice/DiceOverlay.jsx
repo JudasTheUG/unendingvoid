@@ -1701,24 +1701,26 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
         </div>
       )}
 
-      {/* Floating Quick Dice Bar */}
-      <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2">
+      {/* Floating Quick Dice Bar - Mobile-optimized & responsive */}
+      <div className="fixed bottom-2 right-2 sm:right-5 sm:bottom-5 z-50 flex items-center justify-end gap-1.5 sm:gap-2 max-w-[calc(100vw-1rem)] pointer-events-none">
         <button
           onClick={toggleHistory}
-          className={`p-2.5 rounded-xl bg-[#070b14] text-gray-300 hover:text-neon-cyan border-2 border-slate-700 hover:border-neon-cyan transition-all text-xs font-mono shadow-xl ${showHistory ? 'border-neon-cyan text-neon-cyan' : ''}`}
+          className={`pointer-events-auto shrink-0 p-2 sm:p-2.5 rounded-xl bg-[#070b14] text-gray-300 hover:text-neon-cyan border-2 border-slate-700 hover:border-neon-cyan transition-all text-xs font-mono shadow-xl ${showHistory ? 'border-neon-cyan text-neon-cyan' : ''}`}
           title="Toggle Quantum Roll Ledger"
         >
           📜
         </button>
 
         {/* Die Selector Buttons + Lucifer's Silver Coin */}
-        <div className="bg-[#070b14] px-3 py-1.5 flex items-center gap-1.5 border-2 border-slate-700 rounded-xl shadow-xl">
+        <div className="pointer-events-auto bg-[#070b14] px-1.5 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 border-2 border-slate-700 rounded-xl shadow-xl overflow-x-auto no-scrollbar max-w-[calc(100vw-4.25rem)] sm:max-w-none">
           {isViewerDM && (
             <span
-              className="px-2 py-1 rounded text-[10px] font-mono font-bold uppercase bg-purple-900/40 text-purple-300 border border-purple-500/50 flex items-center gap-1 shadow-sm shrink-0"
+              className="px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[9px] sm:text-[10px] font-mono font-bold uppercase bg-purple-900/40 text-purple-300 border border-purple-500/50 flex items-center gap-1 shadow-sm shrink-0 whitespace-nowrap"
               title="DM Screen Active: Your rolls are hidden from player terminals"
             >
-              🛡️ {t('dice.dmPrivateMode') || 'DM Screen (Secret)'}
+              <span>🛡️</span>
+              <span className="hidden sm:inline">{t('dice.dmPrivateMode') || 'DM Screen (Secret)'}</span>
+              <span className="sm:hidden text-[9px] font-bold">DM</span>
             </span>
           )}
 
@@ -1737,7 +1739,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
               }}
               disabled={isRolling}
               title={`Left-click: Roll 1${d} · Right-click: Choose quantity`}
-              className={`px-2 py-1 rounded text-xs font-mono font-bold uppercase transition-all
+              className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[11px] sm:text-xs font-mono font-bold uppercase transition-all shrink-0
                          ${d === 'd20'
                            ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 shadow-[0_0_8px_rgba(0,240,255,0.3)]'
                            : d === 'd100'
@@ -1762,10 +1764,11 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
             }}
             disabled={isRolling}
             title="Left-click: Flip Lucifer's Silver Coin · Right-click: Flip multiple"
-            className="px-2.5 py-1 rounded text-xs font-mono font-bold uppercase transition-all bg-slate-300/20 text-slate-200 border border-slate-300/50 shadow-[0_0_10px_rgba(203,213,225,0.35)] hover:scale-105 active:scale-95 flex items-center gap-1"
+            className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded text-[11px] sm:text-xs font-mono font-bold uppercase transition-all bg-slate-300/20 text-slate-200 border border-slate-300/50 shadow-[0_0_10px_rgba(203,213,225,0.35)] hover:scale-105 active:scale-95 flex items-center gap-1 shrink-0"
           >
             <span>🪙</span>
-            <span>Silver Coin</span>
+            <span className="hidden sm:inline">Silver Coin</span>
+            <span className="sm:hidden">Coin</span>
           </button>
         </div>
       </div>
@@ -1852,7 +1855,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 
       {/* Roll History Drawer - 100% Opaque Military Telemetry Ledger */}
       {showHistory && (
-        <div className="fixed bottom-24 right-5 sm:right-[12.5rem] w-84 max-w-[calc(100vw-2.5rem)] max-h-[26rem] bg-[#070b14] p-4 z-50 shadow-[0_0_35px_rgba(0,0,0,0.95)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
+        <div className="fixed bottom-14 sm:bottom-24 left-2 right-2 sm:left-auto sm:right-[12.5rem] w-auto sm:w-84 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2.5rem)] max-h-[75vh] sm:max-h-[26rem] bg-[#070b14] p-3 sm:p-4 z-50 shadow-[0_0_35px_rgba(0,0,0,0.95)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
           <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span>

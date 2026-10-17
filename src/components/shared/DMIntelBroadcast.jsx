@@ -260,10 +260,10 @@ export default function DMIntelBroadcast({
   return (
     <>
       {/* Floating Tactical Comms Toggle Button - Far Right Above Dice Bar with comfortable margin */}
-      <div className="fixed bottom-24 right-5 z-40">
+      <div className="fixed bottom-14 right-2 sm:bottom-24 sm:right-5 z-40">
         <button
           onClick={handleOpen}
-          className={`px-3.5 py-2.5 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-[0_0_25px_rgba(0,0,0,0.9)]
+          className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 shadow-[0_0_25px_rgba(0,0,0,0.9)]
                      ${isOpen
                        ? 'border-amber-500 text-amber-400 bg-amber-500/15 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
                        : hasNewUnread
@@ -271,12 +271,12 @@ export default function DMIntelBroadcast({
                          : 'border-slate-700 text-gray-300 hover:text-white hover:border-slate-500 hover:bg-[#0e1628]'}`}
           title="Open DM Tactical Comms Feed"
         >
-          <span className="text-base">📡</span>
+          <span className="text-sm sm:text-base">📡</span>
           <span>{t('intel.feedTitle') || 'TAC-COMMS'}</span>
           {hasNewUnread && (
             <span className="w-2 h-2 rounded-full bg-neon-cyan animate-ping"></span>
           )}
-          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-gray-200 border border-slate-700 font-bold">
+          <span className="px-1.5 sm:px-2 py-0.5 rounded bg-slate-800 text-[9px] sm:text-[10px] text-gray-200 border border-slate-700 font-bold">
             {broadcasts.length}
           </span>
         </button>
@@ -284,7 +284,7 @@ export default function DMIntelBroadcast({
 
       {/* 100% Opaque Tactical Intel Feed Panel - Expanded Size with clean margin above dice bar */}
       {isOpen && (
-        <div className="fixed bottom-24 right-5 w-96 sm:w-[32rem] max-w-[calc(100vw-2.5rem)] max-h-[36rem] bg-[#070b14] p-4.5 z-50 shadow-[0_0_50px_rgba(0,0,0,0.98)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
+        <div className="fixed bottom-14 right-2 left-2 sm:left-auto sm:bottom-24 sm:right-5 w-auto sm:w-[32rem] max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2.5rem)] max-h-[75vh] sm:max-h-[36rem] bg-[#070b14] p-3 sm:p-4.5 z-50 shadow-[0_0_50px_rgba(0,0,0,0.98)] border-2 border-slate-700/90 rounded-xl animate-fade-in flex flex-col font-mono">
           {/* Header Bar */}
           <div className="flex items-center justify-between bg-[#0d1424] -mx-4 -mt-4 p-3 mb-3 border-b-2 border-slate-700/90 rounded-t-lg">
             <div className="flex items-center gap-2">

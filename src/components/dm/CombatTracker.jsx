@@ -554,7 +554,7 @@ export default function CombatTracker({
           </div>
 
           {/* Formulate & Start Combat Button */}
-          <div className="pt-2">
+          <div className="pt-2 pb-4">
             <button
               onClick={handleFinalizeTurnOrder}
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-display font-black text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
