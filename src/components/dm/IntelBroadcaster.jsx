@@ -211,6 +211,17 @@ export default function IntelBroadcaster() {
               </button>
             ))}
           </div>
+
+          {/* Tactical Tip for Direct Images vs Pinterest / Web Links */}
+          <div className="p-2 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300/90 leading-relaxed space-y-1">
+            <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-amber-400">
+              <span>💡</span>
+              <span>{t('intel.imageTipTitle') || 'Direct Image vs. Web Link Tip:'}</span>
+            </div>
+            <p>
+              {t('intel.imageTip') || 'For direct inline image rendering, right-click any image on Pinterest or the Web and choose "Copy Image Address" (.jpg/.png/i.pinimg.com). Webpage links (e.g. pin.it) display cleanly as clickable tactical dossiers.'}
+            </p>
+          </div>
         </div>
 
         {/* Broadcast Trigger */}

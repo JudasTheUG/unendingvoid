@@ -58,39 +58,40 @@ export default function InitiativeRollModal({
   const handleRollInitiative = async () => {
     if (isRolling || hasSubmitted) return;
     setIsRolling(true);
+    setHasSubmitted(true);
 
     // Roll d20
     const d20 = Math.floor(Math.random() * 20) + 1;
     const total = d20 + totalBonus;
 
-    // Trigger 3D dice overlay animation with the full computed initiative modifier
-    triggerInteractiveRoll('1d20', totalBonus, `Initiative Check: ${charName}`);
+    // Immediately close popup so user sees the 3D dice rolling on screen
+    setIsOpen(false);
+    if (onClose) onClose();
 
-    // Wait slightly for dramatic effect
-    setTimeout(async () => {
-      setRollResult({ d20, totalBonus, dexMod, extraBonus, total, bonusSources });
-      setHasSubmitted(true);
+    // Trigger 3D dice overlay animation with the exact predetermined d20 roll
+    triggerInteractiveRoll(
+      '1d20',
+      totalBonus,
+      `Initiative Check: ${charName}`,
+      'normal',
+      false,
+      [d20]
+    );
+
+    // Transmit the exact same result to DM
+    try {
+      await submitInitiativeRoll(campaignId, {
+        playerId: charId,
+        playerName: charName,
+        roll: d20,
+        modifier: totalBonus,
+        total,
+      });
+    } catch (err) {
+      console.warn('[InitiativeRollModal] Submission error:', err.message);
+    } finally {
       setIsRolling(false);
-
-      // Transmit result to DM
-      try {
-        await submitInitiativeRoll(campaignId, {
-          playerId: charId,
-          playerName: charName,
-          roll: d20,
-          modifier: totalBonus,
-          total,
-        });
-      } catch (err) {
-        console.warn('[InitiativeRollModal] Submission error:', err.message);
-      }
-
-      // Auto dismiss after 2.5 seconds
-      setTimeout(() => {
-        setIsOpen(false);
-        if (onClose) onClose();
-      }, 2500);
-    }, 1000);
+    }
   };
 
   if (!isOpen) return null;

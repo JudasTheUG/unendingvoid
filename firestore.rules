@@ -31,8 +31,13 @@ service cloud.firestore {
 
     // ── Rolls (immutable real-time rolls) ──
     match /rolls/{rollId} {
-      allow read, create: if isAuth();
+      allow read, create: if true;
       allow update, delete: if false;
+    }
+
+    // ── Tactical Broadcasts / Intel Comms ──
+    match /broadcasts/{broadcastId} {
+      allow read, write: if true;
     }
 
     // ── Sessions ──

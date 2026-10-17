@@ -82,33 +82,48 @@ describe('InitiativeRollModal & Leeeerooyy Button', () => {
     expect(screen.getByText('Alert Feat: +10')).toBeInTheDocument();
   });
 
-  it('clicking "Leeeerooyy..." rolls initiative, shows outcome, and submits', async () => {
+  it('clicking "Leeeerooyy..." closes popup, triggers 3D dice, and submits identical roll to DM', async () => {
     const { submitInitiativeRoll } = await import('../../lib/campaignActions');
+    const { triggerInteractiveRoll } = await import('../dice/DiceOverlay');
+
+    const onClose = vi.fn();
 
     render(
       <InitiativeRollModal
         character={mockCharacter}
         campaignId="camp_1"
         forceOpen={true}
+        onClose={onClose}
       />
     );
 
     const rollButton = screen.getByText('Leeeerooyy...');
-    fireEvent.click(rollButton);
-
-    // Fast-forward timeout for roll calculation
-    act(() => {
-      vi.advanceTimersByTime(1200);
+    await act(async () => {
+      fireEvent.click(rollButton);
     });
 
-    // Verify submitInitiativeRoll was called
+    // Verify triggerInteractiveRoll was called immediately with fixedResults
+    expect(triggerInteractiveRoll).toHaveBeenCalledTimes(1);
+    const callArgs = triggerInteractiveRoll.mock.calls[0];
+    const notation = callArgs[0];
+    const mod = callArgs[1];
+    const fixedResults = callArgs[5];
+
+    expect(notation).toBe('1d20');
+    expect(mod).toBe(3);
+    expect(Array.isArray(fixedResults)).toBe(true);
+    const d20 = fixedResults[0];
+
+    // Verify submitInitiativeRoll was called with the exact same d20 and total
     expect(submitInitiativeRoll).toHaveBeenCalledTimes(1);
     expect(submitInitiativeRoll).toHaveBeenCalledWith(
       'camp_1',
       expect.objectContaining({
         playerId: 'char_kael',
         playerName: 'Kaelen Voss',
+        roll: d20,
         modifier: 3,
+        total: d20 + 3,
       })
     );
   });
@@ -147,5 +162,29 @@ describe('CombatTracker DM Initiative Flow', () => {
     // Finalize Turn Order button
     const finalizeBtn = screen.getByText('Finalize Turn Order & Engage Combat');
     expect(finalizeBtn).toBeInTheDocument();
+  });
+
+  it('switches from "Awaiting operative rolls" to "All Players Ready" when all players submit rolls', () => {
+    localStorage.setItem(
+      'unendingvoid:initiative_rolls',
+      JSON.stringify({
+        p1: { playerId: 'p1', roll: 14, total: 16 },
+        p2: { playerId: 'p2', roll: 10, total: 11 },
+      })
+    );
+
+    render(
+      <CombatTracker
+        campaignId="camp_1"
+        players={mockPlayers}
+        turnOrder={['p1', 'p2']}
+        currentTurn={0}
+        combatActive={false}
+      />
+    );
+
+    // Both players submitted rolls, so it should display "combat.allPlayersReady"
+    const readyElements = screen.getAllByText('combat.allPlayersReady');
+    expect(readyElements.length).toBeGreaterThan(0);
   });
 });

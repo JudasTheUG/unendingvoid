@@ -194,6 +194,13 @@ export default function CombatTracker({
     }
   };
 
+  const allPlayersReady =
+    players.length > 0 &&
+    players.every((p) => {
+      const pId = p.id || p.uid;
+      return playerRolls[pId] !== undefined;
+    });
+
   const activeCombatantId = turnOrder[currentTurn];
   const activeCombatant =
     players.find((p) => (p.id || p.uid) === activeCombatantId) ||
@@ -223,13 +230,21 @@ export default function CombatTracker({
             <button
               onClick={handleAskInitiative}
               className={`px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border
-                         ${isAwaitingRolls
-                           ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 animate-pulse'
-                           : 'bg-red-600/20 hover:bg-red-600/30 text-red-300 border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.3)]'}`}
+                         ${allPlayersReady
+                           ? 'bg-neon-green/20 text-neon-green border-neon-green/60 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                           : isAwaitingRolls
+                             ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 animate-pulse'
+                             : 'bg-red-600/20 hover:bg-red-600/30 text-red-300 border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.3)]'}`}
               title="Broadcast initiative request to all players with 'Leeeerooyy...' button"
             >
-              <span>🚨</span>
-              <span>{isAwaitingRolls ? (t('combat.awaitingRolls') || 'Awaiting Operative Rolls...') : (t('combat.askInitiative') || 'Ask Initiative')}</span>
+              <span>{allPlayersReady ? '✅' : (isAwaitingRolls ? '⏳' : '🚨')}</span>
+              <span>
+                {allPlayersReady
+                  ? (t('combat.allPlayersReady') || 'All Players Ready')
+                  : isAwaitingRolls
+                    ? (t('combat.awaitingRolls') || 'Awaiting Operative Rolls...')
+                    : (t('combat.askInitiative') || 'Ask Initiative')}
+              </span>
             </button>
           )}
 
@@ -328,8 +343,11 @@ export default function CombatTracker({
                 <span>👥</span>
                 <span>Operative Initiative Status ({players.length})</span>
               </span>
-              <span className="text-[10px] text-gray-400">
-                {Object.keys(playerRolls).length}/{players.length} Submitted
+              <span className={`text-[10px] font-bold flex items-center gap-1 ${allPlayersReady ? 'text-neon-green' : 'text-gray-400'}`}>
+                {allPlayersReady && <span>✅</span>}
+                {allPlayersReady
+                  ? (t('combat.allPlayersReady') || 'All Players Ready')
+                  : `${Object.keys(playerRolls).length}/${players.length} Submitted`}
               </span>
             </div>
 

@@ -61,7 +61,8 @@
     "nextTurn": "Sonraki Tur",
     "startCombat": "Savaşı Başlat",
     "endCombat": "Savaşı Bitir",
-    "rolling": "ATILIYOR..."
+    "rolling": "ATILIYOR...",
+    "allPlayersReady": "Tüm Oyuncular Hazır"
   },
   "dice": {
     "roll": "At",
@@ -192,7 +193,12 @@
     "imageLabel": "Gözetleme Fotoğrafı / Görsel URL (İsteğe Bağlı)",
     "broadcastButton": "İstihbaratı Filoya Yayınla",
     "dispatching": "Altuzay Üzerinden İletiliyor...",
-    "broadcastSuccess": "Yayın tüm ajan terminallerine başarıyla iletildi!"
+    "broadcastSuccess": "Yayın tüm ajan terminallerine başarıyla iletildi!",
+    "imageTipTitle": "Doğrudan Resim vs. Web Bağlantısı İpucu:",
+    "imageTip": "Doğrudan görsel önizlemesi için Pinterest veya Web'deki görsele sağ tıklayıp 'Resim Adresini Kopyala' (.jpg/.png/i.pinimg.com) seçin. pin.it gibi sayfa bağlantıları harici taktik dosya olarak açılır.",
+    "externalAttachment": "Harici İstihbarat Dosyası",
+    "openExternalIntel": "Görsel Dosyayı Aç ↗",
+    "openOriginal": "Orijinal Bağlantıyı Aç"
   },
   "notes": {
     "title": "Ajan Saha Günlüğü ve İstihbarat Arşivi",

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import { useDiceSync, publishRoll } from '../../hooks/useDiceSync';
+import { useDiceSync, publishRoll, getStoredRolls } from '../../hooks/useDiceSync';
 
 // Synthesize a realistic sci-fi mechanical clatter sound using Web Audio API
 function playDiceClatterSound() {
@@ -403,7 +403,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 
   const [activeRollBanner, setActiveRollBanner] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
-  const [recentRolls, setRecentRolls] = useState([]);
+  const [recentRolls, setRecentRolls] = useState(() => getStoredRolls());
   const [showHistory, setShowHistory] = useState(false);
 
   // Bottom Dice Multi-Quantity Popover
@@ -1008,25 +1008,48 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     }, 1380);
   }, [clearDice]);
 
-  // Listen for real-time multiplayer rolls
-  useDiceSync((incomingRoll) => {
-    if (incomingRoll.playerId !== user?.uid) {
-      const isRollSecretDM = Boolean(
-        incomingRoll.isSecret ||
-        incomingRoll.role === 'dm' ||
-        incomingRoll.isDMRoll ||
-        incomingRoll.playerName?.includes('(DM)')
-      );
+  // Listen for real-time multiplayer rolls and roll ledger history
+  useDiceSync(
+    (incomingRoll) => {
+      const isFromSelf =
+        incomingRoll.playerId === (user?.uid || 'guest') &&
+        incomingRoll.clientTimestamp &&
+        Math.abs(Date.now() - incomingRoll.clientTimestamp) < 2000;
 
-      // DM rolls are strictly private to the DM; player rolls are visible to everyone!
-      if (isRollSecretDM && !isViewerDM) {
-        return;
+      if (!isFromSelf) {
+        const isRollSecretDM = Boolean(
+          incomingRoll.isSecret ||
+          incomingRoll.role === 'dm' ||
+          incomingRoll.isDMRoll ||
+          incomingRoll.playerName?.includes('(DM)')
+        );
+
+        // DM rolls are strictly private to the DM; player rolls are visible to everyone!
+        if (isRollSecretDM && !isViewerDM) {
+          return;
+        }
+
+        trigger3DVisual(incomingRoll);
+        setRecentRolls((prev) => [incomingRoll, ...prev.filter((r) => r.id !== incomingRoll.id)].slice(0, 30));
       }
-
-      trigger3DVisual(incomingRoll);
-      setRecentRolls((prev) => [incomingRoll, ...prev.slice(0, 19)]);
+    },
+    (historicalRolls) => {
+      if (Array.isArray(historicalRolls) && historicalRolls.length > 0) {
+        setRecentRolls((prev) => {
+          const map = new Map();
+          historicalRolls.forEach((r) => {
+            const key = r.id || `${r.playerId}_${r.clientTimestamp || r.timestamp}`;
+            map.set(key, r);
+          });
+          prev.forEach((r) => {
+            const key = r.id || `${r.playerId}_${r.clientTimestamp || r.timestamp}`;
+            if (!map.has(key)) map.set(key, r);
+          });
+          return Array.from(map.values()).slice(0, 30);
+        });
+      }
     }
-  });
+  );
 
   // Cross-tab & local multiplayer sync listener
   useEffect(() => {
@@ -1046,7 +1069,7 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       }
 
       trigger3DVisual(data);
-      setRecentRolls((prev) => [data, ...prev.slice(0, 19)]);
+      setRecentRolls((prev) => [data, ...prev.slice(0, 29)]);
     };
 
     const handleCustomEvent = (e) => {
@@ -1074,8 +1097,8 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
   // Global trigger listener
   useEffect(() => {
     const handleGlobalRollEvent = (e) => {
-      const { notation: not, modifier: mod, label, rollMode: mode, isSecret } = e.detail || {};
-      handleRoll(not || '1d20', mod !== undefined ? mod : modifier, label || 'action', mode || 'normal', null, isSecret);
+      const { notation: not, modifier: mod, label, rollMode: mode, isSecret, fixedResults } = e.detail || {};
+      handleRoll(not || '1d20', mod !== undefined ? mod : modifier, label || 'action', mode || 'normal', null, isSecret, fixedResults);
     };
 
     window.addEventListener('unendingvoid:roll', handleGlobalRollEvent);
@@ -1089,7 +1112,8 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
     purpose = 'action',
     rollMode = 'normal',
     quantityOverride = null,
-    secretOverride = null
+    secretOverride = null,
+    fixedResults = null
   ) => {
     if (isRolling) return;
     setIsRolling(true);
@@ -1112,7 +1136,11 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       const count = Math.max(1, Math.min(10, quantityOverride || parseInt(rollStr, 10) || 1));
       const results = [];
       for (let i = 0; i < count; i++) {
-        results.push(Math.random() < 0.5 ? 'HEADS' : 'TAILS');
+        results.push(
+          fixedResults && fixedResults[i] !== undefined
+            ? fixedResults[i]
+            : (Math.random() < 0.5 ? 'HEADS' : 'TAILS')
+        );
       }
 
       const headsCount = results.filter((r) => r === 'HEADS').length;
@@ -1137,7 +1165,9 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       };
     } else if (rollStr.includes('d100')) {
       // ──────────────── D100 PERCENTILE ────────────────
-      const raw100 = Math.floor(Math.random() * 100) + 1;
+      const raw100 = (fixedResults && fixedResults[0] !== undefined)
+        ? Number(fixedResults[0])
+        : Math.floor(Math.random() * 100) + 1;
       const total = raw100 + appliedMod;
 
       let tensVal;
@@ -1171,8 +1201,12 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       };
     } else if (rollMode === 'advantage' || rollMode === 'disadvantage') {
       // ──────────────── ADVANTAGE / DISADVANTAGE ────────────────
-      const r1 = Math.floor(Math.random() * 20) + 1;
-      const r2 = Math.floor(Math.random() * 20) + 1;
+      const r1 = (fixedResults && fixedResults[0] !== undefined)
+        ? Number(fixedResults[0])
+        : Math.floor(Math.random() * 20) + 1;
+      const r2 = (fixedResults && fixedResults[1] !== undefined)
+        ? Number(fixedResults[1])
+        : Math.floor(Math.random() * 20) + 1;
       const results = [r1, r2];
 
       const isAdv = rollMode === 'advantage';
@@ -1227,7 +1261,9 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
       const totalMod = customMod !== null ? customMod : appliedMod + notMod;
       const results = [];
       for (let i = 0; i < count; i++) {
-        if (sides === 10) {
+        if (fixedResults && fixedResults[i] !== undefined) {
+          results.push(Number(fixedResults[i]));
+        } else if (sides === 10) {
           results.push(String(Math.floor(Math.random() * 10)));
         } else {
           results.push(Math.floor(Math.random() * sides) + 1);
@@ -1587,12 +1623,19 @@ export default function DiceOverlay({ user, profile, isDM = false, modifier = 0 
 }
 
 /**
- * Trigger a roll programmatically from anywhere in the app with exact die type, modifier, label, rollMode, and secret flag.
+ * Trigger a roll programmatically from anywhere in the app with exact die type, modifier, label, rollMode, secret flag, and optional predetermined fixedResults.
  */
-export function triggerInteractiveRoll(notation, modifier = 0, label = 'Action', rollMode = 'normal', isSecret = null) {
+export function triggerInteractiveRoll(
+  notation,
+  modifier = 0,
+  label = 'Action',
+  rollMode = 'normal',
+  isSecret = null,
+  fixedResults = null
+) {
   window.dispatchEvent(
     new CustomEvent('unendingvoid:roll', {
-      detail: { notation, modifier, label, rollMode, isSecret },
+      detail: { notation, modifier, label, rollMode, isSecret, fixedResults },
     })
   );
 }

@@ -53,6 +53,78 @@ export function saveLocalBroadcast(broadcast) {
   return updated;
 }
 
+/**
+ * IntelMediaPreview - Renders an inline surveillance image or a fallback tactical dossier card
+ * for external links such as Pinterest pins (pin.it) and non-direct image URLs.
+ */
+function IntelMediaPreview({ url, title, onOpenLightbox }) {
+  const { t } = useTranslation();
+  const [loadFailed, setLoadFailed] = useState(false);
+  const isPinterest = /pin\.it|pinterest\./i.test(url);
+
+  if (loadFailed) {
+    return (
+      <div className="p-3 rounded-lg border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-[#0a1120] to-[#070b14] space-y-2">
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="font-bold text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
+            <span>{isPinterest ? '📌' : '📎'}</span>
+            <span>{isPinterest ? 'Pinterest Intel Attachment' : (t('intel.externalAttachment') || 'External Intel Dossier')}</span>
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-black/60 text-gray-400 border border-slate-700 text-[9px]">
+            {isPinterest ? 'pinterest.com' : 'external comms'}
+          </span>
+        </div>
+        <p className="text-[10px] text-gray-300">
+          {isPinterest
+            ? 'Surveillance still hosted on Pinterest. Tap below to access visual dossier.'
+            : 'Attachment link is hosted externally on the comms grid.'}
+        </p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 font-bold text-[11px] transition-all hover:scale-[1.02] shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+        >
+          <span>{isPinterest ? '📌' : '↗'}</span>
+          <span>{t('intel.openExternalIntel') || 'Open Visual Dossier ↗'}</span>
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative group overflow-hidden rounded border border-slate-700 bg-black/60">
+      <img
+        src={url}
+        alt={title}
+        onError={() => setLoadFailed(true)}
+        className="w-full h-32 object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+        onClick={() => onOpenLightbox(url)}
+        loading="lazy"
+      />
+      <div className="absolute bottom-1 right-1 flex items-center gap-1">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="bg-black/80 hover:bg-black text-[9px] text-amber-400 px-2 py-0.5 rounded border border-amber-500/40"
+          title="Open source link in new tab"
+        >
+          ↗ Link
+        </a>
+        <button
+          type="button"
+          onClick={() => onOpenLightbox(url)}
+          className="bg-black/80 hover:bg-black text-[9px] text-neon-cyan px-2 py-0.5 rounded border border-neon-cyan/40"
+        >
+          🔍 {t('intel.viewImage') || 'Examine Intel'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DMIntelBroadcast({
   isDM = false,
   onSaveToNotes = null,
@@ -229,23 +301,13 @@ export default function DMIntelBroadcast({
                       </p>
                     </div>
 
-                    {/* Image Preview (Low-Res / Thumbnail) */}
+                    {/* Image Preview or Tactical External Attachment Card */}
                     {item.imageUrl && (
-                      <div className="relative group overflow-hidden rounded border border-slate-700 bg-black/60">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="w-full h-28 object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
-                          onClick={() => setSelectedImage(item.imageUrl)}
-                          loading="lazy"
-                        />
-                        <button
-                          onClick={() => setSelectedImage(item.imageUrl)}
-                          className="absolute bottom-1 right-1 bg-black/80 hover:bg-black text-[9px] text-neon-cyan px-2 py-0.5 rounded border border-neon-cyan/40"
-                        >
-                          🔍 {t('intel.viewImage') || 'Examine Intel'}
-                        </button>
-                      </div>
+                      <IntelMediaPreview
+                        url={item.imageUrl}
+                        title={item.title}
+                        onOpenLightbox={(img) => setSelectedImage(img)}
+                      />
                     )}
 
                     {/* Save to Player Notes / Collection Button */}
@@ -275,23 +337,40 @@ export default function DMIntelBroadcast({
       {/* Image Lightbox Modal */}
       {selectedImage && (
         <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in font-mono"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="relative max-w-2xl w-full bg-[#070b14] border-2 border-neon-cyan rounded-xl p-2 shadow-[0_0_50px_rgba(0,240,255,0.4)]">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 bg-black/80 text-white hover:text-neon-red px-3 py-1 rounded text-sm font-bold border border-white/20"
-            >
-              ✕
-            </button>
+          <div
+            className="relative max-w-2xl w-full bg-[#070b14] border-2 border-neon-cyan rounded-xl p-3 shadow-[0_0_50px_rgba(0,240,255,0.4)] space-y-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="text-xs font-bold text-neon-cyan tracking-wider">
+                // RECON VISUAL ARCHIVE // SURVEILLANCE DOSSIER //
+              </span>
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="bg-white/10 hover:bg-red-500/20 text-gray-300 hover:text-red-400 px-2.5 py-0.5 rounded text-xs font-bold border border-white/20 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
             <img
               src={selectedImage}
               alt="Intel Visual"
-              className="w-full max-h-[80vh] object-contain rounded"
+              className="w-full max-h-[75vh] object-contain rounded bg-black/50"
             />
-            <div className="p-2 text-center text-xs font-mono text-neon-cyan">
-              // RECON VISUAL ARCHIVE // DECLASSIFIED SURVEILLANCE STILL //
+            <div className="flex items-center justify-between pt-1 text-[11px] text-gray-400">
+              <span className="truncate max-w-xs">{selectedImage}</span>
+              <a
+                href={selectedImage}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-neon-cyan hover:underline flex items-center gap-1 font-bold"
+              >
+                <span>↗</span>
+                <span>{t('intel.openOriginal') || 'Open Original Link'}</span>
+              </a>
             </div>
           </div>
         </div>

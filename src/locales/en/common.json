@@ -61,7 +61,8 @@
     "nextTurn": "Next Turn",
     "startCombat": "Start Combat",
     "endCombat": "End Combat",
-    "rolling": "ROLLING..."
+    "rolling": "ROLLING...",
+    "allPlayersReady": "All Players Ready"
   },
   "dice": {
     "roll": "Roll",
@@ -192,7 +193,12 @@
     "imageLabel": "Surveillance Still / Imagery URL (Optional)",
     "broadcastButton": "Broadcast Intel to Fleet",
     "dispatching": "Transmitting Over Subspace...",
-    "broadcastSuccess": "Transmission dispatched to all operative terminals!"
+    "broadcastSuccess": "Transmission dispatched to all operative terminals!",
+    "imageTipTitle": "Direct Image vs. Web Link Tip:",
+    "imageTip": "For direct inline image rendering, right-click any image on Pinterest or the Web and choose 'Copy Image Address' (.jpg/.png/i.pinimg.com). Webpage links (e.g. pin.it) display cleanly as clickable tactical dossiers.",
+    "externalAttachment": "External Intel Dossier",
+    "openExternalIntel": "Open Visual Dossier ↗",
+    "openOriginal": "Open Original Link"
   },
   "notes": {
     "title": "Operative Field Journal & Intel Archive",

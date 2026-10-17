@@ -61,7 +61,8 @@
     "nextTurn": "Nächster Zug",
     "startCombat": "Kampf beginnen",
     "endCombat": "Kampf beenden",
-    "rolling": "WIRD GEWÜRFELT..."
+    "rolling": "WIRD GEWÜRFELT...",
+    "allPlayersReady": "Alle Spieler bereit"
   },
   "dice": {
     "roll": "Würfeln",
@@ -192,7 +193,12 @@
     "imageLabel": "Aufklärungsbild-URL (Optional)",
     "broadcastButton": "Lagebericht an Flotte übertragen",
     "dispatching": "Übertragung via Subraum läuft...",
-    "broadcastSuccess": "Übertragung erfolgreich an alle Einsatzterminals gesendet!"
+    "broadcastSuccess": "Übertragung erfolgreich an alle Einsatzterminals gesendet!",
+    "imageTipTitle": "Tipp zu Direktbildern vs. Weblinks:",
+    "imageTip": "Für eine direkte Bildanzeige klicken Sie mit der rechten Maustaste auf ein Bild auf Pinterest oder im Web und wählen Sie 'Bildadresse kopieren' (.jpg/.png/i.pinimg.com). Webseiten-Links (z. B. pin.it) werden übersichtlich als anklickbare taktische Dossiers angezeigt.",
+    "externalAttachment": "Externes Lage-Dossier",
+    "openExternalIntel": "Bilddossier öffnen ↗",
+    "openOriginal": "Original-Link öffnen"
   },
   "notes": {
     "title": "Einsatztagebuch & Lage-Archiv",
