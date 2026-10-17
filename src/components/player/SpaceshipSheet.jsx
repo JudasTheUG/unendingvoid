@@ -203,28 +203,6 @@ export default function SpaceshipSheet({
     flashSaved();
   };
 
-  const handleAdjustHull = (delta) => {
-    if (!activeShip) return;
-    const maxH = activeShip.maxHull ?? 180;
-    const newHull = Math.max(0, Math.min(maxH, hull + delta));
-    setHull(newHull);
-    const updatedShip = { ...activeShip, hull: newHull, shields };
-    setActiveShip(updatedShip);
-    if (onUpdateShip) onUpdateShip(updatedShip);
-    flashSaved();
-  };
-
-  const handleAdjustShields = (delta) => {
-    if (!activeShip) return;
-    const maxS = activeShip.maxShields ?? 120;
-    const newShields = Math.max(0, Math.min(maxS, shields + delta));
-    setShields(newShields);
-    const updatedShip = { ...activeShip, hull, shields: newShields };
-    setActiveShip(updatedShip);
-    if (onUpdateShip) onUpdateShip(updatedShip);
-    flashSaved();
-  };
-
   const handleSaveName = () => {
     setIsEditingName(false);
     if (onUpdateShipName) onUpdateShipName(shipName);
@@ -474,65 +452,21 @@ export default function SpaceshipSheet({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-5 items-start">
               <div className="lg:col-span-2 space-y-4">
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <VitalBar
-                        label={t('spaceship.hullIntegrity', 'Starship Hull Integrity')}
-                        current={hull}
-                        max={activeShip.maxHull ?? 180}
-                        type="hp"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1 ml-4 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustHull(-10)}
-                        title="-10 Hull"
-                        className="px-2 py-0.5 rounded bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-700/60 text-xs font-mono font-bold"
-                      >
-                        -10
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustHull(10)}
-                        title="+10 Hull"
-                        className="px-2 py-0.5 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 text-xs font-mono font-bold"
-                      >
-                        +10
-                      </button>
-                    </div>
-                  </div>
+                  <VitalBar
+                    label={t('spaceship.hullIntegrity', 'Starship Hull Integrity')}
+                    current={hull}
+                    max={activeShip.maxHull ?? 180}
+                    type="hp"
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <VitalBar
-                        label={t('spaceship.deflectorEnergy', 'Deflector Energy Capacitors')}
-                        current={shields}
-                        max={activeShip.maxShields ?? 120}
-                        type="shield"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1 ml-4 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustShields(-10)}
-                        title="-10 Deflectors"
-                        className="px-2 py-0.5 rounded bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-700/60 text-xs font-mono font-bold"
-                      >
-                        -10
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustShields(10)}
-                        title="+10 Deflectors"
-                        className="px-2 py-0.5 rounded bg-cyan-950/60 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 text-xs font-mono font-bold"
-                      >
-                        +10
-                      </button>
-                    </div>
-                  </div>
+                  <VitalBar
+                    label={t('spaceship.deflectorEnergy', 'Deflector Energy Capacitors')}
+                    current={shields}
+                    max={activeShip.maxShields ?? 120}
+                    type="shield"
+                  />
                 </div>
               </div>
 

@@ -268,25 +268,21 @@ describe('SpaceshipSheet Vitals Persistence & Engineering Console', () => {
     );
   });
 
-  it('adjusts hull and deflectors incrementally via steppers and persists updates', () => {
+  it('does not render incremental +10/-10 buttons and persists vitals via Engineering Damage Control', () => {
     const handleUpdateShip = vi.fn();
     render(<SpaceshipSheet ship={baseTestShip} onUpdateShip={handleUpdateShip} />);
 
-    const plusHull = screen.getByTitle('+10 Hull');
-    fireEvent.click(plusHull);
+    // Verify +10 / -10 buttons are removed from vitals area
+    expect(screen.queryByTitle('+10 Hull')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('-10 Deflectors')).not.toBeInTheDocument();
+
+    // Verify Engineering Damage Control handles vitals
+    const nanoRepairBtn = screen.getByRole('button', { name: /Nano Repair/i });
+    fireEvent.click(nanoRepairBtn);
 
     expect(handleUpdateShip).toHaveBeenCalledWith(
       expect.objectContaining({
-        hull: 60,
-      })
-    );
-
-    const minusDeflector = screen.getByTitle('-10 Deflectors');
-    fireEvent.click(minusDeflector);
-
-    expect(handleUpdateShip).toHaveBeenCalledWith(
-      expect.objectContaining({
-        shields: 30,
+        hull: 75, // 50 + 25 = 75
       })
     );
   });
