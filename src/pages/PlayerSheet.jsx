@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayerData } from '../hooks/usePlayerData';
 import { useCollection } from '../hooks/useCollection';
@@ -75,20 +77,39 @@ export default function PlayerSheet() {
     setLocalInventory(null);
   }, [targetId]);
 
-  // Listen for combat initialization
+  // Track whether combat is active in the campaign
+  const [isCombatActive, setIsCombatActive] = useState(false);
+
+  React.useEffect(() => {
+    if (!effectivePlayer?.campaignId || !db) return;
+    const unsub = onSnapshot(doc(db, 'campaigns', effectivePlayer.campaignId), (snap) => {
+      if (snap.exists()) {
+        setIsCombatActive(Boolean(snap.data()?.combatActive));
+      } else {
+        setIsCombatActive(false);
+      }
+    });
+    return () => unsub();
+  }, [effectivePlayer?.campaignId]);
+
+  // Listen for combat initialization and termination
   React.useEffect(() => {
     const handleCombatStart = (e) => {
+      setIsCombatActive(true);
       const data = e.detail;
       if (data && data.campaignId) {
         // Auto-open combat board in a new tab/window when combat starts
-        // Or show a prominent alert/button
-        // Using window.open might be blocked by popup blocker, but let's attempt it
         window.open(`/combat/${data.campaignId}`, '_blank');
       }
     };
+    const handleCombatEnd = () => {
+      setIsCombatActive(false);
+    };
     window.addEventListener('unendingvoid:combat_order_set', handleCombatStart);
+    window.addEventListener('unendingvoid:combat_ended', handleCombatEnd);
     return () => {
       window.removeEventListener('unendingvoid:combat_order_set', handleCombatStart);
+      window.removeEventListener('unendingvoid:combat_ended', handleCombatEnd);
     };
   }, []);
 
@@ -339,7 +360,7 @@ export default function PlayerSheet() {
         </div>
       </div>
 
-      {effectivePlayer?.campaignId && (
+      {effectivePlayer?.campaignId && isCombatActive && (
         <div className="flex justify-center mb-4">
           <button
             onClick={() => window.open(`/combat/${effectivePlayer.campaignId}`, '_blank')}

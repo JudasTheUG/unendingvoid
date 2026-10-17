@@ -6,6 +6,7 @@ import {
   requestInitiative,
   submitInitiativeRoll,
   setCombatTurnOrder,
+  endCombatSession,
   deleteCampaign,
   deleteCharacter,
   removeCharacterFromCampaign,
@@ -137,6 +138,31 @@ describe('campaignActions', () => {
         turnOrder,
         combatActive: true,
         initiativeRequested: false,
+      })
+    );
+  });
+
+  it('endCombatSession clears combat tokens, enemies, and sets combatActive false', async () => {
+    const res = await endCombatSession('camp-123', [{ id: 'player-kael' }]);
+
+    expect(res.combatActive).toBe(false);
+    expect(res.combatEnded).toBe(true);
+    expect(res.turnOrder).toEqual([]);
+    expect(res.enemies).toEqual([]);
+    expect(res.combatState.tokens).toEqual({});
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({
+        combatActive: false,
+        combatEnded: true,
+        turnOrder: [],
+        enemies: [],
+        combatState: {
+          tokens: {},
+          targets: {},
+          playerStatuses: {},
+          playerEffects: {},
+        },
       })
     );
   });

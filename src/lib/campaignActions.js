@@ -299,6 +299,87 @@ export async function cancelInitiative(campaignId, players = []) {
 }
 
 /**
+ * DM ends the combat encounter, clearing all grid tokens, enemies, targets, and statuses.
+ */
+export async function endCombatSession(campaignId, players = []) {
+  let playerIds = (players || []).map((p) => p.id || p.uid).filter(Boolean);
+
+  if (playerIds.length === 0 && campaignId && db) {
+    try {
+      const campSnap = await getDoc(doc(db, 'campaigns', campaignId));
+      if (campSnap.exists()) {
+        const active = campSnap.data()?.activeCharacters || [];
+        playerIds = active.map((ac) => ac.characterId || ac.uid).filter(Boolean);
+      }
+    } catch (e) {
+      console.warn('[campaignActions] Notice fetching campaign active characters:', e.message);
+    }
+  }
+
+  const payload = {
+    combatActive: false,
+    combatEnded: true,
+    turnOrder: [],
+    currentTurn: 0,
+    round: 1,
+    enemies: [],
+    combatState: {
+      tokens: {},
+      targets: {},
+      playerStatuses: {},
+      playerEffects: {},
+    },
+    initiativeRequested: false,
+    initiativeRequestedAt: null,
+    initiativeRolls: {},
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    localStorage.removeItem('unendingvoid:combat_order');
+    localStorage.removeItem('unendingvoid:initiative_request');
+    localStorage.removeItem('unendingvoid:initiative_rolls');
+    localStorage.setItem(
+      'unendingvoid:combat_ended',
+      JSON.stringify({ campaignId, timestamp: Date.now() })
+    );
+    window.dispatchEvent(
+      new CustomEvent('unendingvoid:combat_ended', { detail: { campaignId, timestamp: Date.now() } })
+    );
+  } catch (e) {
+    console.warn('Local combat end broadcast failed:', e);
+  }
+
+  if (campaignId && db) {
+    try {
+      const campaignRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campaignRef, payload);
+    } catch (err) {
+      console.warn('[campaignActions] Firestore update error in endCombatSession:', err.message);
+    }
+  }
+
+  if (playerIds.length > 0 && db) {
+    await Promise.all(
+      playerIds.map(async (pId) => {
+        try {
+          const pRef = doc(db, 'players', pId);
+          await updateDoc(pRef, {
+            initiativeRequested: false,
+            initiativeRequestedAt: null,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (err) {
+          console.warn(`[campaignActions] Error resetting player ${pId} in Firestore:`, err.message);
+        }
+      })
+    );
+  }
+
+  return payload;
+}
+
+/**
  * Operative submits their calculated initiative roll.
  */
 export async function submitInitiativeRoll(campaignId, { playerId, playerName, roll, modifier, total, breakdown }) {
@@ -379,6 +460,7 @@ export async function setCombatTurnOrder(campaignId, turnOrder, combatMode = 'gr
     currentTurn: 0,
     round: 1,
     combatActive: true,
+    combatEnded: false,
     combatMode,
     enemies,
     combatState: {

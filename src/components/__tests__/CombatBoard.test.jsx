@@ -24,6 +24,8 @@ let mockAuth = {
   profile: { role: 'dm' },
 };
 
+let mockCampaignData = null;
+
 // Mock useAuth
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => mockAuth,
@@ -54,7 +56,7 @@ vi.mock('firebase/firestore', async (importOriginal) => {
       // Mock snapshot data for campaign
       onNext({
         exists: () => true,
-        data: () => ({
+        data: () => (mockCampaignData !== null ? mockCampaignData : {
           name: 'The Expanse Void',
           dmId: 'dm_user_1',
           combatActive: true,
@@ -100,6 +102,7 @@ vi.mock('../../lib/campaignActions', () => ({
   updateCombatantStats: vi.fn().mockResolvedValue(),
   advanceCombatTurn: vi.fn().mockResolvedValue(),
   addCombatantToCombat: vi.fn().mockResolvedValue({ id: 'en_new' }),
+  endCombatSession: vi.fn().mockResolvedValue(),
 }));
 
 // Mock useDiceSync
@@ -133,6 +136,8 @@ vi.mock('../dice/DiceOverlay', () => ({
 describe('CombatBoardPage & 32x32 Grid System', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.close = vi.fn();
+    mockCampaignData = null;
     mockAuth = {
       user: { uid: 'dm_user_1', displayName: 'Dungeon Master' },
       profile: { role: 'dm' },
@@ -296,5 +301,54 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
 
     // Manual damage and heal controls are NOT rendered for players
     expect(screen.queryByPlaceholderText(/Amt/i)).not.toBeInTheDocument();
+  });
+
+  it('renders End Combat button on top middle for DM and clicking it calls endCombatSession and window.close', async () => {
+    mockAuth = {
+      user: { uid: 'dm_user_1', displayName: 'Dungeon Master' },
+      profile: { role: 'dm' },
+    };
+
+    render(<CombatBoardPage />);
+
+    const endCombatBtn = screen.getByRole('button', { name: /End Combat/i });
+    expect(endCombatBtn).toBeInTheDocument();
+
+    const { endCombatSession } = await import('../../lib/campaignActions');
+    fireEvent.click(endCombatBtn);
+    expect(endCombatSession).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(window.close).toHaveBeenCalled();
+    });
+  });
+
+  it('renders Combat Ended modal with only Close Combat Board button for players when combat is not active', () => {
+    mockAuth = {
+      user: { uid: 'player_user_99', displayName: 'Player One' },
+      profile: { role: 'player' },
+    };
+
+    mockCampaignData = {
+      name: 'The Expanse Void',
+      dmId: 'dm_user_1',
+      combatActive: false,
+      turnOrder: [],
+      enemies: [],
+      combatState: { tokens: {}, targets: {}, playerStatuses: {}, playerEffects: {} },
+    };
+
+    render(<CombatBoardPage />);
+
+    // Notification modal is displayed
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText(/COMBAT HAS ENDED/i)).toBeInTheDocument();
+    expect(screen.getByText(/TACTICAL ALERT \/\/ ENGAGEMENT CONCLUDED/i)).toBeInTheDocument();
+
+    // Only Close Combat Board button is present
+    const closeBtn = screen.getByRole('button', { name: /Close Combat Board/i });
+    expect(closeBtn).toBeInTheDocument();
+
+    fireEvent.click(closeBtn);
+    expect(window.close).toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -9,6 +9,7 @@ import {
   updateCombatantStats,
   advanceCombatTurn,
   addCombatantToCombat,
+  endCombatSession,
 } from '../lib/campaignActions';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
@@ -124,6 +125,7 @@ function getEffectBadgeStyle(effect) {
 
 export default function CombatBoardPage() {
   const { campaignId } = useParams();
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { t } = useTranslation();
 
@@ -135,6 +137,48 @@ export default function CombatBoardPage() {
       ? user?.uid && user.uid === campaign.dmId
       : profile?.role === 'dm' || user?.role === 'dm'
   );
+
+  // DM ends combat encounter completely
+  const handleEndCombat = async () => {
+    try {
+      await endCombatSession(campaignId, players);
+    } catch (err) {
+      console.warn('[CombatBoardPage] Failed to end combat session:', err);
+    }
+    try {
+      window.close();
+    } catch (e) {
+      // ignore
+    }
+    setTimeout(() => {
+      navigate(`/dm/${campaignId}`);
+    }, 250);
+  };
+
+  // Player closes combat board window after notification
+  const handleCloseCombatBoard = () => {
+    try {
+      window.close();
+    } catch (e) {
+      // ignore
+    }
+    setTimeout(() => {
+      navigate('/player');
+    }, 250);
+  };
+
+  // Listen for local combat_ended event
+  useEffect(() => {
+    const handleCombatEndedEvent = () => {
+      if (!isDM) {
+        setCampaign((prev) => (prev ? { ...prev, combatActive: false, combatEnded: true } : prev));
+      }
+    };
+    window.addEventListener('unendingvoid:combat_ended', handleCombatEndedEvent);
+    return () => {
+      window.removeEventListener('unendingvoid:combat_ended', handleCombatEndedEvent);
+    };
+  }, [isDM]);
 
   // Manual HP modification inputs per combatant: { [cId]: number }
   const [manualHpInputs, setManualHpInputs] = useState({});
@@ -646,7 +690,7 @@ export default function CombatBoardPage() {
   return (
     <div className="h-screen w-screen bg-[#050814] text-white font-mono flex flex-col overflow-hidden select-none">
       {/* Standalone Tactical Top Bar */}
-      <div className="h-12 border-b border-slate-800 bg-[#090d18] px-4 flex items-center justify-between shrink-0 shadow-md">
+      <div className="h-12 border-b border-slate-800 bg-[#090d18] px-4 flex items-center justify-between shrink-0 shadow-md relative">
         <div className="flex items-center gap-3">
           <span className="text-xl">⚔️</span>
           <div>
@@ -660,6 +704,20 @@ export default function CombatBoardPage() {
             </span>
           </div>
         </div>
+
+        {/* Top Middle: End Combat Button (DM only) */}
+        {isDM && (
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center z-20">
+            <button
+              onClick={handleEndCombat}
+              className="px-4 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/60 hover:border-red-400 font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)] flex items-center gap-2 cursor-pointer active:scale-95"
+              title={t('combatBoard.endCombat', 'End Combat')}
+            >
+              <span>⏹</span>
+              <span>{t('combatBoard.endCombat', 'End Combat')}</span>
+            </button>
+          </div>
+        )}
 
         {/* Global Turn / Round Telemetry */}
         <div className="flex items-center gap-2">
@@ -1141,6 +1199,55 @@ export default function CombatBoardPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* COMBAT ENDED / INACTIVE NOTIFICATION MODAL (PLAYERS ONLY) */}
+      {!isDM && !campaign.combatActive && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in font-mono"
+        >
+          <div className="relative max-w-md w-full bg-[#070b14] border-2 border-red-500 rounded-2xl p-6 shadow-[0_0_50px_rgba(239,68,68,0.5)] space-y-5 text-center overflow-hidden">
+            {/* Top Warning Stripe */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 animate-pulse" />
+
+            {/* Tactical Alert Banner */}
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/40 text-red-400 text-xs font-bold uppercase tracking-widest animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span>{t('combatBoard.combatEndedAlert', 'TACTICAL ALERT // ENGAGEMENT CONCLUDED')}</span>
+              </div>
+              <h2 className="font-display text-2xl font-black text-white tracking-wide uppercase pt-2">
+                {t('combatBoard.combatEndedTitle', 'COMBAT HAS ENDED')}
+              </h2>
+              <p className="text-xs text-gray-400">
+                {t(
+                  'combatBoard.combatEndedPrompt',
+                  'The Dungeon Master has ended the combat encounter. Tactical battle telemetry has been cleared.'
+                )}
+              </p>
+            </div>
+
+            {/* Tactical Grid Emblem */}
+            <div className="bg-[#0e1628] p-5 rounded-xl border border-slate-700 flex flex-col items-center justify-center space-y-2">
+              <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+                ⏹
+              </div>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                // GRID DISENGAGED //
+              </span>
+            </div>
+
+            {/* ONLY ONE BUTTON: CLOSE COMBAT BOARD */}
+            <button
+              onClick={handleCloseCombatBoard}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-display font-black text-sm uppercase tracking-widest transition-all shadow-[0_0_25px_rgba(239,68,68,0.4)] cursor-pointer active:scale-95"
+            >
+              {t('combatBoard.closeBoard', 'Close Combat Board')}
+            </button>
           </div>
         </div>
       )}

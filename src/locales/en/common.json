@@ -577,6 +577,11 @@
     "ac": "AC",
     "shield": "Shield",
     "unitAc": "Armor Class (AC)",
-    "unitShields": "Shields"
+    "unitShields": "Shields",
+    "endCombat": "End Combat",
+    "combatEndedAlert": "TACTICAL ALERT // ENGAGEMENT CONCLUDED",
+    "combatEndedTitle": "COMBAT HAS ENDED",
+    "combatEndedPrompt": "The Dungeon Master has ended the combat encounter. Tactical battle telemetry has been cleared.",
+    "closeBoard": "Close Combat Board"
   }
 }

@@ -577,6 +577,11 @@
     "ac": "AC",
     "shield": "Kalkan",
     "unitAc": "Zırh Sınıfı (AC)",
-    "unitShields": "Kalkan Kapasitesi"
+    "unitShields": "Kalkan Kapasitesi",
+    "endCombat": "Çatışmayı Bitir",
+    "combatEndedAlert": "TAKTİKSEL ALARM // ÇATIŞMA SONLANDIRILDI",
+    "combatEndedTitle": "SAVAŞ SONA ERDİ",
+    "combatEndedPrompt": "Oyun Yöneticisi çatışmayı sonlandırdı. Taktiksel savaş telemetrisi sıfırlandı.",
+    "closeBoard": "Savaş Haritasını Kapat"
   }
 }

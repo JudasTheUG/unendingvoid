@@ -577,6 +577,11 @@
     "ac": "RK",
     "shield": "Schild",
     "unitAc": "Rüstungsklasse (RK)",
-    "unitShields": "Schildkapazität"
+    "unitShields": "Schildkapazität",
+    "endCombat": "Kampf beenden",
+    "combatEndedAlert": "TAKTISCHER ALARM // GEFECHT BEENDET",
+    "combatEndedTitle": "KAMPF WURDE BEENDET",
+    "combatEndedPrompt": "Der Spielleiter hat das Gefecht beendet. Die taktische Gefechtstelemetrie wurde zurückgesetzt.",
+    "closeBoard": "Kampfbrett schließen"
   }
 }

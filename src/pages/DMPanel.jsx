@@ -16,7 +16,7 @@ import DiceOverlay from '../components/dice/DiceOverlay';
 import { logout } from '../lib/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { deleteCampaign, removeCharacterFromCampaign, cancelInitiative } from '../lib/campaignActions';
+import { deleteCampaign, removeCharacterFromCampaign, cancelInitiative, endCombatSession } from '../lib/campaignActions';
 import ShipAssignmentModal from '../components/dm/ShipAssignmentModal';
 
 export default function DMPanel() {
@@ -73,7 +73,7 @@ export default function DMPanel() {
     setCombatActive(nextState);
     if (!nextState && (campaign?.id || campaignId)) {
       try {
-        await cancelInitiative(campaign?.id || campaignId, partyCharacters);
+        await endCombatSession(campaign?.id || campaignId, partyCharacters);
       } catch (err) {
         console.warn('[DMPanel] Error resetting combat active in campaign:', err.message);
       }
