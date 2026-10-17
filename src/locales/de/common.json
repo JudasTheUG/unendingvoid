@@ -238,5 +238,12 @@
     "characterRemoved": "Einsatzkraft aus der Kampagne entfernt.",
     "failedToDelete": "Kampagne konnte nicht gelöscht werden",
     "failedToRemove": "Einsatzkraft konnte nicht entfernt werden"
+  },
+  "character": {
+    "deleteCharacter": "Charakter löschen",
+    "confirmDeleteCharacter": "Möchten Sie diese Einsatzkraft wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "characterDeleted": "Einsatzkraft erfolgreich gelöscht.",
+    "deleteFailed": "Charakter konnte nicht gelöscht werden.",
+    "launchSheet": "Charakterbogen öffnen ▶"
   }
 }

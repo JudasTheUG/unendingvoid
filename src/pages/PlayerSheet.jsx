@@ -19,7 +19,7 @@ import PlayerNotesTab from '../components/player/PlayerNotesTab';
 import DMIntelBroadcast from '../components/shared/DMIntelBroadcast';
 import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
-import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote } from '../lib/playerActions';
+import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter } from '../lib/playerActions';
 import { logout } from '../lib/authService';
 
 export default function PlayerSheet() {
@@ -100,6 +100,25 @@ export default function PlayerSheet() {
       await removePlayerNote(effectivePlayer.id || effectivePlayer.uid, noteToDelete);
     } catch (err) {
       console.warn('[PlayerSheet] Note removed from local state:', err.message);
+    }
+  };
+
+  const handleDeleteCharacter = async () => {
+    const charId = effectivePlayer.id || effectivePlayer.uid;
+    const confirmed = window.confirm(
+      t(
+        'character.confirmDeleteCharacter',
+        `Are you sure you want to permanently decommission operative "${playerName}"? This action cannot be undone.`
+      )
+    );
+    if (!confirmed || !charId) return;
+
+    try {
+      await deleteCharacter(charId);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[PlayerSheet] Error deleting character:', err);
+      alert(t('character.deleteFailed', 'Failed to delete operative'));
     }
   };
 
@@ -206,6 +225,15 @@ export default function PlayerSheet() {
         <div className="flex items-center gap-3">
           <CreditCounter amount={currentCredits} />
           <LanguageSwitcher />
+          <button
+            type="button"
+            onClick={handleDeleteCharacter}
+            className="px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 text-[11px] font-mono font-bold transition-all flex items-center gap-1.5"
+            title={t('character.deleteCharacter', 'Delete Character')}
+          >
+            <span>🗑️</span>
+            <span className="hidden sm:inline">{t('character.deleteCharacter', 'Delete Character')}</span>
+          </button>
           <button
             onClick={logout}
             className="text-gray-400 hover:text-neon-red transition-colors uppercase text-[10px]"

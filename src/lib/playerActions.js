@@ -1,5 +1,9 @@
-import { doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
+
+export const deleteCharacter = (characterId) =>
+  deleteDoc(doc(db, 'players', characterId));
+
 
 export const updatePlayerHP = (userId, hp) =>
   updateDoc(doc(db, 'players', userId), { hp, updatedAt: serverTimestamp() });

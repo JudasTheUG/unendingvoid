@@ -238,5 +238,12 @@
     "characterRemoved": "Operative removed from campaign.",
     "failedToDelete": "Failed to delete campaign",
     "failedToRemove": "Failed to remove operative"
+  },
+  "character": {
+    "deleteCharacter": "Delete Character",
+    "confirmDeleteCharacter": "Are you sure you want to permanently decommission this operative? This action cannot be undone.",
+    "characterDeleted": "Operative successfully decommissioned.",
+    "deleteFailed": "Failed to delete operative.",
+    "launchSheet": "Launch Character Sheet ▶"
   }
 }

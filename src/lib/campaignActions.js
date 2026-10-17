@@ -289,6 +289,22 @@ export async function deleteCampaign(campaignId) {
 }
 
 /**
+ * Permanently deletes a character from Firestore.
+ */
+export async function deleteCharacter(characterId) {
+  if (!characterId || !db) return false;
+  try {
+    const charRef = doc(db, 'players', characterId);
+    await deleteDoc(charRef);
+    return true;
+  } catch (err) {
+    console.error('[campaignActions] deleteCharacter error:', err);
+    throw err;
+  }
+}
+
+
+/**
  * Removes an operative / character from an active campaign.
  */
 export async function removeCharacterFromCampaign(campaignId, characterId) {

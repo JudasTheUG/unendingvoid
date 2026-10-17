@@ -238,5 +238,12 @@
     "characterRemoved": "Ajan seferden çıkarıldı.",
     "failedToDelete": "Sefer silinemedi",
     "failedToRemove": "Ajan çıkarılamadı"
+  },
+  "character": {
+    "deleteCharacter": "Karakteri Sil",
+    "confirmDeleteCharacter": "Bu operatif karakterini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "characterDeleted": "Operatif başarıyla silindi.",
+    "deleteFailed": "Karakter silinemedi.",
+    "launchSheet": "Karakter Sayfasını Aç ▶"
   }
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useCollection } from '../hooks/useCollection';
-import { createCampaign, createCharacter, deleteCampaign } from '../lib/campaignActions';
+import { createCampaign, createCharacter, deleteCampaign, deleteCharacter } from '../lib/campaignActions';
 import LanguageSwitcher from '../components/shared/LanguageSwitcher';
 import { logout } from '../lib/authService';
 
@@ -16,6 +16,27 @@ export default function DashboardPage() {
   const [showCreateCharModal, setShowCreateCharModal] = useState(false);
   const [showCreateCampModal, setShowCreateCampModal] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+  const [deletedCharIds, setDeletedCharIds] = useState([]);
+
+  const handleDeleteCharacter = async (char) => {
+    const charName = char.displayName || char.name || 'this operative';
+    const confirmDelete = window.confirm(
+      t(
+        'character.confirmDeleteCharacter',
+        `Are you sure you want to permanently decommission operative "${charName}"? This action cannot be undone.`
+      )
+    );
+    if (!confirmDelete) return;
+
+    try {
+      setDeletedCharIds((prev) => [...prev, char.id]);
+      await deleteCharacter(char.id);
+    } catch (err) {
+      console.error('[DashboardPage] Delete character error:', err);
+      setDeletedCharIds((prev) => prev.filter((id) => id !== char.id));
+      alert(t('character.deleteFailed', 'Failed to delete operative') + ': ' + err.message);
+    }
+  };
 
   const handleDeleteCampaign = async (camp) => {
     const confirmDelete = window.confirm(
@@ -56,9 +77,10 @@ export default function DashboardPage() {
   const { docs: allCampaigns } = useCollection('campaigns');
 
   // Filter characters owned by current user
-  const myCharacters = allCharacters.filter(
-    (c) => c.ownerId === user?.uid || c.uid === user?.uid
-  );
+  const myCharacters = allCharacters
+    .filter((c) => !deletedCharIds.includes(c.id))
+    .filter((c) => c.ownerId === user?.uid || c.uid === user?.uid);
+
 
   // Filter campaigns where user is DM or participating
   const myCampaigns = allCampaigns.filter(
@@ -249,12 +271,22 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => navigate(`/character/${char.id}`)}
-                    className="w-full py-2 rounded bg-neon-cyan/15 hover:bg-neon-cyan/25 text-neon-cyan border border-neon-cyan/40 text-xs font-mono font-bold uppercase tracking-wider transition-all"
-                  >
-                    Launch Character Sheet ▶
-                  </button>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      onClick={() => navigate(`/character/${char.id}`)}
+                      className="flex-1 py-2 px-3 rounded bg-neon-cyan/15 hover:bg-neon-cyan/25 text-neon-cyan border border-neon-cyan/40 text-xs font-mono font-bold uppercase tracking-wider transition-all"
+                    >
+                      {t('character.launchSheet', 'Launch Character Sheet ▶')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCharacter(char)}
+                      className="p-2 rounded bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 text-xs transition-all hover:scale-105"
+                      title={t('character.deleteCharacter', 'Delete Character')}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

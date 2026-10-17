@@ -7,6 +7,7 @@ import {
   submitInitiativeRoll,
   setCombatTurnOrder,
   deleteCampaign,
+  deleteCharacter,
   removeCharacterFromCampaign,
 } from '../campaignActions';
 import { addDoc, setDoc, updateDoc, deleteDoc, getDoc, doc, collection } from 'firebase/firestore';
@@ -141,6 +142,14 @@ describe('campaignActions', () => {
   it('deleteCampaign deletes campaign document from Firestore', async () => {
     deleteDoc.mockResolvedValue();
     const res = await deleteCampaign('camp-123');
+
+    expect(res).toBe(true);
+    expect(deleteDoc).toHaveBeenCalledWith({ id: 'mock-doc-ref' });
+  });
+
+  it('deleteCharacter deletes character document from Firestore', async () => {
+    deleteDoc.mockResolvedValue();
+    const res = await deleteCharacter('char-123');
 
     expect(res).toBe(true);
     expect(deleteDoc).toHaveBeenCalledWith({ id: 'mock-doc-ref' });
