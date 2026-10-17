@@ -19,12 +19,14 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+let mockAuth = {
+  user: { uid: 'dm_user_1', displayName: 'Dungeon Master' },
+  profile: { role: 'dm' },
+};
+
 // Mock useAuth
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { uid: 'dm_user_1', displayName: 'Dungeon Master' },
-    profile: { role: 'dm' },
-  }),
+  useAuth: () => mockAuth,
 }));
 
 // Mock Firebase onSnapshot for campaign and players
@@ -131,6 +133,10 @@ vi.mock('../dice/DiceOverlay', () => ({
 describe('CombatBoardPage & 32x32 Grid System', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuth = {
+      user: { uid: 'dm_user_1', displayName: 'Dungeon Master' },
+      profile: { role: 'dm' },
+    };
   });
 
   it('renders all combatant names properly including displayName without leaving blanks', () => {
@@ -226,5 +232,43 @@ describe('CombatBoardPage & 32x32 Grid System', () => {
       'camp_alpha',
       expect.objectContaining({ name: 'Syndicate Sniper', hp: 35 })
     );
+  });
+
+  it('displays HP numbers, health bars, and damage/heal controls to the DM', () => {
+    render(<CombatBoardPage />);
+
+    // DM can see HP for combatants
+    expect(screen.getAllByText(/100 \/ 100/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/35 \/ 35/i)).toBeInTheDocument();
+    expect(screen.getAllByText('HP').length).toBeGreaterThan(0);
+
+    // Damage and heal controls are present for DM
+    expect(screen.getAllByPlaceholderText(/Amt/i).length).toBeGreaterThan(0);
+  });
+
+  it('strictly hides all HP numbers, HP labels, health bars, and damage/heal controls from players', () => {
+    mockAuth = {
+      user: { uid: 'player_user_99', displayName: 'Player One' },
+      profile: { role: 'player' },
+    };
+
+    render(<CombatBoardPage />);
+
+    // Combatant names are still visible
+    expect(screen.getAllByText(/Uğur GELEÇ/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/MCRN Sniper/i)).toBeInTheDocument();
+
+    // HP labels and numerical HP are NOT visible on the cards
+    expect(screen.queryByText(/100 \/ 100/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/35 \/ 35/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('HP')).not.toBeInTheDocument();
+
+    // Manual damage and heal controls are NOT rendered for players
+    expect(screen.queryByPlaceholderText(/Amt/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Damage/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Heal/i)).not.toBeInTheDocument();
+
+    // Players see Status badge
+    expect(screen.getAllByText('Normal').length).toBeGreaterThan(0);
   });
 });

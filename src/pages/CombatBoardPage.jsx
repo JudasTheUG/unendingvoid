@@ -47,13 +47,17 @@ const EFFECTS_LIST = [
 
 export default function CombatBoardPage() {
   const { campaignId } = useParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useTranslation();
 
   const [campaign, setCampaign] = useState(null);
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const isDM = Boolean(user?.uid && campaign?.dmId && user.uid === campaign.dmId);
+  const isDM = Boolean(
+    campaign?.dmId
+      ? user?.uid && user.uid === campaign.dmId
+      : profile?.role === 'dm' || user?.role === 'dm'
+  );
 
   // Manual HP modification inputs per combatant: { [cId]: number }
   const [manualHpInputs, setManualHpInputs] = useState({});
@@ -407,7 +411,7 @@ export default function CombatBoardPage() {
               <div
                 draggable={canDrag}
                 onDragStart={(e) => canDrag && handleDragStart(e, tokenCombatant.id)}
-                title={`${tokenCombatant.name} (${tokenCombatant.isEnemy ? 'Hostile' : 'Operative'})\nStatus: ${tokenCombatant.status}\nEffect: ${tokenCombatant.effect}`}
+                title={`${tokenCombatant.name} (${tokenCombatant.isEnemy ? 'Hostile' : 'Operative'})\n${isDM ? `HP: ${tokenCombatant.hp}/${tokenCombatant.maxHp || 100}\n` : ''}Status: ${tokenCombatant.status}\nEffect: ${tokenCombatant.effect}`}
                 className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex flex-col items-center justify-center select-none cursor-pointer transition-transform relative ${
                   isSilhouette ? 'opacity-40 border-2 border-dashed border-neon-cyan animate-pulse' : 'opacity-100 shadow-md'
                 } ${
@@ -557,8 +561,6 @@ export default function CombatBoardPage() {
             {allCombatants.map((c, idx) => {
               const isActive = idx === currentTurn;
               const isTargeted = Object.values(targets).includes(c.id);
-              const isMyCharacter = c.id === myCharId;
-              const canViewHp = isDM || isMyCharacter;
 
               return (
                 <div
@@ -591,8 +593,8 @@ export default function CombatBoardPage() {
                     </span>
                   </div>
 
-                  {/* Health Section */}
-                  {canViewHp ? (
+                  {/* Health Section - STRICTLY DM ONLY */}
+                  {isDM && (
                     <div className="space-y-1 mb-2.5">
                       <div className="flex justify-between text-xs text-gray-300 font-mono">
                         <span className="text-[10px] uppercase text-gray-500">{t('combatBoard.hp', 'HP')}</span>
@@ -612,14 +614,6 @@ export default function CombatBoardPage() {
                           style={{ width: `${Math.min(100, Math.max(0, (c.hp / (c.maxHp || 100)) * 100))}%` }}
                         ></div>
                       </div>
-                    </div>
-                  ) : (
-                    /* Non-DM Players see health condition text without numerical values */
-                    <div className="text-[10px] text-gray-400 mb-2">
-                      Condition:{' '}
-                      <strong className={c.status === 'Dead' ? 'text-red-400' : 'text-neon-green'}>
-                        {c.status}
-                      </strong>
                     </div>
                   )}
 
