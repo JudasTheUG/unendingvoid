@@ -36,7 +36,7 @@ export default function SpaceshipCard({ ship, locale = 'en' }) {
       <h3 className="font-display text-base font-bold text-white mb-1">{name}</h3>
       {description && <p className="text-xs text-gray-400 mb-4">{description}</p>}
 
-      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5 font-mono text-xs">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t border-white/5 font-mono text-xs">
         <div className="bg-white/5 p-2 rounded border border-white/5">
           <span className="text-[10px] text-gray-400 block uppercase">
             {t('spaceship.subWarpSpeed', 'Sub-Warp Speed')}
@@ -45,9 +45,25 @@ export default function SpaceshipCard({ ship, locale = 'en' }) {
         </div>
         <div className="bg-white/5 p-2 rounded border border-white/5">
           <span className="text-[10px] text-gray-400 block uppercase">
+            {t('spaceship.shipAC', 'Ship AC')}
+          </span>
+          <span className="text-neon-cyan font-bold text-sm">🛡️ {ship.armorClass || 16}</span>
+        </div>
+        <div className="bg-white/5 p-2 rounded border border-white/5">
+          <span className="text-[10px] text-gray-400 block uppercase">
             {t('spaceship.hullIntegrity', 'Hull Integrity')}
           </span>
-          <span className="text-neon-green font-bold text-sm">🛡️ {ship.maxHull || ship.hull || ship.hullPoints || 100} HP</span>
+          <span className="text-neon-green font-bold text-sm">
+            🛡️ {typeof ship.hull === 'number' ? ship.hull : (ship.maxHull || ship.hullPoints || 100)} / {ship.maxHull || ship.hullPoints || 100} HP
+          </span>
+        </div>
+        <div className="bg-white/5 p-2 rounded border border-white/5">
+          <span className="text-[10px] text-gray-400 block uppercase">
+            {t('spaceship.deflectorEnergy', 'Deflector Energy')}
+          </span>
+          <span className="text-cyan-400 font-bold text-sm">
+            🔰 {typeof ship.shields === 'number' ? ship.shields : (ship.maxShields || 120)} / {ship.maxShields || 120} MW
+          </span>
         </div>
       </div>
     </div>

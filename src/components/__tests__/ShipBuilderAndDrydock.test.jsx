@@ -186,3 +186,109 @@ describe('SpaceshipSheet Mode Switching & Naval Shipyard', () => {
   });
 });
 
+describe('SpaceshipSheet Vitals Persistence & Engineering Console', () => {
+  const baseTestShip = {
+    id: 'test_corvette',
+    name: 'Void Runner',
+    classType: 'Strike Corvette',
+    hull: 50,
+    maxHull: 100,
+    shields: 40,
+    maxShields: 80,
+    armorClass: 16,
+    subWarpSpeed: 45,
+    cargoCapacity: 50,
+    cargoUsed: 10,
+    weapons: [],
+    modules: [],
+  };
+
+  it('persists hull repairs and calls onUpdateShip with restored hull integrity', () => {
+    const handleUpdateShip = vi.fn();
+    render(<SpaceshipSheet ship={baseTestShip} onUpdateShip={handleUpdateShip} />);
+
+    // Click Nano Repair (+25)
+    const repairBtn = screen.getByRole('button', { name: /Nano Repair/i });
+    fireEvent.click(repairBtn);
+
+    expect(handleUpdateShip).toHaveBeenCalledTimes(1);
+    expect(handleUpdateShip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hull: 75,
+        shields: 40,
+      })
+    );
+  });
+
+  it('persists deflector shield recharge to maximum capacitors', () => {
+    const handleUpdateShip = vi.fn();
+    render(<SpaceshipSheet ship={baseTestShip} onUpdateShip={handleUpdateShip} />);
+
+    // Click Recharge Deflectors
+    const rechargeBtn = screen.getByRole('button', { name: /Recharge Deflectors/i });
+    fireEvent.click(rechargeBtn);
+
+    expect(handleUpdateShip).toHaveBeenCalledTimes(1);
+    expect(handleUpdateShip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hull: 50,
+        shields: 80,
+      })
+    );
+  });
+
+  it('handles damage penetration: shields absorb first and overflow pierces hull', () => {
+    const handleUpdateShip = vi.fn();
+    render(<SpaceshipSheet ship={baseTestShip} onUpdateShip={handleUpdateShip} />);
+
+    // Apply custom damage (default input is 25) -> shields 40 absorbs 25, leaving 15 shields
+    const dmgBtn = screen.getByRole('button', { name: /Damage/i });
+    fireEvent.click(dmgBtn);
+
+    expect(handleUpdateShip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shields: 15,
+        hull: 50,
+      })
+    );
+  });
+
+  it('restores both hull and shields to 100% on Full Overhaul', () => {
+    const handleUpdateShip = vi.fn();
+    render(<SpaceshipSheet ship={baseTestShip} onUpdateShip={handleUpdateShip} />);
+
+    const overhaulBtn = screen.getByRole('button', { name: /Full Overhaul/i });
+    fireEvent.click(overhaulBtn);
+
+    expect(handleUpdateShip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hull: 100,
+        shields: 80,
+      })
+    );
+  });
+
+  it('adjusts hull and deflectors incrementally via steppers and persists updates', () => {
+    const handleUpdateShip = vi.fn();
+    render(<SpaceshipSheet ship={baseTestShip} onUpdateShip={handleUpdateShip} />);
+
+    const plusHull = screen.getByTitle('+10 Hull');
+    fireEvent.click(plusHull);
+
+    expect(handleUpdateShip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hull: 60,
+      })
+    );
+
+    const minusDeflector = screen.getByTitle('-10 Deflectors');
+    fireEvent.click(minusDeflector);
+
+    expect(handleUpdateShip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shields: 30,
+      })
+    );
+  });
+});
+

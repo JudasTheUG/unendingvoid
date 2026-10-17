@@ -3,8 +3,15 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export function usePlayerData(userId) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => {
+    if (!userId || typeof localStorage === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(`unendingvoid_player_${userId}`);
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return null;
+  });
+  const [loading, setLoading] = useState(!data);
 
   useEffect(() => {
     if (!userId) {
@@ -13,12 +20,33 @@ export function usePlayerData(userId) {
     }
 
     try {
+      const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(`unendingvoid_player_${userId}`) : null;
+      if (cached) {
+        try {
+          setData(JSON.parse(cached));
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    try {
       const unsub = onSnapshot(
         doc(db, 'players', userId),
         (snap) => {
           if (snap.exists()) {
-            setData({ uid: snap.id, ...snap.data() });
+            const playerDoc = { uid: snap.id, ...snap.data() };
+            setData(playerDoc);
+            try {
+              localStorage.setItem(`unendingvoid_player_${userId}`, JSON.stringify(playerDoc));
+            } catch (_) {}
           } else {
+            const localRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(`unendingvoid_player_${userId}`) : null;
+            if (localRaw) {
+              try {
+                setData(JSON.parse(localRaw));
+                setLoading(false);
+                return;
+              } catch (_) {}
+            }
             // Provide sensible fallback operative data so interface doesn't hang
             setData({
               uid: userId,
@@ -46,6 +74,14 @@ export function usePlayerData(userId) {
         },
         (err) => {
           console.warn('[usePlayerData] Snapshot warning (offline/emulator):', err.message);
+          const localRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(`unendingvoid_player_${userId}`) : null;
+          if (localRaw) {
+            try {
+              setData(JSON.parse(localRaw));
+              setLoading(false);
+              return;
+            } catch (_) {}
+          }
           setData({
             uid: userId,
             displayName: 'Void Operative',

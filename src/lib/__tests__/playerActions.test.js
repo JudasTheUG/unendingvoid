@@ -17,6 +17,7 @@ import {
   removePlayerNote,
   setPlayerEEMembership,
   assignShipToPlayer,
+  updateShipVitals,
   removeShipFromPlayer,
   updatePlayerInventory,
   addPlayerDesign,
@@ -220,6 +221,24 @@ describe('playerActions', () => {
       spaceshipName: 'Kusaragi',
       updatedAt: 'serverTimestampMock',
     });
+
+    const cached = JSON.parse(localStorage.getItem(`unendingvoid_player_${mockUserId}`));
+    expect(cached.ship.id).toBe('ship_kusaragi_corvette');
+  });
+
+  it('updateShipVitals calls updateDoc with ship.hull and ship.shields and syncs localStorage', async () => {
+    await updateShipVitals(mockUserId, { hull: 140, shields: 95 });
+
+    expect(doc).toHaveBeenCalledWith(db, 'players', mockUserId);
+    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+      'ship.hull': 140,
+      'ship.shields': 95,
+      updatedAt: 'serverTimestampMock',
+    });
+
+    const cached = JSON.parse(localStorage.getItem(`unendingvoid_player_${mockUserId}`));
+    expect(cached.ship.hull).toBe(140);
+    expect(cached.ship.shields).toBe(95);
   });
 
   it('removeShipFromPlayer calls updateDoc with null ship values', async () => {

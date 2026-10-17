@@ -72,21 +72,67 @@ export const setPlayerEEMembership = (userId, hasEEMembership = true) =>
     updatedAt: serverTimestamp(),
   });
 
-export const assignShipToPlayer = (userId, shipData) =>
-  updateDoc(doc(db, 'players', userId), {
+export const assignShipToPlayer = (userId, shipData) => {
+  try {
+    const raw = localStorage.getItem(`unendingvoid_player_${userId}`);
+    const parsed = raw ? JSON.parse(raw) : { uid: userId };
+    parsed.ship = shipData;
+    parsed.spaceship = shipData?.id || null;
+    parsed.spaceshipName = shipData
+      ? typeof shipData.name === 'object'
+        ? shipData.name.en
+        : shipData.name
+      : null;
+    localStorage.setItem(`unendingvoid_player_${userId}`, JSON.stringify(parsed));
+  } catch (_) {}
+
+  return updateDoc(doc(db, 'players', userId), {
     ship: shipData,
     spaceship: shipData?.id || null,
     spaceshipName: shipData ? (typeof shipData.name === 'object' ? shipData.name.en : shipData.name) : null,
     updatedAt: serverTimestamp(),
   });
+};
 
-export const removeShipFromPlayer = (userId) =>
-  updateDoc(doc(db, 'players', userId), {
+export const updateShipVitals = (userId, { hull, shields }) => {
+  try {
+    const raw = localStorage.getItem(`unendingvoid_player_${userId}`);
+    const parsed = raw ? JSON.parse(raw) : { uid: userId };
+    if (parsed.ship) {
+      parsed.ship.hull = hull;
+      parsed.ship.shields = shields;
+    } else {
+      parsed.ship = { hull, shields };
+    }
+    localStorage.setItem(`unendingvoid_player_${userId}`, JSON.stringify(parsed));
+  } catch (_) {}
+
+  return updateDoc(doc(db, 'players', userId), {
+    'ship.hull': hull,
+    'ship.shields': shields,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const removeShipFromPlayer = (userId) => {
+  try {
+    const raw = localStorage.getItem(`unendingvoid_player_${userId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.ship = null;
+      parsed.spaceship = null;
+      parsed.spaceshipName = null;
+      localStorage.setItem(`unendingvoid_player_${userId}`, JSON.stringify(parsed));
+    }
+  } catch (_) {}
+
+  return updateDoc(doc(db, 'players', userId), {
     ship: null,
     spaceship: null,
     spaceshipName: null,
     updatedAt: serverTimestamp(),
   });
+};
 
 export const updatePlayerInventory = (userId, inventory) =>
   updateDoc(doc(db, 'players', userId), {

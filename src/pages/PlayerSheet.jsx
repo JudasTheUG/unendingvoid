@@ -66,6 +66,13 @@ export default function PlayerSheet() {
     inventory: [],
   };
 
+  // Reset local state overrides whenever operative targetId changes
+  React.useEffect(() => {
+    setLocalShip(null);
+    setLocalCredits(null);
+    setLocalInventory(null);
+  }, [targetId]);
+
   const equippedShip = allItems.find(
     (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
   );
@@ -429,7 +436,14 @@ export default function PlayerSheet() {
           onUpdateShipName={(name) => {
             setCustomShipName(name);
             if (activeShipData) {
-              setLocalShip({ ...activeShipData, name });
+              const updated = { ...activeShipData, name };
+              setLocalShip(updated);
+              const playerId = effectivePlayer.id || effectivePlayer.uid;
+              if (playerId) {
+                assignShipToPlayer(playerId, updated).catch((err) =>
+                  console.warn('[PlayerSheet] Ship saved to local state:', err.message)
+                );
+              }
             }
           }}
           onUpdateShip={(newShip) => {

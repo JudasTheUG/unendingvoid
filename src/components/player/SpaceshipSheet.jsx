@@ -81,20 +81,27 @@ export default function SpaceshipSheet({
   });
   const [viewMode, setViewMode] = useState(hasOwnedShip ? 'flightDeck' : 'shipyard');
 
-  const [hull, setHull] = useState(activeShip?.hull || 180);
-  const [shields, setShields] = useState(activeShip?.shields || 120);
+  const [hull, setHull] = useState(() => (typeof activeShip?.hull === 'number' ? activeShip.hull : (activeShip?.maxHull ?? 180)));
+  const [shields, setShields] = useState(() => (typeof activeShip?.shields === 'number' ? activeShip.shields : (activeShip?.maxShields ?? 120)));
   const [shipName, setShipName] = useState(() => {
     if (!activeShip) return '';
     return typeof activeShip.name === 'object' ? activeShip.name.en : (activeShip.name || 'Kusaragi');
   });
   const [isEditingName, setIsEditingName] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [customDmgInput, setCustomDmgInput] = useState(25);
+  const [justSaved, setJustSaved] = useState(false);
+
+  const flashSaved = () => {
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2000);
+  };
 
   useEffect(() => {
     if (ship) {
       setActiveShip(ship);
-      setHull(ship.hull ?? 180);
-      setShields(ship.shields ?? 120);
+      setHull(typeof ship.hull === 'number' ? ship.hull : (ship.maxHull ?? 180));
+      setShields(typeof ship.shields === 'number' ? ship.shields : (ship.maxShields ?? 120));
       const name = typeof ship.name === 'object' ? (ship.name[currentLang] || ship.name.en) : (ship.name || 'Kusaragi');
       setShipName(name);
     } else if (ship === null) {
@@ -118,14 +125,83 @@ export default function SpaceshipSheet({
     );
   };
 
-  const handleRepairHull = () => {
+  const handleRepairHull = (amount = 25) => {
     if (!activeShip) return;
-    setHull((prev) => Math.min(activeShip.maxHull || 180, prev + 25));
+    const maxH = activeShip.maxHull ?? 180;
+    const newHull = Math.min(maxH, hull + amount);
+    setHull(newHull);
+    const updatedShip = { ...activeShip, hull: newHull, shields };
+    setActiveShip(updatedShip);
+    if (onUpdateShip) onUpdateShip(updatedShip);
+    flashSaved();
   };
 
   const handleRechargeShields = () => {
     if (!activeShip) return;
-    setShields(activeShip.maxShields || 120);
+    const maxS = activeShip.maxShields ?? 120;
+    setShields(maxS);
+    const updatedShip = { ...activeShip, hull, shields: maxS };
+    setActiveShip(updatedShip);
+    if (onUpdateShip) onUpdateShip(updatedShip);
+    flashSaved();
+  };
+
+  const handleFullOverhaul = () => {
+    if (!activeShip) return;
+    const maxH = activeShip.maxHull ?? 180;
+    const maxS = activeShip.maxShields ?? 120;
+    setHull(maxH);
+    setShields(maxS);
+    const updatedShip = { ...activeShip, hull: maxH, shields: maxS };
+    setActiveShip(updatedShip);
+    if (onUpdateShip) onUpdateShip(updatedShip);
+    flashSaved();
+  };
+
+  const handleTakeDamage = (damageAmount) => {
+    if (!activeShip) return;
+    const dmg = Math.max(0, Number(damageAmount) || 0);
+    if (dmg <= 0) return;
+
+    let newShields = shields;
+    let newHull = hull;
+
+    if (newShields >= dmg) {
+      newShields -= dmg;
+    } else {
+      const remainingDmg = dmg - newShields;
+      newShields = 0;
+      newHull = Math.max(0, newHull - remainingDmg);
+    }
+
+    setShields(newShields);
+    setHull(newHull);
+    const updatedShip = { ...activeShip, hull: newHull, shields: newShields };
+    setActiveShip(updatedShip);
+    if (onUpdateShip) onUpdateShip(updatedShip);
+    flashSaved();
+  };
+
+  const handleAdjustHull = (delta) => {
+    if (!activeShip) return;
+    const maxH = activeShip.maxHull ?? 180;
+    const newHull = Math.max(0, Math.min(maxH, hull + delta));
+    setHull(newHull);
+    const updatedShip = { ...activeShip, hull: newHull, shields };
+    setActiveShip(updatedShip);
+    if (onUpdateShip) onUpdateShip(updatedShip);
+    flashSaved();
+  };
+
+  const handleAdjustShields = (delta) => {
+    if (!activeShip) return;
+    const maxS = activeShip.maxShields ?? 120;
+    const newShields = Math.max(0, Math.min(maxS, shields + delta));
+    setShields(newShields);
+    const updatedShip = { ...activeShip, hull, shields: newShields };
+    setActiveShip(updatedShip);
+    if (onUpdateShip) onUpdateShip(updatedShip);
+    flashSaved();
   };
 
   const handleSaveName = () => {
@@ -368,40 +444,135 @@ export default function SpaceshipSheet({
             </div>
 
             {/* Ship Vitals & Damage Control Consoles */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-5 items-center">
-              <div className="lg:col-span-2 space-y-3.5">
-                <VitalBar
-                  label={t('spaceship.hullIntegrity', 'Starship Hull Integrity')}
-                  current={hull}
-                  max={activeShip.maxHull || 180}
-                  type="hp"
-                />
-                <VitalBar
-                  label={t('spaceship.deflectorEnergy', 'Deflector Energy Capacitors')}
-                  current={shields}
-                  max={activeShip.maxShields || 120}
-                  type="shield"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-5 items-start">
+              <div className="lg:col-span-2 space-y-4">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <VitalBar
+                        label={t('spaceship.hullIntegrity', 'Starship Hull Integrity')}
+                        current={hull}
+                        max={activeShip.maxHull ?? 180}
+                        type="hp"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 ml-4 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustHull(-10)}
+                        title="-10 Hull"
+                        className="px-2 py-0.5 rounded bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-700/60 text-xs font-mono font-bold"
+                      >
+                        -10
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustHull(10)}
+                        title="+10 Hull"
+                        className="px-2 py-0.5 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 text-xs font-mono font-bold"
+                      >
+                        +10
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <VitalBar
+                        label={t('spaceship.deflectorEnergy', 'Deflector Energy Capacitors')}
+                        current={shields}
+                        max={activeShip.maxShields ?? 120}
+                        type="shield"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 ml-4 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustShields(-10)}
+                        title="-10 Deflectors"
+                        className="px-2 py-0.5 rounded bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-700/60 text-xs font-mono font-bold"
+                      >
+                        -10
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustShields(10)}
+                        title="+10 Deflectors"
+                        className="px-2 py-0.5 rounded bg-cyan-950/60 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 text-xs font-mono font-bold"
+                      >
+                        +10
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-[#070b14] p-4 rounded-lg border border-slate-700 space-y-2.5 text-xs">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block border-b border-slate-700/80 pb-1.5 font-bold">
-                  {t('spaceship.damageControl', 'Engineering Damage Control')}
-                </span>
+              <div className="bg-[#070b14] p-4 rounded-lg border border-slate-700 space-y-3 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 font-bold">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                    {t('spaceship.damageControl', 'Engineering Damage Control')}
+                  </span>
+                  {justSaved && (
+                    <span className="text-[10px] font-mono text-neon-green animate-pulse">
+                      ✓ {t('spaceship.vitalsSynced', 'Vitals Saved')}
+                    </span>
+                  )}
+                </div>
+
+                {/* Repair & Recharge Buttons */}
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={handleRepairHull}
-                    className="py-2 px-2.5 rounded bg-emerald-950/60 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/60 font-bold text-[11px] uppercase transition-all shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                    onClick={() => handleRepairHull(25)}
+                    className="py-2 px-2 rounded bg-emerald-950/60 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/60 font-bold text-[11px] uppercase transition-all shadow-[0_0_10px_rgba(16,185,129,0.2)]"
                   >
                     🛠️ {t('spaceship.repairHull', 'Nano Repair (+25)')}
                   </button>
                   <button
                     type="button"
                     onClick={handleRechargeShields}
-                    className="py-2 px-2.5 rounded bg-cyan-950/60 hover:bg-cyan-900/70 text-cyan-300 border border-cyan-500/60 font-bold text-[11px] uppercase transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]"
+                    className="py-2 px-2 rounded bg-cyan-950/60 hover:bg-cyan-900/70 text-cyan-300 border border-cyan-500/60 font-bold text-[11px] uppercase transition-all shadow-[0_0_10px_rgba(0,240,255,0.2)]"
                   >
                     ⚡ {t('spaceship.rechargeDeflectors', 'Recharge Deflectors')}
+                  </button>
+                </div>
+
+                {/* Combat Damage & Full Restore */}
+                <div className="pt-2 border-t border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="200"
+                      value={customDmgInput}
+                      onChange={(e) => setCustomDmgInput(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-center font-mono text-xs text-white"
+                      title={t('spaceship.damageAmount', 'Amount')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleTakeDamage(customDmgInput)}
+                      className="flex-1 py-1.5 px-2 rounded bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-500/60 font-bold text-[11px] uppercase transition-all"
+                    >
+                      💥 {t('spaceship.applyDamage', 'Damage')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRepairHull(customDmgInput)}
+                      className="py-1.5 px-2 rounded bg-emerald-950/50 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 font-bold text-[11px] uppercase transition-all"
+                    >
+                      🛠️ {t('spaceship.applyRepair', 'Repair')}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleFullOverhaul}
+                    className="w-full py-1.5 rounded bg-indigo-950/60 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/50 font-bold text-[10px] uppercase tracking-wider transition-all"
+                  >
+                    🏥 {t('spaceship.fullRestore', 'Full Overhaul')}
                   </button>
                 </div>
               </div>
