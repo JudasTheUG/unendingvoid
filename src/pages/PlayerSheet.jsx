@@ -25,7 +25,7 @@ import RestRequestModal from '../components/player/RestRequestModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer, updatePlayerAvatar, updatePlayerRestUsage } from '../lib/playerActions';
 import { advanceCampaignTime, requestPartyRest, clearPartyRest } from '../lib/campaignActions';
-import { DEFAULT_IN_GAME_TIME, calculateDailyRestStatus, getGameDateString } from '../lib/calendarUtils';
+import { DEFAULT_IN_GAME_TIME, calculateDailyRestStatus, applyRestToUsage, getGameDateString } from '../lib/calendarUtils';
 import { logout } from '../lib/authService';
 
 export default function PlayerSheet() {
@@ -181,21 +181,27 @@ export default function PlayerSheet() {
   React.useEffect(() => {
     if (!operativeId) return;
     const currentDay = getGameDateString(campaignTime);
-    const recordedDay = dailyRestStatus.date;
+    const recordedUsage = localRestUsage || effectivePlayer?.restUsage;
+    const recordedDay = recordedUsage?.date ? getGameDateString(recordedUsage.date) : currentDay;
     if (currentDay > recordedDay) {
-      const resetUsage = {
+      const computedStatus = calculateDailyRestStatus(recordedUsage, campaignTime);
+      const nextUsage = {
         date: currentDay,
-        shortRestsUsed: 0,
-        longRestsUsed: 0,
+        shortRestsUsed: computedStatus.shortRestsUsed,
+        shortRestDate: recordedUsage?.shortRestDate || recordedDay,
+        longRestsUsed: computedStatus.longRestsUsed,
+        lastLongRestDate: recordedUsage?.lastLongRestDate || null,
+        longRestTaken: Boolean(recordedUsage?.longRestTaken),
       };
-      setLocalRestUsage(resetUsage);
+      setLocalRestUsage(nextUsage);
       if (typeof localStorage !== 'undefined') {
         try {
-          localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(resetUsage));
+          localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(nextUsage));
+          updatePlayerRestUsage(operativeId, nextUsage).catch(() => {});
         } catch (_) {}
       }
     }
-  }, [campaignTime, dailyRestStatus.date, operativeId]);
+  }, [campaignTime, operativeId, localRestUsage, effectivePlayer?.restUsage]);
 
   React.useEffect(() => {
     if (!effectivePlayer?.campaignId || !db) return;
@@ -285,14 +291,14 @@ export default function PlayerSheet() {
         if (detail.approved) {
           const restType = detail.restRequest?.type || 'short';
           const newTime = detail.inGameTime || campaignTime;
-          const currentDay = getGameDateString(newTime);
-          const baseStatus = calculateDailyRestStatus(dailyRestStatus, newTime);
+          const prevTime = detail.previousTime || campaignTime;
 
-          const updatedUsage = {
-            date: currentDay,
-            shortRestsUsed: restType === 'short' ? Math.min(2, baseStatus.shortRestsUsed + 1) : baseStatus.shortRestsUsed,
-            longRestsUsed: restType === 'long' ? Math.min(1, baseStatus.longRestsUsed + 1) : baseStatus.longRestsUsed,
-          };
+          const updatedUsage = applyRestToUsage(
+            localRestUsage || effectivePlayer?.restUsage,
+            restType,
+            prevTime,
+            newTime
+          );
           setLocalRestUsage(updatedUsage);
           if (operativeId) {
             try {
@@ -515,7 +521,7 @@ export default function PlayerSheet() {
 
     if (effectivePlayer?.campaignId) {
       try {
-        const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'short');
+        const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'short', campaignTime);
         setCampaignRestRequest(req);
       } catch (err) {
         console.warn('Failed to request squad short rest:', err);
@@ -530,6 +536,7 @@ export default function PlayerSheet() {
     const newShields = Math.min(effectivePlayer.maxShields || 50, (effectivePlayer.shields || 0) + 5);
 
     await handleUpdateHp(newHp, newShields);
+    const prevTime = campaignTime;
     let updatedTime = campaignTime;
     try {
       updatedTime = await advanceCampaignTime(null, 2, campaignTime);
@@ -538,11 +545,12 @@ export default function PlayerSheet() {
       console.warn('Failed to advance rest time:', err);
     }
 
-    const nextUsage = {
-      date: getGameDateString(updatedTime || campaignTime),
-      shortRestsUsed: Math.min(2, dailyRestStatus.shortRestsUsed + 1),
-      longRestsUsed: dailyRestStatus.longRestsUsed,
-    };
+    const nextUsage = applyRestToUsage(
+      localRestUsage || effectivePlayer?.restUsage,
+      'short',
+      prevTime,
+      updatedTime
+    );
     setLocalRestUsage(nextUsage);
     if (operativeId) {
       try {
@@ -562,7 +570,7 @@ export default function PlayerSheet() {
 
     if (effectivePlayer?.campaignId) {
       try {
-        const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'long');
+        const req = await requestPartyRest(effectivePlayer.campaignId, effectivePlayer, 'long', campaignTime);
         setCampaignRestRequest(req);
       } catch (err) {
         console.warn('Failed to request squad long rest:', err);
@@ -572,24 +580,26 @@ export default function PlayerSheet() {
 
     // Solo / offline fallback
     await handleUpdateHp(effectivePlayer.maxHp || 100, effectivePlayer.maxShields || 50);
-    let updatedTime = campaignTime;
+    const prevLongTime = campaignTime;
+    let updatedLongTime = campaignTime;
     try {
-      updatedTime = await advanceCampaignTime(null, 8, campaignTime);
-      setCampaignTimeState(updatedTime);
+      updatedLongTime = await advanceCampaignTime(null, 8, campaignTime);
+      setCampaignTimeState(updatedLongTime);
     } catch (err) {
       console.warn('Failed to advance rest time:', err);
     }
 
-    const nextUsage = {
-      date: getGameDateString(updatedTime || campaignTime),
-      shortRestsUsed: dailyRestStatus.shortRestsUsed,
-      longRestsUsed: Math.min(1, dailyRestStatus.longRestsUsed + 1),
-    };
-    setLocalRestUsage(nextUsage);
+    const nextLongUsage = applyRestToUsage(
+      localRestUsage || effectivePlayer?.restUsage,
+      'long',
+      prevLongTime,
+      updatedLongTime
+    );
+    setLocalRestUsage(nextLongUsage);
     if (operativeId) {
       try {
-        localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(nextUsage));
-        updatePlayerRestUsage(operativeId, nextUsage).catch(() => {});
+        localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(nextLongUsage));
+        updatePlayerRestUsage(operativeId, nextLongUsage).catch(() => {});
       } catch (_) {}
     }
 

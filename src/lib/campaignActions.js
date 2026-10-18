@@ -17,6 +17,7 @@ import {
   parseGameTime,
   serializeGameTime,
   calculateDailyRestStatus,
+  applyRestToUsage,
   getGameDateString,
   MAX_SHORT_RESTS_PER_DAY,
   MAX_LONG_RESTS_PER_DAY,
@@ -838,7 +839,7 @@ export async function setCampaignTime(campaignId, newGameTimeStr) {
  * Initiates a party rest request (short or long rest).
  * The requesting player automatically votes 'agreed'.
  */
-export async function requestPartyRest(campaignId, player, restType = 'short') {
+export async function requestPartyRest(campaignId, player, restType = 'short', currentInGameTime = null) {
   const pId = player.id || player.uid || 'operative';
   const pName = player.displayName || player.name || 'Operative';
 
@@ -847,6 +848,7 @@ export async function requestPartyRest(campaignId, player, restType = 'short') {
     type: restType, // 'short' (2 hours) | 'long' (8 hours)
     requesterId: pId,
     requesterName: pName,
+    startTime: currentInGameTime || null,
     status: 'pending',
     requestedAt: Date.now(),
     votes: {
@@ -982,15 +984,25 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
     resolvedAt: Date.now(),
   };
 
+  let startTime = existingRequest?.startTime || fallbackTime || null;
+  if (!startTime && typeof localStorage !== 'undefined') {
+    startTime = localStorage.getItem(`unendingvoid:campaign_time_${campaignId}`) || localStorage.getItem('unendingvoid:ingame_time');
+  }
+  if (!startTime) {
+    startTime = DEFAULT_IN_GAME_TIME;
+  }
+
   let updatedGameTime = null;
 
   if (approved) {
     const hours = restType === 'short' ? 2 : 8;
     try {
-      updatedGameTime = await advanceCampaignTime(campaignId, hours, fallbackTime);
+      updatedGameTime = await advanceCampaignTime(campaignId, hours, startTime);
     } catch (err) {
       console.warn('[campaignActions] Error advancing time on rest approval:', err.message);
     }
+
+    const endTime = updatedGameTime || advanceGameTime(startTime, hours);
 
     // Restore players in the campaign
     if (players && players.length > 0 && db) {
@@ -1002,13 +1014,7 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
             const pRef = doc(db, 'players', pId);
             const maxHp = p.maxHp || 100;
             const maxShields = p.maxShields || 50;
-            const targetDay = getGameDateString(updatedGameTime || fallbackTime);
-            const baseStatus = calculateDailyRestStatus(p.restUsage, updatedGameTime || fallbackTime);
-            const newRestUsage = {
-              date: targetDay,
-              shortRestsUsed: restType === 'short' ? Math.min(MAX_SHORT_RESTS_PER_DAY, baseStatus.shortRestsUsed + 1) : baseStatus.shortRestsUsed,
-              longRestsUsed: restType === 'long' ? Math.min(MAX_LONG_RESTS_PER_DAY, baseStatus.longRestsUsed + 1) : baseStatus.longRestsUsed,
-            };
+            const newRestUsage = applyRestToUsage(p.restUsage, restType, startTime, endTime);
 
             if (restType === 'long') {
               await updateDoc(pRef, {
@@ -1038,12 +1044,21 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
     }
   }
 
+  const finalEndTime = updatedGameTime || (approved ? advanceGameTime(startTime, restType === 'long' ? 8 : 2) : startTime);
+
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('unendingvoid:rest_request', JSON.stringify({ campaignId, restRequest: resolvedRequest }));
       window.dispatchEvent(
         new CustomEvent('unendingvoid:rest_resolved', {
-          detail: { campaignId, restRequest: resolvedRequest, approved, inGameTime: updatedGameTime, timestamp: Date.now() },
+          detail: {
+            campaignId,
+            restRequest: resolvedRequest,
+            approved,
+            inGameTime: finalEndTime,
+            previousTime: startTime,
+            timestamp: Date.now(),
+          },
         })
       );
     }
@@ -1061,7 +1076,7 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
     }
   }
 
-  return { restRequest: resolvedRequest, inGameTime: updatedGameTime };
+  return { restRequest: resolvedRequest, inGameTime: finalEndTime, previousTime: startTime };
 }
 
 /**
