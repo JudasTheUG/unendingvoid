@@ -740,6 +740,15 @@ export async function advanceCampaignTime(campaignId, hoursToAdd = 0, currentFal
     if (typeof localStorage !== 'undefined') {
       if (campaignId) localStorage.setItem(`unendingvoid:campaign_time_${campaignId}`, updatedTime);
       localStorage.setItem('unendingvoid:ingame_time', updatedTime);
+      try {
+        const rawRest = localStorage.getItem('unendingvoid:rest_request');
+        if (rawRest) {
+          const parsedRest = JSON.parse(rawRest);
+          if (parsedRest?.restRequest?.status && parsedRest.restRequest.status !== 'pending') {
+            localStorage.removeItem('unendingvoid:rest_request');
+          }
+        }
+      } catch (_) {}
       window.dispatchEvent(
         new CustomEvent('unendingvoid:time_updated', {
           detail: { campaignId, inGameTime: updatedTime, hoursAdded: hoursToAdd, timestamp: Date.now() },
@@ -750,10 +759,21 @@ export async function advanceCampaignTime(campaignId, hoursToAdd = 0, currentFal
 
   if (campaignId && db) {
     try {
-      await updateDoc(doc(db, 'campaigns', campaignId), {
+      const campRef = doc(db, 'campaigns', campaignId);
+      const updateData = {
         inGameTime: updatedTime,
         updatedAt: serverTimestamp(),
-      });
+      };
+      try {
+        const snap = await getDoc(campRef);
+        if (snap.exists()) {
+          const campData = snap.data();
+          if (campData?.restRequest && campData.restRequest.status !== 'pending') {
+            updateData.restRequest = null;
+          }
+        }
+      } catch (_) {}
+      await updateDoc(campRef, updateData);
     } catch (err) {
       console.warn('[campaignActions] Firestore update notice for inGameTime:', err.message);
     }
@@ -772,6 +792,15 @@ export async function setCampaignTime(campaignId, newGameTimeStr) {
     if (typeof localStorage !== 'undefined') {
       if (campaignId) localStorage.setItem(`unendingvoid:campaign_time_${campaignId}`, serialized);
       localStorage.setItem('unendingvoid:ingame_time', serialized);
+      try {
+        const rawRest = localStorage.getItem('unendingvoid:rest_request');
+        if (rawRest) {
+          const parsedRest = JSON.parse(rawRest);
+          if (parsedRest?.restRequest?.status && parsedRest.restRequest.status !== 'pending') {
+            localStorage.removeItem('unendingvoid:rest_request');
+          }
+        }
+      } catch (_) {}
       window.dispatchEvent(
         new CustomEvent('unendingvoid:time_updated', {
           detail: { campaignId, inGameTime: serialized, timestamp: Date.now() },
@@ -782,10 +811,21 @@ export async function setCampaignTime(campaignId, newGameTimeStr) {
 
   if (campaignId && db) {
     try {
-      await updateDoc(doc(db, 'campaigns', campaignId), {
+      const campRef = doc(db, 'campaigns', campaignId);
+      const updateData = {
         inGameTime: serialized,
         updatedAt: serverTimestamp(),
-      });
+      };
+      try {
+        const snap = await getDoc(campRef);
+        if (snap.exists()) {
+          const campData = snap.data();
+          if (campData?.restRequest && campData.restRequest.status !== 'pending') {
+            updateData.restRequest = null;
+          }
+        }
+      } catch (_) {}
+      await updateDoc(campRef, updateData);
     } catch (err) {
       console.warn('[campaignActions] Firestore setCampaignTime notice:', err.message);
     }
@@ -1048,7 +1088,7 @@ export async function cancelPartyRest(campaignId) {
     try {
       const campRef = doc(db, 'campaigns', campaignId);
       await updateDoc(campRef, {
-        restRequest: cancelledRequest,
+        restRequest: null,
         updatedAt: serverTimestamp(),
       });
     } catch (err) {
@@ -1059,5 +1099,30 @@ export async function cancelPartyRest(campaignId) {
   return cancelledRequest;
 }
 
+/**
+ * Clears or dismisses the active rest request from the campaign in Firestore and localStorage.
+ */
+export async function clearPartyRest(campaignId) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('unendingvoid:rest_request');
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:rest_cleared', {
+          detail: { campaignId, timestamp: Date.now() },
+        })
+      );
+    }
+  } catch (_) {}
 
-
+  if (campaignId && db) {
+    try {
+      const campRef = doc(db, 'campaigns', campaignId);
+      await updateDoc(campRef, {
+        restRequest: null,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('[campaignActions] Firestore error in clearPartyRest:', err.message);
+    }
+  }
+}

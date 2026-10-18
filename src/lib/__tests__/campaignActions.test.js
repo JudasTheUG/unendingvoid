@@ -12,6 +12,7 @@ import {
   removeCharacterFromCampaign,
   advanceCampaignTime,
   setCampaignTime,
+  clearPartyRest,
 } from '../campaignActions';
 import { addDoc, setDoc, updateDoc, deleteDoc, getDoc, doc, collection } from 'firebase/firestore';
 
@@ -233,5 +234,46 @@ describe('campaignActions', () => {
       expect.objectContaining({ inGameTime: '2382-01-01T12:00:00' })
     );
   });
+
+  it('advanceCampaignTime clears non-pending rest request in Firestore and localStorage', async () => {
+    localStorage.setItem(
+      'unendingvoid:rest_request',
+      JSON.stringify({ campaignId: 'camp-123', restRequest: { id: 'rest_old', status: 'approved' } })
+    );
+
+    getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        inGameTime: '2381-05-18T08:00:00',
+        restRequest: { id: 'rest_old', status: 'approved' },
+      }),
+    });
+    updateDoc.mockResolvedValue();
+
+    await advanceCampaignTime('camp-123', 24);
+
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({
+        inGameTime: '2381-05-19T08:00:00',
+        restRequest: null,
+      })
+    );
+    expect(localStorage.getItem('unendingvoid:rest_request')).toBeNull();
+  });
+
+  it('clearPartyRest sets restRequest to null and clears localStorage', async () => {
+    localStorage.setItem('unendingvoid:rest_request', JSON.stringify({ id: 'rest_1' }));
+    updateDoc.mockResolvedValue();
+
+    await clearPartyRest('camp-123');
+
+    expect(updateDoc).toHaveBeenCalledWith(
+      { id: 'mock-doc-ref' },
+      expect.objectContaining({ restRequest: null })
+    );
+    expect(localStorage.getItem('unendingvoid:rest_request')).toBeNull();
+  });
 });
+
 

@@ -55,6 +55,8 @@ vi.mock('../../hooks/useCollection', () => ({
   useCollection: () => ({ docs: [], loading: false }),
 }));
 
+let snapshotListeners = [];
+
 vi.mock('firebase/firestore', async (importOriginal) => {
   const actual = await importOriginal();
   return {
@@ -62,12 +64,15 @@ vi.mock('firebase/firestore', async (importOriginal) => {
     doc: vi.fn((db, col, id) => ({ col, id })),
     onSnapshot: vi.fn((docRef, onNext) => {
       if (docRef?.col === 'campaigns') {
+        snapshotListeners.push(onNext);
         onNext({
           exists: () => true,
           data: () => mockCampaignData,
         });
       }
-      return () => {};
+      return () => {
+        snapshotListeners = snapshotListeners.filter((l) => l !== onNext);
+      };
     }),
   };
 });
@@ -185,4 +190,60 @@ describe('PlayerSheet - Combat Board Button Inactive Visibility Engine', () => {
 
     expect(screen.getByText(/18 May 2381 16:00/i)).toBeInTheDocument();
   });
+
+  it('does NOT re-open resolved rest modal when DM skips a day or snapshot updates after player closes it', async () => {
+    mockCampaignData = {
+      combatActive: false,
+      combatEnded: true,
+      inGameTime: '2381-05-18T08:00:00',
+      turnOrder: [],
+    };
+
+    render(<PlayerSheet />);
+
+    const longRestBtn = screen.getByRole('button', { name: /Long Rest/i });
+    await act(async () => {
+      longRestBtn.click();
+    });
+
+    // Requisition modal should be displayed
+    expect(screen.getByText(/Squad Rest Requisition/i)).toBeInTheDocument();
+
+    // DM authorizes the long rest (+8h)
+    await act(async () => {
+      await resolvePartyRest('camp_test_alpha', true, [], '2381-05-18T08:00:00');
+    });
+
+    // Notice that DM authorized rest is displayed with Close button
+    expect(screen.getByText(/DM authorized the Long Rest/i)).toBeInTheDocument();
+    const closeBtn = screen.getByRole('button', { name: /Close/i });
+
+    // Operative closes the rest modal
+    await act(async () => {
+      closeBtn.click();
+    });
+
+    // Modal is dismissed
+    expect(screen.queryByText(/DM authorized the Long Rest/i)).not.toBeInTheDocument();
+
+    // Now DM clicks "Skip Day" or another day passes - Firestore snapshot triggers with new inGameTime!
+    mockCampaignData = {
+      ...mockCampaignData,
+      inGameTime: '2381-05-19T16:00:00',
+    };
+
+    await act(async () => {
+      snapshotListeners.forEach((listener) => {
+        listener({
+          exists: () => true,
+          data: () => mockCampaignData,
+        });
+      });
+    });
+
+    // Modal MUST NOT re-appear on player screen!
+    expect(screen.queryByText(/DM authorized the Long Rest/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Squad Rest Requisition/i)).not.toBeInTheDocument();
+  });
 });
+

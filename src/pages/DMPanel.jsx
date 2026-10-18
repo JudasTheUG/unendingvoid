@@ -130,6 +130,7 @@ export default function DMPanel() {
     window.addEventListener('unendingvoid:rest_voted', handleRestEvent);
     window.addEventListener('unendingvoid:rest_resolved', handleRestEvent);
     window.addEventListener('unendingvoid:rest_cancelled', handleRestEvent);
+    window.addEventListener('unendingvoid:rest_cleared', handleRestEvent);
     window.addEventListener('storage', handleStorageRest);
 
     return () => {
@@ -137,6 +138,7 @@ export default function DMPanel() {
       window.removeEventListener('unendingvoid:rest_voted', handleRestEvent);
       window.removeEventListener('unendingvoid:rest_resolved', handleRestEvent);
       window.removeEventListener('unendingvoid:rest_cancelled', handleRestEvent);
+      window.removeEventListener('unendingvoid:rest_cleared', handleRestEvent);
       window.removeEventListener('storage', handleStorageRest);
     };
   }, [campaign?.id, campaignId]);
@@ -146,6 +148,9 @@ export default function DMPanel() {
     try {
       const updated = await advanceCampaignTime(campId, 24, campaignTime);
       setCampaignTimeState(updated);
+      if (localRestRequest && localRestRequest.status !== 'pending') {
+        setLocalRestRequest(null);
+      }
     } catch (err) {
       console.warn('Failed to skip day:', err);
     }

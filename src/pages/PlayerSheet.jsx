@@ -24,7 +24,7 @@ import InitiativeRollModal from '../components/player/InitiativeRollModal';
 import RestRequestModal from '../components/player/RestRequestModal';
 import DiceOverlay from '../components/dice/DiceOverlay';
 import { updatePlayerHP, updatePlayerShields, addPlayerNote, removePlayerNote, deleteCharacter, assignShipToPlayer, updatePlayerAvatar, updatePlayerRestUsage } from '../lib/playerActions';
-import { advanceCampaignTime, requestPartyRest } from '../lib/campaignActions';
+import { advanceCampaignTime, requestPartyRest, clearPartyRest } from '../lib/campaignActions';
 import { DEFAULT_IN_GAME_TIME, calculateDailyRestStatus, getGameDateString } from '../lib/calendarUtils';
 import { logout } from '../lib/authService';
 
@@ -117,6 +117,26 @@ export default function PlayerSheet() {
     );
   });
 
+  // Squad Rest Requisition tracking & expiration protection
+  const dismissedRestIdsRef = React.useRef(new Set());
+
+  const isRestDismissedOrExpired = React.useCallback((req, cId) => {
+    if (!req || !req.status || req.status === 'cancelled') return true;
+    if (req.status === 'pending') return false; // Pending requests require opertive attention
+
+    // For resolved (approved or denied):
+    if (req.id && dismissedRestIdsRef.current.has(req.id)) return true;
+    if (typeof localStorage !== 'undefined') {
+      const campKey = cId || effectivePlayer?.campaignId || 'default';
+      const storedDismissedId = localStorage.getItem(`unendingvoid:dismissed_rest_${campKey}`);
+      if (storedDismissedId && req.id && storedDismissedId === req.id) return true;
+    }
+    // Expire resolved notifications after 60 seconds
+    if (req.resolvedAt && Date.now() - req.resolvedAt > 60000) return true;
+    if (!req.resolvedAt && req.requestedAt && Date.now() - req.requestedAt > 120000) return true;
+    return false;
+  }, [effectivePlayer?.campaignId]);
+
   // Squad Rest Requisition state
   const [campaignRestRequest, setCampaignRestRequest] = useState(() => {
     if (typeof localStorage === 'undefined') return null;
@@ -124,8 +144,18 @@ export default function PlayerSheet() {
       const raw = localStorage.getItem('unendingvoid:rest_request');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (!effectivePlayer?.campaignId || parsed?.campaignId === effectivePlayer.campaignId) {
-          return parsed.restRequest;
+        const campId = effectivePlayer?.campaignId;
+        if (!campId || parsed?.campaignId === campId) {
+          const req = parsed.restRequest;
+          if (req && req.status === 'pending') return req;
+          if (req && (req.status === 'approved' || req.status === 'denied')) {
+            const campKey = campId || 'default';
+            const storedDismissedId = localStorage.getItem(`unendingvoid:dismissed_rest_${campKey}`);
+            if (storedDismissedId && req.id && storedDismissedId === req.id) return null;
+            if (req.resolvedAt && Date.now() - req.resolvedAt > 60000) return null;
+            if (!req.resolvedAt && req.requestedAt && Date.now() - req.requestedAt > 120000) return null;
+            return req;
+          }
         }
       }
     } catch (_) {}
@@ -185,7 +215,12 @@ export default function PlayerSheet() {
             setCampaignTimeState(camp.inGameTime);
           }
           if (camp?.restRequest !== undefined) {
-            setCampaignRestRequest(camp.restRequest);
+            const req = camp.restRequest;
+            if (req && !isRestDismissedOrExpired(req, effectivePlayer.campaignId)) {
+              setCampaignRestRequest(req);
+            } else {
+              setCampaignRestRequest(null);
+            }
           }
         } else {
           setIsCombatActive(false);
@@ -196,7 +231,7 @@ export default function PlayerSheet() {
       }
     );
     return () => unsub();
-  }, [effectivePlayer?.campaignId]);
+  }, [effectivePlayer?.campaignId, isRestDismissedOrExpired]);
 
   // Listen for combat initialization and termination (window events + multi-tab storage)
   React.useEffect(() => {
@@ -228,7 +263,12 @@ export default function PlayerSheet() {
       const detail = e.detail;
       if (!detail) return;
       if (!campId || detail.campaignId === campId) {
-        setCampaignRestRequest(detail.restRequest || null);
+        const req = detail.restRequest;
+        if (req && !isRestDismissedOrExpired(req, campId)) {
+          setCampaignRestRequest(req);
+        } else {
+          setCampaignRestRequest(null);
+        }
       }
     };
 
@@ -236,7 +276,12 @@ export default function PlayerSheet() {
       const detail = e.detail;
       if (!detail) return;
       if (!campId || detail.campaignId === campId) {
-        setCampaignRestRequest(detail.restRequest || null);
+        const req = detail.restRequest;
+        if (req && !isRestDismissedOrExpired(req, campId)) {
+          setCampaignRestRequest(req);
+        } else {
+          setCampaignRestRequest(null);
+        }
         if (detail.approved) {
           const restType = detail.restRequest?.type || 'short';
           const newTime = detail.inGameTime || campaignTime;
@@ -269,6 +314,13 @@ export default function PlayerSheet() {
       }
     };
 
+    const handleRestCleared = (e) => {
+      const detail = e.detail;
+      if (!campId || !detail || detail.campaignId === campId) {
+        setCampaignRestRequest(null);
+      }
+    };
+
     const handleStorageChange = (e) => {
       if (e.key === 'unendingvoid:combat_ended') {
         setIsCombatActive(false);
@@ -298,7 +350,12 @@ export default function PlayerSheet() {
           try {
             const parsed = JSON.parse(e.newValue);
             if (!campId || parsed.campaignId === campId) {
-              setCampaignRestRequest(parsed.restRequest || null);
+              const req = parsed.restRequest;
+              if (req && !isRestDismissedOrExpired(req, campId)) {
+                setCampaignRestRequest(req);
+              } else {
+                setCampaignRestRequest(null);
+              }
             }
           } catch (_) {}
         }
@@ -312,6 +369,7 @@ export default function PlayerSheet() {
     window.addEventListener('unendingvoid:rest_voted', handleRestEvent);
     window.addEventListener('unendingvoid:rest_resolved', handleRestResolved);
     window.addEventListener('unendingvoid:rest_cancelled', handleRestEvent);
+    window.addEventListener('unendingvoid:rest_cleared', handleRestCleared);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
@@ -322,9 +380,10 @@ export default function PlayerSheet() {
       window.removeEventListener('unendingvoid:rest_voted', handleRestEvent);
       window.removeEventListener('unendingvoid:rest_resolved', handleRestResolved);
       window.removeEventListener('unendingvoid:rest_cancelled', handleRestEvent);
+      window.removeEventListener('unendingvoid:rest_cleared', handleRestCleared);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [effectivePlayer?.campaignId, effectivePlayer?.maxHp, effectivePlayer?.maxShields, effectivePlayer?.stats]);
+  }, [effectivePlayer?.campaignId, effectivePlayer?.maxHp, effectivePlayer?.maxShields, effectivePlayer?.stats, isRestDismissedOrExpired]);
 
   const equippedShip = allItems.find(
     (it) => it.id === effectivePlayer.spaceship && it.type === 'spaceship'
@@ -558,6 +617,34 @@ export default function PlayerSheet() {
     }
   };
 
+  const handleCloseRestModal = async () => {
+    const currentReq = campaignRestRequest;
+    if (currentReq?.id) {
+      dismissedRestIdsRef.current.add(currentReq.id);
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const campKey = effectivePlayer?.campaignId || 'default';
+          localStorage.setItem(`unendingvoid:dismissed_rest_${campKey}`, currentReq.id);
+          localStorage.removeItem('unendingvoid:rest_request');
+        } catch (_) {}
+      }
+    }
+    setCampaignRestRequest(null);
+
+    // If this request was already resolved (approved or denied), clear it from campaign Firestore doc so it doesn't linger
+    if (
+      effectivePlayer?.campaignId &&
+      currentReq &&
+      (currentReq.status === 'approved' || currentReq.status === 'denied')
+    ) {
+      try {
+        await clearPartyRest(effectivePlayer.campaignId);
+      } catch (err) {
+        console.warn('[PlayerSheet] Notice clearing party rest:', err);
+      }
+    }
+  };
+
   return (
     <div className="min-h-dvh bg-void-bg text-white relative p-4 md:p-6 lg:p-8 pb-44 md:pb-52 lg:pb-56 space-y-6">
       {/* 3D Dice Layer */}
@@ -577,7 +664,7 @@ export default function PlayerSheet() {
         campaignId={effectivePlayer?.campaignId}
         currentUser={effectivePlayer}
         activeCharacters={[]}
-        onClose={() => setCampaignRestRequest(null)}
+        onClose={handleCloseRestModal}
       />
 
       {/* Navigation & Breadcrumbs Bar */}

@@ -57,6 +57,18 @@ export default function RestRequestModal({
         {/* Top glow stripe */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-amber-400 to-cyan-500 animate-pulse" />
 
+        {/* Top-right close button for resolved dialogs */}
+        {(restRequest.status === 'approved' || restRequest.status === 'denied') && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3 right-3 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+            title={t('common.close', 'Close')}
+          >
+            ✕
+          </button>
+        )}
+
         {/* Modal Header */}
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/70 border border-cyan-500/40 text-neon-cyan text-xs font-bold uppercase tracking-wider">
