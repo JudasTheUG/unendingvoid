@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -29,6 +29,9 @@ export const DEFAULT_SAMPLE_INTEL = [
 ];
 
 const LOCAL_STORAGE_KEY = 'unendingvoid:dm_broadcasts';
+export const LAST_READ_KEY = 'unendingvoid:tac_comms_last_read';
+export const LATEST_BROADCAST_KEY = 'unendingvoid:latest_broadcast';
+export const BROADCAST_CHANNEL_NAME = 'unendingvoid_intel_channel';
 
 export function getStoredBroadcasts() {
   try {
@@ -55,10 +58,20 @@ export function saveLocalBroadcast(broadcast) {
   const updated = Array.from(map.values()).slice(0, 500);
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(LATEST_BROADCAST_KEY, JSON.stringify({ broadcast, timestamp: Date.now() }));
     window.dispatchEvent(new CustomEvent('unendingvoid:new_broadcast', { detail: broadcast }));
   } catch (e) {
     console.error('Failed saving local broadcast', e);
   }
+
+  try {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+      bc.postMessage({ broadcast, timestamp: Date.now() });
+      bc.close();
+    }
+  } catch (_) {}
+
   return updated;
 }
 
@@ -146,7 +159,57 @@ export default function DMIntelBroadcast({
   const [savedIds, setSavedIds] = useState(new Set());
   const [hasNewUnread, setHasNewUnread] = useState(false);
 
-  // Sync broadcasts from Firestore (with permanent local fallback & caching)
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+
+  const isInitialLoadRef = useRef(true);
+  const knownIdsRef = useRef(new Set(broadcasts.map((b) => b && b.id).filter(Boolean)));
+  const lastReadTimeRef = useRef(0);
+
+  // Initialize lastReadTime on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LAST_READ_KEY);
+      if (stored) {
+        lastReadTimeRef.current = Number(stored) || 0;
+      } else {
+        const now = Date.now();
+        lastReadTimeRef.current = now;
+        localStorage.setItem(LAST_READ_KEY, now.toString());
+      }
+    } catch (_) {
+      lastReadTimeRef.current = Date.now();
+    }
+  }, []);
+
+  // Shared handler for new incoming broadcasts (via window event, BroadcastChannel, or storage event)
+  const handleIncomingBroadcast = (item) => {
+    if (!item || !item.id) return;
+    knownIdsRef.current.add(item.id);
+
+    setBroadcasts((prev) => {
+      const map = new Map();
+      map.set(item.id, item);
+      prev.forEach((b) => {
+        if (b && b.id && !map.has(b.id)) map.set(b.id, b);
+      });
+      const merged = Array.from(map.values()).sort((a, b) => {
+        const tA = a.createdMillis || (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : Number(a.createdAt) || 0);
+        const tB = b.createdMillis || (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : Number(b.createdAt) || 0);
+        return tB - tA;
+      });
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged.slice(0, 500)));
+      } catch (_) {}
+      return merged;
+    });
+
+    if (!isOpenRef.current) {
+      setHasNewUnread(true);
+    }
+  };
+
+  // Sync broadcasts from Firestore and cross-tab/local channels
   useEffect(() => {
     let unsubscribe = null;
     try {
@@ -169,6 +232,32 @@ export default function DMIntelBroadcast({
                         : Number(data.createdMillis || data.createdAt) || Date.now(),
                 };
               });
+
+              const isInitial = isInitialLoadRef.current;
+              isInitialLoadRef.current = false;
+
+              // Check if any newly received broadcast should trigger unread notification
+              let hasNewIncoming = false;
+              if (isInitial) {
+                const lastRead = lastReadTimeRef.current;
+                if (lastRead > 0 && live.some((b) => (b.createdMillis || 0) > lastRead)) {
+                  hasNewIncoming = true;
+                }
+              } else {
+                const hasAddedDocs = snapshot.docChanges().some((c) => c.type === 'added');
+                const hasUnknownIds = live.some((b) => !knownIdsRef.current.has(b.id));
+                if (hasAddedDocs || hasUnknownIds) {
+                  hasNewIncoming = true;
+                }
+              }
+
+              live.forEach((b) => {
+                if (b && b.id) knownIdsRef.current.add(b.id);
+              });
+
+              if (hasNewIncoming && !isOpenRef.current) {
+                setHasNewUnread(true);
+              }
 
               setBroadcasts((prev) => {
                 const map = new Map();
@@ -201,24 +290,51 @@ export default function DMIntelBroadcast({
       console.warn('[DMIntelBroadcast] Firestore listener failed:', e);
     }
 
+    // 1. Same-window custom event
     const handleCustomBroadcast = (e) => {
-      setBroadcasts((prev) => {
-        const updated = [e.detail, ...prev.filter((b) => b.id !== e.detail.id)];
-        try {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated.slice(0, 500)));
-        } catch (_) {}
-        return updated;
-      });
-      if (!isOpen) setHasNewUnread(true);
+      if (e.detail) {
+        handleIncomingBroadcast(e.detail);
+      }
     };
-
     window.addEventListener('unendingvoid:new_broadcast', handleCustomBroadcast);
+
+    // 2. Cross-tab BroadcastChannel
+    let bc = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+        bc.onmessage = (e) => {
+          if (e.data?.broadcast) {
+            handleIncomingBroadcast(e.data.broadcast);
+          }
+        };
+      }
+    } catch (_) {}
+
+    // 3. Storage event fallback (multi-tab)
+    const handleStorage = (e) => {
+      if (e.key === LATEST_BROADCAST_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.broadcast) {
+            handleIncomingBroadcast(parsed.broadcast);
+          }
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
 
     return () => {
       if (unsubscribe) unsubscribe();
       window.removeEventListener('unendingvoid:new_broadcast', handleCustomBroadcast);
+      window.removeEventListener('storage', handleStorage);
+      if (bc) {
+        try {
+          bc.close();
+        } catch (_) {}
+      }
     };
-  }, [isOpen]);
+  }, []);
 
   // Listen for close_tac_comms (e.g. when Quantum Roll Ledger opens)
   useEffect(() => {
@@ -234,10 +350,15 @@ export default function DMIntelBroadcast({
       const next = !prev;
       if (next) {
         window.dispatchEvent(new CustomEvent('unendingvoid:close_ledger'));
+        setHasNewUnread(false);
+        const now = Date.now();
+        lastReadTimeRef.current = now;
+        try {
+          localStorage.setItem(LAST_READ_KEY, now.toString());
+        } catch (_) {}
       }
       return next;
     });
-    setHasNewUnread(false);
   };
 
   const handleSaveItem = (item) => {
@@ -263,6 +384,7 @@ export default function DMIntelBroadcast({
       <div className="fixed bottom-14 right-2 sm:bottom-24 sm:right-5 z-40">
         <button
           onClick={handleOpen}
+          data-testid="tac-comms-btn"
           className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-[#070b14] border-2 transition-all font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 shadow-[0_0_25px_rgba(0,0,0,0.9)]
                      ${isOpen
                        ? 'border-amber-500 text-amber-400 bg-amber-500/15 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
@@ -274,7 +396,10 @@ export default function DMIntelBroadcast({
           <span className="text-sm sm:text-base">📡</span>
           <span>{t('intel.feedTitle') || 'TAC-COMMS'}</span>
           {hasNewUnread && (
-            <span className="w-2 h-2 rounded-full bg-neon-cyan animate-ping"></span>
+            <span data-testid="tac-comms-unread-dot" className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-cyan opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-neon-cyan shadow-[0_0_8px_#00F0FF]"></span>
+            </span>
           )}
           <span className="px-1.5 sm:px-2 py-0.5 rounded bg-slate-800 text-[9px] sm:text-[10px] text-gray-200 border border-slate-700 font-bold">
             {broadcasts.length}

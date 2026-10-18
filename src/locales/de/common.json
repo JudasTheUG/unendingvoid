@@ -247,6 +247,7 @@
   },
   "intel": {
     "feedTitle": "TAK-KOMM",
+    "unreadNotice": "Neuer Übertragungsalarm // TAK-KOMM",
     "feedHeader": "📡 Taktische Kommunikation // SL-Lagebericht",
     "readOnly": "NUR MONITOR",
     "incomingNotice": "Eingehende Flotten- und Gesetzlosen-Funksprüche",

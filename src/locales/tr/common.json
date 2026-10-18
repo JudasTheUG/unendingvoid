@@ -247,6 +247,7 @@
   },
   "intel": {
     "feedTitle": "TAK-HABERLEŞME",
+    "unreadNotice": "Yeni İletim Uyarısı // TAK-HABERLEŞME",
     "feedHeader": "📡 Taktik Haberleşme // GM İstihbaratı",
     "readOnly": "SADECE İZLEME",
     "incomingNotice": "Gelen Filo ve Kanunsuz İletimleri",

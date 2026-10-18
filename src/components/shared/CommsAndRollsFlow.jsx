@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { getStoredBroadcasts, saveLocalBroadcast, IntelMediaPreview } from './DMIntelBroadcast';
+import { getStoredBroadcasts, saveLocalBroadcast, IntelMediaPreview, BROADCAST_CHANNEL_NAME, LATEST_BROADCAST_KEY } from './DMIntelBroadcast';
 import { getStoredRolls, useDiceSync } from '../../hooks/useDiceSync';
 
 export default function CommsAndRollsFlow({
@@ -88,14 +88,45 @@ export default function CommsAndRollsFlow({
     } catch (_) {}
 
     const handleCustomBroadcast = (e) => {
-      setBroadcasts((prev) => [e.detail, ...prev.filter((b) => b.id !== e.detail.id)]);
+      if (e.detail) {
+        setBroadcasts((prev) => [e.detail, ...prev.filter((b) => b.id !== e.detail.id)]);
+      }
     };
-
     window.addEventListener('unendingvoid:new_broadcast', handleCustomBroadcast);
+
+    let bc = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+        bc.onmessage = (e) => {
+          if (e.data?.broadcast) {
+            setBroadcasts((prev) => [e.data.broadcast, ...prev.filter((b) => b.id !== e.data.broadcast.id)]);
+          }
+        };
+      }
+    } catch (_) {}
+
+    const handleStorage = (e) => {
+      if (e.key === LATEST_BROADCAST_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.broadcast) {
+            setBroadcasts((prev) => [parsed.broadcast, ...prev.filter((b) => b.id !== parsed.broadcast.id)]);
+          }
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
 
     return () => {
       if (unsubscribe) unsubscribe();
       window.removeEventListener('unendingvoid:new_broadcast', handleCustomBroadcast);
+      window.removeEventListener('storage', handleStorage);
+      if (bc) {
+        try {
+          bc.close();
+        } catch (_) {}
+      }
     };
   }, []);
 

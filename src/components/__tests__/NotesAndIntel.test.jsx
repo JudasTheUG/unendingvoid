@@ -164,4 +164,60 @@ describe('DMIntelBroadcast', () => {
     expect(closeLedgerSpy).toHaveBeenCalled();
     window.removeEventListener('unendingvoid:close_ledger', closeLedgerSpy);
   });
+
+  it('triggers blinking unread dot when new broadcast is dispatched while TAC-COMMS is closed, and clears on open', () => {
+    localStorage.clear();
+    render(<DMIntelBroadcast />);
+
+    // Initially closed, no unread dot
+    expect(screen.queryByTestId('tac-comms-unread-dot')).not.toBeInTheDocument();
+
+    // Dispatch new broadcast event (e.g. from DM broadcast)
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('unendingvoid:new_broadcast', {
+          detail: {
+            id: 'intel_test_live_99',
+            title: 'Critical Threat Inbound',
+            content: 'Hostile stealth fleet on intercept course.',
+            createdAt: Date.now(),
+          },
+        })
+      );
+    });
+
+    // Unread dot must appear with blinking animation
+    expect(screen.getByTestId('tac-comms-unread-dot')).toBeInTheDocument();
+
+    // Click TAC-COMMS to open
+    const toggleBtn = screen.getByTitle('Open DM Tactical Comms Feed');
+    fireEvent.click(toggleBtn);
+
+    // Unread dot must be cleared
+    expect(screen.queryByTestId('tac-comms-unread-dot')).not.toBeInTheDocument();
+  });
+
+  it('triggers unread dot on multi-tab storage event when new broadcast arrives', () => {
+    localStorage.clear();
+    render(<DMIntelBroadcast />);
+
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'unendingvoid:latest_broadcast',
+          newValue: JSON.stringify({
+            broadcast: {
+              id: 'intel_cross_tab_101',
+              title: 'Subspace Alert',
+              content: 'Relay transmission received.',
+              createdAt: Date.now(),
+            },
+          }),
+        })
+      );
+    });
+
+    expect(screen.getByTestId('tac-comms-unread-dot')).toBeInTheDocument();
+  });
 });
+

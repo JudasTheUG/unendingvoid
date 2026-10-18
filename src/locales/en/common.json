@@ -247,6 +247,7 @@
   },
   "intel": {
     "feedTitle": "TAC-COMMS",
+    "unreadNotice": "New Transmission Alert // TAC-COMMS",
     "feedHeader": "📡 Tactical Comms // DM Intel Feed",
     "readOnly": "MONITOR ONLY",
     "incomingNotice": "Incoming Fleet & Outlaw Transmissions",
