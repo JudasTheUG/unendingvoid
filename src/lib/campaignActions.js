@@ -1005,9 +1005,15 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
     const endTime = updatedGameTime || advanceGameTime(startTime, hours);
 
     // Restore players in the campaign
-    if (players && players.length > 0 && db) {
+    const targetPlayers = Array.isArray(players) ? [...players] : [];
+    const requesterId = existingRequest?.requesterId || existingRequest?.playerId;
+    if (requesterId && !targetPlayers.some((p) => (p.id || p.uid) === requesterId)) {
+      targetPlayers.push({ id: requesterId, uid: requesterId, restUsage: existingRequest?.restUsage });
+    }
+
+    if (targetPlayers.length > 0 && db) {
       await Promise.all(
-        players.map(async (p) => {
+        targetPlayers.map(async (p) => {
           const pId = p.id || p.uid;
           if (!pId) return;
           try {
@@ -1045,6 +1051,9 @@ export async function resolvePartyRest(campaignId, approved = true, players = []
   }
 
   const finalEndTime = updatedGameTime || (approved ? advanceGameTime(startTime, restType === 'long' ? 8 : 2) : startTime);
+  resolvedRequest.startTime = startTime;
+  resolvedRequest.endTime = finalEndTime;
+  resolvedRequest.inGameTime = finalEndTime;
 
   try {
     if (typeof localStorage !== 'undefined') {

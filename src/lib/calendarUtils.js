@@ -122,69 +122,70 @@ export function isNextGameDay(currentDateStr, previousDateStr) {
 /**
  * Calculates operative daily rest allowance based on in-game day progression.
  * Rules:
- * 1. Long rest belongs to the in-game day it was started. When time passes 23:59 into 00:00 (tomorrow),
- *    the long rest is replenished (1 available).
- * 2. Short rests can ONLY be refilled if date is different than day of short rest used
- *    AND a long rest has been taken.
+ * 1. 2 Short Rests per day, 1 Long Rest per day.
+ * 2. When taking a Long Rest, long rest is used (0/1 left, disabled) and ALL short rests are refilled to 2/2.
+ * 3. When day changes to the next day (current date > previous date) or on Day Skip,
+ *    both Short Rests (2/2) and Long Rest (1/1) are fully replenished.
  */
 export function calculateDailyRestStatus(restUsage = {}, currentGameTime = DEFAULT_IN_GAME_TIME) {
   const currentDay = getGameDateString(currentGameTime);
   const recordedDay = restUsage?.date ? getGameDateString(restUsage.date) : currentDay;
 
-  // 1. Long Rest Availability
-  // A long rest is used for currentDay if the last long rest was charged to currentDay
-  const lastLongRestDay = restUsage?.lastLongRestDate || (
-    Number(restUsage?.longRestsUsed || 0) > 0 && recordedDay === currentDay ? recordedDay : null
+  // Day rollover / Day Skip: current day is newer than recorded day
+  if (currentDay > recordedDay) {
+    return {
+      date: currentDay,
+      shortRestsUsed: 0,
+      longRestsUsed: 0,
+      shortRestsLeft: MAX_SHORT_RESTS_PER_DAY, // 2
+      longRestsLeft: MAX_LONG_RESTS_PER_DAY,   // 1
+      shortRestDate: currentDay,
+      lastLongRestDate: restUsage?.lastLongRestDate || null,
+      longRestTaken: false,
+    };
+  }
+
+  // Same day:
+  const lastLongRestDay = restUsage?.lastLongRestDate
+    ? getGameDateString(restUsage.lastLongRestDate)
+    : (Number(restUsage?.longRestsUsed || 0) > 0 ? recordedDay : null);
+
+  const isLongRestUsedToday = Boolean(
+    lastLongRestDay === currentDay ||
+    (Number(restUsage?.longRestsUsed || 0) > 0 && recordedDay === currentDay)
   );
-  const isLongRestUsedToday = Boolean(lastLongRestDay && lastLongRestDay === currentDay);
+
   const longRestsUsed = isLongRestUsedToday ? 1 : 0;
   const longRestsLeft = Math.max(0, MAX_LONG_RESTS_PER_DAY - longRestsUsed);
 
-  // 2. Short Rest Availability
-  // Rule: "short rests can only be refilled if date is different than day of short rest used and long rest is taken"
   const recordedShortUsed = Math.min(
     MAX_SHORT_RESTS_PER_DAY,
     Math.max(0, Number(restUsage?.shortRestsUsed || 0))
   );
 
-  let shortRestsUsed = recordedShortUsed;
-
-  if (recordedShortUsed > 0) {
-    const shortDay = restUsage?.shortRestDate ? getGameDateString(restUsage.shortRestDate) : recordedDay;
-    const isDifferentDate = currentDay > shortDay;
-    const hasLongRested = Boolean(
-      restUsage?.longRestTaken ||
-      (lastLongRestDay && lastLongRestDay >= shortDay) ||
-      (Number(restUsage?.longRestsUsed || 0) > 0 && recordedDay >= shortDay)
-    );
-
-    if (isDifferentDate && hasLongRested) {
-      shortRestsUsed = 0;
-    }
-  }
+  // Short rests used today:
+  const shortRestsUsed = recordedShortUsed;
+  const shortRestsLeft = Math.max(0, MAX_SHORT_RESTS_PER_DAY - shortRestsUsed);
 
   return {
     date: currentDay,
     shortRestsUsed,
     longRestsUsed,
-    shortRestsLeft: Math.max(0, MAX_SHORT_RESTS_PER_DAY - shortRestsUsed),
+    shortRestsLeft,
     longRestsLeft,
     shortRestDate: restUsage?.shortRestDate || recordedDay,
     lastLongRestDate: lastLongRestDay,
-    longRestTaken: Boolean(restUsage?.longRestTaken),
+    longRestTaken: isLongRestUsedToday,
   };
 }
 
 /**
  * Applies a completed rest (short or long) to an operative's restUsage record.
  * - Long Rest (+8 hours):
- *   Belongs to the in-game day it was started (startDay).
- *   If the 8-hour rest crosses midnight (endDay > startDay), then upon entering tomorrow,
- *   both 1 long rest and 2 short rests are replenished.
- *   If completed within the same day, long rest is marked used for startDay, and any short rests
- *   from previous days are refilled.
+ *   Consumes long rest (1/1 used, 0/1 left, disabled).
+ *   Refills short rests (0/2 used, 2/2 left).
  * - Short Rest (+2 hours):
- *   Consumes a short rest on startDay. Resets longRestTaken to false.
+ *   Consumes a short rest (increments shortRestsUsed by 1, up to max 2).
  */
 export function applyRestToUsage(currentUsage = {}, restType = 'short', startTimeStr, endTimeStr) {
   const startDay = getGameDateString(startTimeStr || DEFAULT_IN_GAME_TIME);
@@ -192,44 +193,28 @@ export function applyRestToUsage(currentUsage = {}, restType = 'short', startTim
   const currentStatus = calculateDailyRestStatus(currentUsage, startTimeStr || DEFAULT_IN_GAME_TIME);
 
   if (restType === 'long') {
-    if (endDay > startDay) {
-      // Crossed midnight (e.g. started after 16:01, or anytime passing 23:59 into 00:00 tomorrow)!
-      // The long rest belonged to startDay.
-      // Tomorrow (endDay) begins with 2 short rests and 1 long rest replenished!
-      return {
-        date: endDay,
-        shortRestsUsed: 0,
-        shortRestDate: endDay,
-        longRestsUsed: 0,
-        lastLongRestDate: startDay,
-        longRestTaken: false,
-      };
-    } else {
-      // Completed within the same day (e.g. 08:00 to 16:00)
-      // If short rests were from a previous day, this long rest refills them!
-      const shortDay = currentUsage?.shortRestDate ? getGameDateString(currentUsage.shortRestDate) : startDay;
-      const hadShortRestFromPreviousDay = shortDay < startDay;
-      const newShortUsed = hadShortRestFromPreviousDay ? 0 : currentStatus.shortRestsUsed;
-
-      return {
-        date: startDay,
-        shortRestsUsed: newShortUsed,
-        shortRestDate: hadShortRestFromPreviousDay ? startDay : shortDay,
-        longRestsUsed: 1,
-        lastLongRestDate: startDay,
-        longRestTaken: true, // Long rest has been taken; refilling short rests when date advances
-      };
-    }
+    const activeDay = endDay;
+    return {
+      date: activeDay,
+      shortRestsUsed: 0, // Short rests REFILLED on long rest!
+      shortRestDate: activeDay,
+      longRestsUsed: 1, // Long rest USED! (0/1 left, disabled)
+      lastLongRestDate: activeDay,
+      longRestTaken: true,
+    };
   }
 
-  // Short Rest (+2 hours)
-  const newShortUsed = Math.min(MAX_SHORT_RESTS_PER_DAY, currentStatus.shortRestsUsed + 1);
+  // Short Rest (+2 hours):
+  const activeDay = endDay;
+  const baseShortUsed = (endDay > startDay) ? 0 : currentStatus.shortRestsUsed;
+  const newShortUsed = Math.min(MAX_SHORT_RESTS_PER_DAY, baseShortUsed + 1);
+
   return {
-    date: endDay,
+    date: activeDay,
     shortRestsUsed: newShortUsed,
-    shortRestDate: startDay,
-    longRestsUsed: currentStatus.longRestsUsed,
+    shortRestDate: activeDay,
+    longRestsUsed: (endDay > startDay) ? 0 : currentStatus.longRestsUsed,
     lastLongRestDate: currentUsage?.lastLongRestDate || (currentStatus.longRestsUsed > 0 ? startDay : null),
-    longRestTaken: false, // New short rest used; requires a subsequent long rest to refill
+    longRestTaken: currentStatus.longRestTaken,
   };
 }
