@@ -178,55 +178,14 @@ export default function PlayerSheet() {
     campaignTime
   );
 
-  const lastProcessedRestRef = React.useRef(null);
+  const processedRestEventsRef = React.useRef(new Set());
 
   // Sync restUsage from Firestore when it updates
   React.useEffect(() => {
     if (effectivePlayer?.restUsage) {
-      setLocalRestUsage((prev) => {
-        if (!prev) return effectivePlayer.restUsage;
-        const prevDay = prev.date ? getGameDateString(prev.date) : '';
-        const incomingDay = effectivePlayer.restUsage.date ? getGameDateString(effectivePlayer.restUsage.date) : '';
-        if (incomingDay > prevDay) {
-          return effectivePlayer.restUsage;
-        }
-        if (incomingDay === prevDay) {
-          if (
-            Number(effectivePlayer.restUsage.longRestsUsed || 0) > Number(prev.longRestsUsed || 0) ||
-            Number(effectivePlayer.restUsage.shortRestsUsed || 0) > Number(prev.shortRestsUsed || 0)
-          ) {
-            return effectivePlayer.restUsage;
-          }
-        }
-        return prev;
-      });
+      setLocalRestUsage(effectivePlayer.restUsage);
     }
   }, [effectivePlayer?.restUsage]);
-
-  // Handle day skip / in-game midnight rollover: refills both short rests (2/2) and long rest (1/1)
-  React.useEffect(() => {
-    if (!operativeId) return;
-    const currentDay = getGameDateString(campaignTime);
-    const recordedUsage = localRestUsage || effectivePlayer?.restUsage;
-    const recordedDay = recordedUsage?.date ? getGameDateString(recordedUsage.date) : currentDay;
-    if (currentDay > recordedDay) {
-      const nextUsage = {
-        date: currentDay,
-        shortRestsUsed: 0,
-        shortRestDate: currentDay,
-        longRestsUsed: 0,
-        lastLongRestDate: recordedUsage?.lastLongRestDate || null,
-        longRestTaken: false,
-      };
-      setLocalRestUsage(nextUsage);
-      if (typeof localStorage !== 'undefined') {
-        try {
-          localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(nextUsage));
-          updatePlayerRestUsage(operativeId, nextUsage).catch(() => {});
-        } catch (_) {}
-      }
-    }
-  }, [campaignTime, operativeId, localRestUsage, effectivePlayer?.restUsage]);
 
   const campaignTimeRef = React.useRef(campaignTime);
   campaignTimeRef.current = campaignTime;
@@ -234,6 +193,62 @@ export default function PlayerSheet() {
   localRestUsageRef.current = localRestUsage;
   const effectivePlayerRef = React.useRef(effectivePlayer);
   effectivePlayerRef.current = effectivePlayer;
+
+  const handleUpdateHp = React.useCallback(async (newHp, newShields) => {
+    const opId = effectivePlayerRef.current?.id || effectivePlayerRef.current?.uid;
+    if (!opId) return;
+    try {
+      await updatePlayerHP(opId, newHp);
+      await updatePlayerShields(opId, newShields);
+    } catch (err) {
+      console.warn('[PlayerSheet] Local state update only:', err.message);
+    }
+  }, []);
+
+  const applyApprovedRestOnce = React.useCallback((req, inGameTime, prevTimeInput) => {
+    if (!req || req.status !== 'approved') return;
+    const restKey = req.id ? `${req.id}_${req.resolvedAt || 'approved'}` : (req.resolvedAt ? `rest_${req.resolvedAt}` : null);
+    if (!restKey || processedRestEventsRef.current.has(restKey)) {
+      return; // Already processed this rest resolution
+    }
+    processedRestEventsRef.current.add(restKey);
+
+    const restType = req.type || 'short';
+    const currPlayer = effectivePlayerRef.current;
+    const newTime = inGameTime || req.inGameTime || req.endTime || campaignTimeRef.current;
+    const prevTime = prevTimeInput || req.startTime || campaignTimeRef.current;
+
+    if (newTime) {
+      setCampaignTimeState(newTime);
+    }
+
+    const currentBaseUsage = currPlayer?.restUsage || localRestUsageRef.current;
+    const nextUsage = applyRestToUsage(
+      currentBaseUsage,
+      restType,
+      prevTime,
+      newTime
+    );
+    setLocalRestUsage(nextUsage);
+
+    const opId = currPlayer?.id || currPlayer?.uid;
+    if (opId) {
+      try {
+        localStorage.setItem(`unendingvoid:rest_usage:${opId}`, JSON.stringify(nextUsage));
+        updatePlayerRestUsage(opId, nextUsage).catch(() => {});
+      } catch (_) {}
+    }
+
+    if (restType === 'long') {
+      handleUpdateHp(currPlayer?.maxHp || 100, currPlayer?.maxShields || 50);
+    } else {
+      const conMod = Math.floor(((currPlayer?.stats?.constitution || 10) - 10) / 2);
+      const healRoll = Math.floor(Math.random() * 10) + 1 + Math.max(0, conMod);
+      const newHp = Math.min(currPlayer?.maxHp || 100, (currPlayer?.hp || 0) + healRoll);
+      const newShields = Math.min(currPlayer?.maxShields || 50, (currPlayer?.shields || 0) + 5);
+      handleUpdateHp(newHp, newShields);
+    }
+  }, [handleUpdateHp]);
 
   React.useEffect(() => {
     if (!effectivePlayer?.campaignId || !db) return;
@@ -261,41 +276,8 @@ export default function PlayerSheet() {
             }
 
             // Live rest approval sync from Firestore campaign document
-            if (
-              req?.status === 'approved' &&
-              req?.resolvedAt &&
-              lastProcessedRestRef.current !== req.resolvedAt
-            ) {
-              lastProcessedRestRef.current = req.resolvedAt;
-              const restType = req.type || 'short';
-              const currPlayer = effectivePlayerRef.current;
-              const newTime = camp.inGameTime || campaignTimeRef.current;
-              const prevTime = req.startTime || campaignTimeRef.current;
-
-              const nextUsage = applyRestToUsage(
-                localRestUsageRef.current || currPlayer?.restUsage,
-                restType,
-                prevTime,
-                newTime
-              );
-              setLocalRestUsage(nextUsage);
-              const opId = currPlayer?.id || currPlayer?.uid;
-              if (opId) {
-                try {
-                  localStorage.setItem(`unendingvoid:rest_usage:${opId}`, JSON.stringify(nextUsage));
-                  updatePlayerRestUsage(opId, nextUsage).catch(() => {});
-                } catch (_) {}
-              }
-
-              if (restType === 'long') {
-                handleUpdateHp(currPlayer?.maxHp || 100, currPlayer?.maxShields || 50);
-              } else {
-                const conMod = Math.floor(((currPlayer?.stats?.constitution || 10) - 10) / 2);
-                const healRoll = Math.floor(Math.random() * 10) + 1 + Math.max(0, conMod);
-                const newHp = Math.min(currPlayer?.maxHp || 100, (currPlayer?.hp || 0) + healRoll);
-                const newShields = Math.min(currPlayer?.maxShields || 50, (currPlayer?.shields || 0) + 5);
-                handleUpdateHp(newHp, newShields);
-              }
+            if (req?.status === 'approved') {
+              applyApprovedRestOnce(req, camp.inGameTime, req.startTime);
             }
           }
         } else {
@@ -307,7 +289,7 @@ export default function PlayerSheet() {
       }
     );
     return () => unsub();
-  }, [effectivePlayer?.campaignId, isRestDismissedOrExpired]);
+  }, [effectivePlayer?.campaignId, isRestDismissedOrExpired, applyApprovedRestOnce]);
 
   // Listen for combat initialization and termination (window events + multi-tab storage)
   React.useEffect(() => {
@@ -358,37 +340,8 @@ export default function PlayerSheet() {
         } else {
           setCampaignRestRequest(null);
         }
-        if (detail.approved) {
-          const restType = detail.restRequest?.type || 'short';
-          const newTime = detail.inGameTime || campaignTime;
-          const prevTime = detail.previousTime || campaignTime;
-          if (detail.inGameTime) {
-            setCampaignTimeState(detail.inGameTime);
-          }
-
-          const updatedUsage = applyRestToUsage(
-            localRestUsage || effectivePlayer?.restUsage,
-            restType,
-            prevTime,
-            newTime
-          );
-          setLocalRestUsage(updatedUsage);
-          if (operativeId) {
-            try {
-              localStorage.setItem(`unendingvoid:rest_usage:${operativeId}`, JSON.stringify(updatedUsage));
-              updatePlayerRestUsage(operativeId, updatedUsage).catch(() => {});
-            } catch (_) {}
-          }
-
-          if (restType === 'long') {
-            handleUpdateHp(effectivePlayer.maxHp || 100, effectivePlayer.maxShields || 50);
-          } else {
-            const conMod = Math.floor(((effectivePlayer.stats?.constitution || 10) - 10) / 2);
-            const healRoll = Math.floor(Math.random() * 10) + 1 + Math.max(0, conMod);
-            const newHp = Math.min(effectivePlayer.maxHp || 100, (effectivePlayer.hp || 0) + healRoll);
-            const newShields = Math.min(effectivePlayer.maxShields || 50, (effectivePlayer.shields || 0) + 5);
-            handleUpdateHp(newHp, newShields);
-          }
+        if (detail.approved && detail.restRequest) {
+          applyApprovedRestOnce(detail.restRequest, detail.inGameTime, detail.previousTime);
         }
       }
     };
@@ -576,15 +529,6 @@ export default function PlayerSheet() {
       : resolvedItems;
 
   if (playerLoading && !player && !profile) return <LoadingSpinner />;
-
-  const handleUpdateHp = async (newHp, newShields) => {
-    try {
-      await updatePlayerHP(effectivePlayer.id || effectivePlayer.uid, newHp);
-      await updatePlayerShields(effectivePlayer.id || effectivePlayer.uid, newShields);
-    } catch (err) {
-      console.warn('[PlayerSheet] Local state update only:', err.message);
-    }
-  };
 
   const handleShortRest = async () => {
     if (dailyRestStatus.shortRestsLeft <= 0) {

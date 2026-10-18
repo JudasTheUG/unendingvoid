@@ -123,9 +123,15 @@ describe('calendarUtils - Galactic Chronometer Engine', () => {
       expect(day1Evening.shortRestsLeft).toBe(0);
       expect(day1Evening.longRestsLeft).toBe(0);
 
-      // Day advances to next date (current date > previous date) after long rest: resets to 2 short & 1 long rest!
+      // Day advances to next date after long rest: resets to 2 short & 1 long rest!
       const day2Morning = calculateDailyRestStatus(
-        { date: '2381-05-18', shortRestsUsed: 2, longRestsUsed: 1 },
+        {
+          date: '2381-05-18',
+          primaryShortRestTime: '2381-05-18T10:00:00',
+          secondaryShortRestTime: '2381-05-18T12:00:00',
+          lastLongRestStartTime: '2381-05-18T14:00:00',
+          lastLongRestDate: '2381-05-18',
+        },
         '2381-05-19T06:00:00'
       );
       expect(day2Morning.date).toBe('2381-05-19');
@@ -135,75 +141,72 @@ describe('calendarUtils - Galactic Chronometer Engine', () => {
       expect(day2Morning.longRestsUsed).toBe(0);
     });
 
-    it('sets long rest to 0/1 (used & disabled) and refills short rests on long rest completion', () => {
+    it('sets long rest to 0/1 (used & disabled) when taken and ending on same day, and resets after midnight', () => {
       const { applyRestToUsage, calculateDailyRestStatus } = require('../calendarUtils');
 
-      // Start: Day 1 at 08:00. Player has used 2 short rests today.
-      const initialUsage = {
-        date: '2381-05-18',
-        shortRestsUsed: 2,
-        shortRestDate: '2381-05-18',
-        longRestsUsed: 0,
-        longRestTaken: false,
-      };
-
-      // Player takes Long Rest (+8 hours) starting at 08:00 -> ends at 16:00
+      // Player takes Long Rest (+8 hours) starting at 10:00 -> ends at 18:00 on 18 May
       const afterRestUsage = applyRestToUsage(
-        initialUsage,
+        {},
         'long',
-        '2381-05-18T08:00:00',
-        '2381-05-18T16:00:00'
+        '2381-05-18T10:00:00',
+        '2381-05-18T18:00:00'
       );
 
-      // Long rest is used (0/1 left, disabled) and short rests are completely refilled!
+      // Long rest is used (0/1 left, disabled) for the rest of 18 May
       expect(afterRestUsage.date).toBe('2381-05-18');
       expect(afterRestUsage.longRestsUsed).toBe(1);
-      expect(afterRestUsage.shortRestsUsed).toBe(0);
 
-      const status = calculateDailyRestStatus(afterRestUsage, '2381-05-18T16:00:00');
-      expect(status.longRestsLeft).toBe(0); // 0/1 left, disabled! Cannot endlessly long rest!
-      expect(status.shortRestsLeft).toBe(2); // 2/2 left, refilled on long rest!
+      const statusSameDay = calculateDailyRestStatus(afterRestUsage, '2381-05-18T18:00:00');
+      expect(statusSameDay.longRestsLeft).toBe(0); // 0/1 left, disabled on same day!
+
+      // At midnight (00:00 on 19 May), long rest replenishes to 1/1!
+      const statusMidnight = calculateDailyRestStatus(afterRestUsage, '2381-05-19T00:00:00');
+      expect(statusMidnight.longRestsLeft).toBe(1); // 1/1 left, replenished on day change!
+      expect(statusMidnight.longRestsUsed).toBe(0);
     });
 
-    it('refills short rests (2/2) and long rest (1/1) on day skip or date change', () => {
-      const { calculateDailyRestStatus } = require('../calendarUtils');
+    it('follows user scenario: short rest on 28 May, day skip to 29 May (not refilled), long rest crossing to 30 May refills both SR and LR', () => {
+      const { applyRestToUsage, calculateDailyRestStatus } = require('../calendarUtils');
 
-      // Day 1: Player uses 2 short rests and 1 long rest (all exhausted)
-      const exhaustedDay1 = {
-        date: '2381-05-18',
-        shortRestsUsed: 2,
-        shortRestDate: '2381-05-18',
-        longRestsUsed: 1,
-        lastLongRestDate: '2381-05-18',
-        longRestTaken: true,
-      };
+      // 1. Today is 28 May 2381, 15:00. SR=2, LR=1.
+      const initial = calculateDailyRestStatus({}, '2381-05-28T15:00:00');
+      expect(initial.shortRestsLeft).toBe(2);
+      expect(initial.longRestsLeft).toBe(1);
 
-      // DM skips a day or time rolls over to 19 May
-      const day2Status = calculateDailyRestStatus(exhaustedDay1, '2381-05-19T08:00:00');
-      expect(day2Status.date).toBe('2381-05-19');
-      expect(day2Status.shortRestsLeft).toBe(2); // Refilled on day skip!
-      expect(day2Status.shortRestsUsed).toBe(0);
-      expect(day2Status.longRestsLeft).toBe(1);  // Refilled on day skip!
-      expect(day2Status.longRestsUsed).toBe(0);
+      // 2. Use short rest (+2h): time is 17:00. SR=1, LR=1.
+      const usageAfterSR = applyRestToUsage({}, 'short', '2381-05-28T15:00:00', '2381-05-28T17:00:00');
+      const statusAfterSR = calculateDailyRestStatus(usageAfterSR, '2381-05-28T17:00:00');
+      expect(statusAfterSR.shortRestsLeft).toBe(1);
+      expect(statusAfterSR.longRestsLeft).toBe(1);
+
+      // 3. Skip day: today is 29 May 2381, 17:00.
+      // Short rest was NOT refilled because long rest was not taken!
+      const statusDay2 = calculateDailyRestStatus(usageAfterSR, '2381-05-29T17:00:00');
+      expect(statusDay2.shortRestsLeft).toBe(1); // STILL 1 short rest!
+      expect(statusDay2.longRestsLeft).toBe(1);  // 1 long rest!
+
+      // 4. Use long rest on 29 May 17:00 -> ends 30 May 01:00 (+8h).
+      // During long rest, time advanced to new day 30 May which replenished LR!
+      // And SR was taken on 28 May < 30 May + LR was taken on 29 May > 28 May, so SR replenishes!
+      const usageAfterLR = applyRestToUsage(usageAfterSR, 'long', '2381-05-29T17:00:00', '2381-05-30T01:00:00');
+      const statusDay3 = calculateDailyRestStatus(usageAfterLR, '2381-05-30T01:00:00');
+      expect(statusDay3.date).toBe('2381-05-30');
+      expect(statusDay3.longRestsLeft).toBe(1);  // 1/1 replenished!
+      expect(statusDay3.shortRestsLeft).toBe(2); // 2/2 replenished!
     });
 
-    it('refills short rests on day skip even if long rest was not taken', () => {
-      const { calculateDailyRestStatus } = require('../calendarUtils');
+    it('does not double count short rest when applyRestToUsage is called idempotently with same start timestamp', () => {
+      const { applyRestToUsage, calculateDailyRestStatus } = require('../calendarUtils');
 
-      // Day 1: 2 short rests used, NO long rest taken
-      const noLongRestUsage = {
-        date: '2381-05-18',
-        shortRestsUsed: 2,
-        shortRestDate: '2381-05-18',
-        longRestsUsed: 0,
-        longRestTaken: false,
-      };
+      const firstCall = applyRestToUsage({}, 'short', '2381-05-28T15:00:00', '2381-05-28T17:00:00');
+      expect(firstCall.shortRestsUsed).toBe(1);
 
-      // DM skips a day -> 19 May
-      const nextDayStatus = calculateDailyRestStatus(noLongRestUsage, '2381-05-19T08:00:00');
-      expect(nextDayStatus.shortRestsLeft).toBe(2); // Refilled on day skip!
-      expect(nextDayStatus.shortRestsUsed).toBe(0);
-      expect(nextDayStatus.longRestsLeft).toBe(1);  // Available on new day!
+      // Duplicate invocation with the same start timestamp
+      const secondCall = applyRestToUsage(firstCall, 'short', '2381-05-28T15:00:00', '2381-05-28T17:00:00');
+      expect(secondCall.shortRestsUsed).toBe(1); // STILL 1, not 2!
+
+      const status = calculateDailyRestStatus(secondCall, '2381-05-28T17:00:00');
+      expect(status.shortRestsLeft).toBe(1);
     });
   });
 });
